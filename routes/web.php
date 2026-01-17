@@ -1,6 +1,18 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AreaController;
+use App\Http\Controllers\TipoBienController;
+use App\Http\Controllers\BienController;
+use App\Http\Controllers\EstadoBienController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TipoMvtoController;
+use App\Http\Controllers\DocumentoSustentoController;
+
+
 use Illuminate\Support\Facades\Route;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -13,11 +25,39 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Página de bienvenida (pública)
 Route::get('/', function () {
     return view('welcome');
 });
 
+// Rutas protegidas con autenticación
+Route::middleware(['auth', 'verified'])->group(function () {
 
-Route::get('/admin', function () {
-    return view('admin.dashboard');
-})->name('admin.dashboard');
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+
+    // GESTIÓN DE INVENTARIO
+    Route::resource('area', AreaController::class);
+    Route::resource('tipo-bien', TipoBienController::class);
+    Route::resource('bien', BienController::class);
+    Route::post('/bien/verificar-codigo', [App\Http\Controllers\BienController::class, 'verificarCodigo'])->name('bien.verificar-codigo');
+    //RUTAS DE LOS COLORES
+    // Rutas de Configuración del Sistema
+Route::get('/configuracion', [App\Http\Controllers\ConfiguracionController::class, 'index'])
+    ->name('configuracion.index');
+Route::post('/configuracion', [App\Http\Controllers\ConfiguracionController::class, 'actualizar'])
+    ->name('configuracion.actualizar');
+
+    Route::resource('estado-bien', EstadoBienController::class);
+    Route::resource('tipo-mvto', TipoMvtoController::class);
+    Route::resource('documento-sustento', DocumentoSustentoController::class);
+
+
+
+});
+
+require __DIR__.'/auth.php';
+
+
+

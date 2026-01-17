@@ -110,16 +110,16 @@ return [
     */
 
     'preloader' => [
-        'enabled' => true,
-        'mode' => 'fullscreen',
-        'img' => [
-            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-            'alt' => 'AdminLTE Preloader Image',
-            'effect' => 'animation__shake',
-            'width' => 60,
-            'height' => 60,
+    'enabled' => true,
+    'img' => [
+        'path' => 'images/logo.png',  // Tu logo
+        'alt' => 'Logo GesInventario',
+        'effect' => 'animation__shake',  // Efecto de animación
+        'width' => 80,   // Ajusta el tamaño
+        'height' => 80,
         ],
     ],
+
 
     /*
     |--------------------------------------------------------------------------
@@ -257,7 +257,7 @@ return [
     */
 
     'use_route_url' => false,
-    'dashboard_url' => 'home',
+    'dashboard_url' => 'dashboard',
     'logout_url' => 'logout',
     'login_url' => 'login',
     'register_url' => 'register',
@@ -298,101 +298,65 @@ return [
     |
     */
 
-    'menu' => [
-        // Navbar items:
-        [
-            'type' => 'navbar-search',
-            'text' => 'search',
-            'topnav_right' => true,
-        ],
-        [
-            'type' => 'fullscreen-widget',
-            'topnav_right' => true,
-        ],
-
-        // Sidebar items:
-        [
-            'type' => 'sidebar-menu-search',
-            'text' => 'search',
-        ],
-        [
-            'text' => 'blog',
-            'url' => 'admin/blog',
-            'can' => 'manage-blog',
-        ],
-        [
-            'text' => 'pages',
-            'url' => 'admin/pages',
-            'icon' => 'far fa-fw fa-file',
-            'label' => 4,
-            'label_color' => 'success',
-        ],
-        ['header' => 'account_settings'],
-        [
-            'text' => 'profile',
-            'url' => 'admin/settings',
-            'icon' => 'fas fa-fw fa-user',
-        ],
-        [
-            'text' => 'change_password',
-            'url' => 'admin/settings',
-            'icon' => 'fas fa-fw fa-lock',
-        ],
-        [
-            'text' => 'multilevel',
-            'icon' => 'fas fa-fw fa-share',
-            'submenu' => [
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                ],
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                    'submenu' => [
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                        ],
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                            'submenu' => [
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                ],
-            ],
-        ],
-        ['header' => 'labels'],
-        [
-            'text' => 'important',
-            'icon_color' => 'red',
-            'url' => '#',
-        ],
-        [
-            'text' => 'warning',
-            'icon_color' => 'yellow',
-            'url' => '#',
-        ],
-        [
-            'text' => 'information',
-            'icon_color' => 'cyan',
-            'url' => '#',
-        ],
+'menu' => [
+    // Navbar items:
+    [
+        'type'         => 'navbar-search',
+        'text'         => 'search',
+        'topnav_right' => true,
     ],
+    [
+        'type'         => 'fullscreen-widget',
+        'topnav_right' => true,
+    ],
+
+    // Sidebar items:
+    [
+        'text'        => 'Dashboard',
+        'url'         => 'dashboard',
+        'icon'        => 'fas fa-fw fa-tachometer-alt',
+    ],
+
+    ['header' => 'GESTIÓN DE INVENTARIO'],
+
+    [
+        'text' => 'Áreas',
+        'url'  => 'area',
+        'icon' => 'fas fa-fw fa-building',
+    ],
+    [
+        'text' => 'Tipos de Bien',
+        'url'  => 'tipo-bien',
+        'icon' => 'fas fa-fw fa-tags',
+    ],
+    [
+        'text' => 'Estados del Bien',
+        'url'  => 'estado-bien',
+        'icon' => 'fas fa-fw fa-check-circle',
+    ],
+    [
+        'text' => 'Tipos de Movimiento',
+        'url'  => 'tipo-mvto',
+        'icon' => 'fas fa-fw fa-exchange-alt',
+    ],
+    [
+        'text' => 'Bienes',
+        'url'  => 'bien',
+        'icon' => 'fas fa-fw fa-box',
+    ],
+    [
+        'text' => 'Documentos Sustento',
+        'url'  => 'documento-sustento',
+        'icon' => 'fas fa-fw fa-file-invoice',
+    ],
+      ['header' => 'CONFIGURACIÓN'],
+    [
+        'text' => 'Apariencia del Sistema',
+        'icon' => 'fas fa-palette',
+        'url'  => 'configuracion',
+    ],
+],
+
 
     /*
     |--------------------------------------------------------------------------
