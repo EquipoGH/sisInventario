@@ -5,12 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Bien;
 use App\Models\TipoBien;
 use App\Http\Requests\BienRequest;
+use App\Services\MovimientoService;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Log;
 
 class BienController extends Controller
 {
+    protected $movimientoService;
+
+    /**
+     * Inyectar MovimientoService
+     */
+    public function __construct(MovimientoService $movimientoService)
+    {
+        $this->movimientoService = $movimientoService;
+    }
+
     /**
      * Listar bienes con búsqueda, ordenamiento dinámico y paginación
      * SOLO SE ORDENA POR: Código, Denominación y Fecha (las columnas críticas)
@@ -89,6 +100,7 @@ class BienController extends Controller
 
     /**
      * Guardar nuevo bien
+     * ✅ EL OBSERVER SE ENCARGA DE CREAR EL MOVIMIENTO AUTOMÁTICAMENTE
      */
     public function store(BienRequest $request)
     {
@@ -114,11 +126,12 @@ class BienController extends Controller
                 $data['foto_bien'] = $uploadedFile->getSecurePath();
             }
 
+            // Crear bien (el Observer registrará el movimiento automáticamente)
             $bien = Bien::create($data);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Bien registrado exitosamente',
+                'message' => 'Bien registrado exitosamente (movimiento creado automáticamente)',
                 'data' => $bien->load('tipoBien')
             ]);
         } catch (\Exception $e) {
@@ -142,6 +155,7 @@ class BienController extends Controller
 
     /**
      * Actualizar bien existente
+     * ✅ EL OBSERVER SE ENCARGA DE CREAR EL MOVIMIENTO AUTOMÁTICAMENTE
      */
     public function update(BienRequest $request, Bien $bien)
     {
@@ -173,11 +187,12 @@ class BienController extends Controller
                 $data['foto_bien'] = $uploadedFile->getSecurePath();
             }
 
+            // Actualizar bien (el Observer registrará el movimiento si hay cambios relevantes)
             $bien->update($data);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Bien actualizado exitosamente',
+                'message' => 'Bien actualizado exitosamente (movimiento registrado si hubo cambios)',
                 'data' => $bien->load('tipoBien')
             ]);
         } catch (\Exception $e) {
@@ -196,6 +211,14 @@ class BienController extends Controller
     public function destroy(Bien $bien)
     {
         try {
+            // Verificar si tiene movimientos
+            if ($bien->tieneMovimientos()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede eliminar. El bien tiene movimientos registrados.'
+                ], 400);
+            }
+
             // 🗑️ Eliminar imagen de Cloudinary
             if ($bien->foto_bien) {
                 $this->deleteCloudinaryImage($bien->foto_bien);
@@ -234,6 +257,19 @@ class BienController extends Controller
         return response()->json([
             'existe' => $existe,
             'mensaje' => $existe ? 'Este código ya está en uso' : 'Código disponible'
+        ]);
+    }
+
+    /**
+     * Ver historial de movimientos de un bien
+     */
+    public function historialMovimientos(Bien $bien)
+    {
+        $movimientos = $bien->historialMovimientos();
+
+        return response()->json([
+            'success' => true,
+            'data' => $movimientos
         ]);
     }
 

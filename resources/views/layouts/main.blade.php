@@ -108,6 +108,29 @@
                     </li>
 
                     <li class="nav-item">
+                        <a href="{{ route('responsable.index') }}" class="nav-link {{ request()->routeIs('responsable.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-user-tie"></i>
+                            <p>Responsables</p>
+                        </a>
+                    </li>
+
+                     <li class="nav-item">
+                        <a href="{{ route('responsable-area.index') }}" class="nav-link {{ request()->routeIs('responsable-area.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-user-tag"></i>
+                            <p>Asignaciones</p>
+                        </a>
+                    </li>
+
+
+                    <li class="nav-item">
+                        <a href="{{ route('ubicacion.index') }}" class="nav-link {{ request()->routeIs('ubicacion.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-map-marker-alt"></i>
+                            <p>Ubicaciones</p>
+                        </a>
+                    </li>
+
+
+                    <li class="nav-item">
                         <a href="{{ route('tipo-bien.index') }}" class="nav-link {{ request()->routeIs('tipo-bien.*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-tags"></i>
                             <p>Tipos de Bien</p>
@@ -120,6 +143,15 @@
                             <p>Estados del Bien</p>
                         </a>
                     </li>
+
+                    <!-- Movimientos -->
+                    <li class="nav-item">
+                        <a href="{{ route('movimiento.index') }}" class="nav-link {{ request()->routeIs('movimiento.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-exchange-alt"></i>
+                            <p>Movimientos</p>
+                        </a>
+                    </li>
+
 
                     <li class="nav-item">
                         <a href="{{ route('tipo-mvto.index') }}" class="nav-link {{ request()->routeIs('tipo-mvto.*') ? 'active' : '' }}">

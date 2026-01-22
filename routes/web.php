@@ -8,6 +8,12 @@ use App\Http\Controllers\EstadoBienController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TipoMvtoController;
 use App\Http\Controllers\DocumentoSustentoController;
+use App\Http\Controllers\ResponsableController;
+use App\Http\Controllers\UbicacionController;
+use App\Http\Controllers\ResponsableAreaController;
+use App\Http\Controllers\MovimientoController;
+
+
 
 
 use Illuminate\Support\Facades\Route;
@@ -52,6 +58,11 @@ Route::post('/configuracion', [App\Http\Controllers\ConfiguracionController::cla
     Route::resource('estado-bien', EstadoBienController::class);
     Route::resource('tipo-mvto', TipoMvtoController::class);
     Route::resource('documento-sustento', DocumentoSustentoController::class);
+    Route::resource('responsable', ResponsableController::class);
+    Route::resource('ubicacion', UbicacionController::class);
+    Route::resource('responsable-area', ResponsableAreaController::class);
+    Route::resource('movimiento', MovimientoController::class);
+
 
 
 
