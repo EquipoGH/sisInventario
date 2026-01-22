@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Bien;
 use App\Observers\BienObserver;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,5 +24,6 @@ class AppServiceProvider extends ServiceProvider
     {
         // Registrar el Observer de Bien
         Bien::observe(BienObserver::class);
+        Paginator::useBootstrapFive();
     }
 }

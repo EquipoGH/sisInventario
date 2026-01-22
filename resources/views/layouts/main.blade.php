@@ -174,6 +174,14 @@
                         </a>
                     </li>
 
+                    <!-- Seguridad -->
+        <li class="nav-header">SEGURIDAD</li>
+                    <li class="nav-item">
+            <a href="{{ route('perfil.index') }}" class="nav-link {{ request()->routeIs('perfil.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-id-card"></i>
+                <p>Perfil Usuario</p>
+            </a>
+        </li>
                     <!-- Configuración -->
                     <li class="nav-header">CONFIGURACIÓN</li>
 

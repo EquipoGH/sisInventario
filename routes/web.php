@@ -12,6 +12,7 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\ResponsableAreaController;
 use App\Http\Controllers\MovimientoController;
+use App\Http\Controllers\PerfilController;
 
 
 
@@ -62,6 +63,11 @@ Route::post('/configuracion', [App\Http\Controllers\ConfiguracionController::cla
     Route::resource('ubicacion', UbicacionController::class);
     Route::resource('responsable-area', ResponsableAreaController::class);
     Route::resource('movimiento', MovimientoController::class);
+
+    // Seguridad
+        Route::delete('perfil/bulk-destroy', [PerfilController::class, 'bulkDestroy'])
+            ->name('perfil.bulk-destroy');
+        Route::resource('perfil', PerfilController::class)->except(['show', 'create']);
 
 
 
