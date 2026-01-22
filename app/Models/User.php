@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Notifications\ResetPasswordNotification; // 👈 AGREGAR ESTA LÍNEA
 
 class User extends Authenticatable
 {
@@ -48,7 +49,23 @@ class User extends Authenticatable
         'ultimo_acceso' => 'datetime',  // ✅ NUEVO
     ];
 
+    // ============================================
+    // ✅ MÉTODO PARA EMAIL DE RECUPERACIÓN PERSONALIZADO
+    // ============================================
+    /**
+     * Enviar la notificación de restablecimiento de contraseña personalizada.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
+    // ============================================
     // ✅ RELACIONES CON SISTEMA DE PERMISOS
+    // ============================================
     /**
      * Relación muchos a muchos con Perfil
      */
@@ -65,9 +82,14 @@ class User extends Authenticatable
         return $this->hasMany(Historial::class, 'id_usuario', 'id');
     }
 
-    // ✅ MÉTODOS HELPER PARA PERMISOS (OPCIONAL PERO RECOMENDADO)
+    // ============================================
+    // ✅ MÉTODOS HELPER PARA PERMISOS
+    // ============================================
     /**
      * Verificar si el usuario tiene un perfil específico
+     *
+     * @param  string  $nombrePerfil
+     * @return bool
      */
     public function tienePerfil($nombrePerfil)
     {
@@ -76,6 +98,9 @@ class User extends Authenticatable
 
     /**
      * Verificar si el usuario tiene acceso a un módulo
+     *
+     * @param  string  $nombreModulo
+     * @return bool
      */
     public function tieneAccesoModulo($nombreModulo)
     {
@@ -88,6 +113,8 @@ class User extends Authenticatable
 
     /**
      * Obtener todos los módulos del usuario
+     *
+     * @return \Illuminate\Support\Collection
      */
     public function obtenerModulos()
     {
