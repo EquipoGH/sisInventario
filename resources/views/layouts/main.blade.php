@@ -182,6 +182,19 @@
                 <p>Perfil Usuario</p>
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('permiso.index') }}" class="nav-link {{ request()->routeIs('permiso.*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-key"></i>
+                <p>Permisos</p>
+            </a>
+        </li>
+        <li class="nav-item">
+    <a href="{{ route('modulo.index') }}" class="nav-link {{ request()->routeIs('modulo.*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-cubes"></i>
+        <p>Módulos</p>
+    </a>
+</li>
+
                     <!-- Configuración -->
                     <li class="nav-header">CONFIGURACIÓN</li>
 

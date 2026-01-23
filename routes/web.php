@@ -13,6 +13,8 @@ use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\ResponsableAreaController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\PerfilController;
+use App\Http\Controllers\PermisoController;
+use App\Http\Controllers\ModuloController;
 
 
 
@@ -68,6 +70,14 @@ Route::post('/configuracion', [App\Http\Controllers\ConfiguracionController::cla
         Route::delete('perfil/bulk-destroy', [PerfilController::class, 'bulkDestroy'])
             ->name('perfil.bulk-destroy');
         Route::resource('perfil', PerfilController::class)->except(['show', 'create']);
+
+        Route::delete('permiso/bulk-destroy', [PermisoController::class, 'bulkDestroy'])
+            ->name('permiso.bulk-destroy');
+        Route::resource('permiso', PermisoController::class)->except(['show', 'create']);
+
+        Route::delete('modulo/bulk-destroy', [ModuloController::class, 'bulkDestroy'])
+            ->name('modulo.bulk-destroy');
+        Route::resource('modulo', ModuloController::class)->except(['show', 'create']);
 
 
 
