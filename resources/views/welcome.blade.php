@@ -371,7 +371,7 @@
 
             <div class="text-center mb-16">
                 <span class="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-semibold text-sm mb-4">
-                    🚀 MÓDULOS PRINCIPALES
+                    MÓDULOS PRINCIPALES
                 </span>
                 <h2 class="text-4xl md:text-5xl font-extrabold text-gray-800 mb-4">
                     Todo lo que <span class="gradient-text">necesitas</span>

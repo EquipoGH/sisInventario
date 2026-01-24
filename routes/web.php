@@ -15,23 +15,13 @@ use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PermisoController;
 use App\Http\Controllers\ModuloController;
-
-
-
-
+use App\Http\Controllers\ConfiguracionController;
 use Illuminate\Support\Facades\Route;
-
-
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
 */
 
 // Página de bienvenida (pública)
@@ -42,49 +32,71 @@ Route::get('/', function () {
 // Rutas protegidas con autenticación
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // Dashboard
+    // ==================== DASHBOARD ====================
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // ==================== CONFIGURACIÓN ====================
+    Route::get('/configuracion', [ConfiguracionController::class, 'index'])
+        ->name('configuracion.index');
+    Route::post('/configuracion', [ConfiguracionController::class, 'actualizar'])
+        ->name('configuracion.actualizar');
 
-    // GESTIÓN DE INVENTARIO
+    // ==================== DOCUMENTO SUSTENTO ====================
+    // ⚠️ IMPORTANTE: Rutas específicas ANTES del resource
+
+    Route::post('/documento-sustento/verificar-numero', [DocumentoSustentoController::class, 'verificarNumero'])
+        ->name('documento-sustento.verificar-numero');
+
+    Route::get('/documento-sustento/obtener', [DocumentoSustentoController::class, 'obtenerDocumentos'])
+        ->name('documento-sustento.obtener-documentos');
+
+    Route::get('/documento-sustento/{documento_sustento}/bienes', [DocumentoSustentoController::class, 'bienes'])
+        ->name('documento-sustento.bienes');
+
+    Route::post('/documento-sustento/{documento_sustento}/desvincular-bienes', [DocumentoSustentoController::class, 'desvincularBienes'])
+        ->name('documento-sustento.desvincular-bienes');
+
+    // Resource CRUD
+    Route::resource('documento-sustento', DocumentoSustentoController::class);
+
+    // ==================== BIEN ====================
+    // ⚠️ IMPORTANTE: Rutas específicas ANTES del resource
+
+    Route::post('/bien/verificar-codigo', [BienController::class, 'verificarCodigo'])
+        ->name('bien.verificar-codigo');
+
+    Route::get('/bien/obtener-documentos', [BienController::class, 'obtenerDocumentos'])
+        ->name('bien.obtener-documentos');
+
+    // Resource CRUD
+    Route::resource('bien', BienController::class);
+
+    // ==================== GESTIÓN DE INVENTARIO ====================
     Route::resource('area', AreaController::class);
     Route::resource('tipo-bien', TipoBienController::class);
-    Route::resource('bien', BienController::class);
-    Route::post('/bien/verificar-codigo', [App\Http\Controllers\BienController::class, 'verificarCodigo'])->name('bien.verificar-codigo');
-    //RUTAS DE LOS COLORES
-    // Rutas de Configuración del Sistema
-Route::get('/configuracion', [App\Http\Controllers\ConfiguracionController::class, 'index'])
-    ->name('configuracion.index');
-Route::post('/configuracion', [App\Http\Controllers\ConfiguracionController::class, 'actualizar'])
-    ->name('configuracion.actualizar');
-
     Route::resource('estado-bien', EstadoBienController::class);
     Route::resource('tipo-mvto', TipoMvtoController::class);
-    Route::resource('documento-sustento', DocumentoSustentoController::class);
     Route::resource('responsable', ResponsableController::class);
     Route::resource('ubicacion', UbicacionController::class);
     Route::resource('responsable-area', ResponsableAreaController::class);
     Route::resource('movimiento', MovimientoController::class);
 
-    // Seguridad
-        Route::delete('perfil/bulk-destroy', [PerfilController::class, 'bulkDestroy'])
-            ->name('perfil.bulk-destroy');
-        Route::resource('perfil', PerfilController::class)->except(['show', 'create']);
+    // ==================== SEGURIDAD ====================
 
-        Route::delete('permiso/bulk-destroy', [PermisoController::class, 'bulkDestroy'])
-            ->name('permiso.bulk-destroy');
-        Route::resource('permiso', PermisoController::class)->except(['show', 'create']);
+    // Perfil
+    Route::delete('perfil/bulk-destroy', [PerfilController::class, 'bulkDestroy'])
+        ->name('perfil.bulk-destroy');
+    Route::resource('perfil', PerfilController::class)->except(['show', 'create']);
 
-        Route::delete('modulo/bulk-destroy', [ModuloController::class, 'bulkDestroy'])
-            ->name('modulo.bulk-destroy');
-        Route::resource('modulo', ModuloController::class)->except(['show', 'create']);
+    // Permiso
+    Route::delete('permiso/bulk-destroy', [PermisoController::class, 'bulkDestroy'])
+        ->name('permiso.bulk-destroy');
+    Route::resource('permiso', PermisoController::class)->except(['show', 'create']);
 
-
-
-
+    // Módulo
+    Route::delete('modulo/bulk-destroy', [ModuloController::class, 'bulkDestroy'])
+        ->name('modulo.bulk-destroy');
+    Route::resource('modulo', ModuloController::class)->except(['show', 'create']);
 });
 
 require __DIR__.'/auth.php';
-
-
-

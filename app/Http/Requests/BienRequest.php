@@ -12,11 +12,27 @@ class BienRequest extends FormRequest
         return true;
     }
 
+    // ⭐ Preparar datos antes de validación
+    protected function prepareForValidation()
+    {
+        // El NumDoc se sincroniza automáticamente en el controlador
+        // No debe venir desde el formulario por seguridad
+        if ($this->has('NumDoc')) {
+            $this->request->remove('NumDoc');
+        }
+
+        // ⭐ NUEVO: Convertir id_documento vacío a null
+        if ($this->id_documento === '' || $this->id_documento === '0') {
+            $this->merge(['id_documento' => null]);
+        }
+    }
+
     public function rules(): array
     {
         $bienId = $this->route('bien') ? $this->route('bien')->id_bien : null;
 
         return [
+            // ==================== CAMPOS OBLIGATORIOS ====================
             'codigo_patrimonial' => [
                 'required',
                 'string',
@@ -25,13 +41,24 @@ class BienRequest extends FormRequest
             ],
             'denominacion_bien' => 'required|string|max:100',
             'id_tipobien' => 'required|exists:tipo_bien,id_tipo_bien',
+            'fecha_registro' => 'required|date|before_or_equal:today',
+
+            // ⭐ Documento Sustento (OPCIONAL)
+            'id_documento' => [
+                'nullable',
+                'integer',
+                'exists:documento_sustento,id_documento'
+            ],
+
+            // ==================== CAMPOS OPCIONALES ====================
             'modelo_bien' => 'nullable|string|max:20',
             'marca_bien' => 'nullable|string|max:20',
             'color_bien' => 'nullable|string|max:20',
             'dimensiones_bien' => 'nullable|string|max:50',
             'nserie_bien' => 'nullable|string|max:20',
-            'fecha_registro' => 'required|date',
-            'foto_bien' => 'nullable|image|mimes:jpeg,jpg,png,gif|max:5120', // 5MB
+
+            // ⭐ CORREGIDO: El input se llama "foto" NO "foto_bien"
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ];
     }
 
@@ -40,14 +67,41 @@ class BienRequest extends FormRequest
         return [
             'codigo_patrimonial.required' => 'El código patrimonial es obligatorio',
             'codigo_patrimonial.unique' => 'Este código patrimonial ya existe',
+            'codigo_patrimonial.max' => 'El código no puede exceder 20 caracteres',
+
             'denominacion_bien.required' => 'La denominación es obligatoria',
+            'denominacion_bien.max' => 'La denominación no puede exceder 100 caracteres',
+
             'id_tipobien.required' => 'Debe seleccionar un tipo de bien',
-            'id_tipobien.exists' => 'El tipo de bien no existe',
+            'id_tipobien.exists' => 'El tipo de bien seleccionado no existe',
+
+            'id_documento.integer' => 'El documento sustento no es válido',
+            'id_documento.exists' => 'El documento sustento seleccionado no existe',
+
             'fecha_registro.required' => 'La fecha de registro es obligatoria',
             'fecha_registro.date' => 'La fecha no es válida',
-            'foto_bien.image' => 'El archivo debe ser una imagen',
-            'foto_bien.mimes' => 'Solo se permiten imágenes JPG, PNG o GIF',
-            'foto_bien.max' => 'La imagen no puede ser mayor a 5MB'
+            'fecha_registro.before_or_equal' => 'La fecha no puede ser futura',
+
+            'foto.image' => 'El archivo debe ser una imagen',
+            'foto.mimes' => 'Solo se permiten imágenes JPG, PNG, GIF o WebP',
+            'foto.max' => 'La imagen no puede ser mayor a 5MB',
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'codigo_patrimonial' => 'código patrimonial',
+            'denominacion_bien' => 'denominación',
+            'id_tipobien' => 'tipo de bien',
+            'id_documento' => 'documento sustento',
+            'fecha_registro' => 'fecha de registro',
+            'modelo_bien' => 'modelo',
+            'marca_bien' => 'marca',
+            'color_bien' => 'color',
+            'dimensiones_bien' => 'dimensiones',
+            'nserie_bien' => 'número de serie',
+            'foto' => 'fotografía'
         ];
     }
 }

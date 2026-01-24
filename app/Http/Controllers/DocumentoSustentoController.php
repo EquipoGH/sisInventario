@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\DocumentoSustento;
 use App\Http\Requests\DocumentoSustentoRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class DocumentoSustentoController extends Controller
 {
@@ -14,8 +16,8 @@ class DocumentoSustentoController extends Controller
         $perPage = 10;
 
         // 🔥 PARÁMETROS DE ORDENAMIENTO
-        $orden = $request->get('orden', 'id'); // Por defecto: ID
-        $direccion = $request->get('direccion', 'desc'); // Por defecto: DESC
+        $orden = $request->get('orden', 'id');
+        $direccion = $request->get('direccion', 'desc');
 
         // Validar columnas permitidas (seguridad)
         $columnasPermitidas = ['id', 'tipo', 'numero', 'fecha'];
@@ -26,7 +28,8 @@ class DocumentoSustentoController extends Controller
         // Validar dirección
         $direccion = in_array($direccion, ['asc', 'desc']) ? $direccion : 'desc';
 
-        $query = DocumentoSustento::query();
+        // ⭐ MEJORADO: Incluir conteo de bienes
+        $query = DocumentoSustento::withCount('bienes');
 
         // Aplicar búsqueda
         if (!empty($search)) {
@@ -79,12 +82,16 @@ class DocumentoSustentoController extends Controller
 
     public function store(DocumentoSustentoRequest $request)
     {
-        \Log::info('Datos recibidos en store:', $request->all());
+        Log::info('Datos recibidos en store:', $request->all());
 
         try {
+            DB::beginTransaction();
+
             $documento = DocumentoSustento::create($request->validated());
 
-            \Log::info('DocumentoSustento creado:', $documento->toArray());
+            DB::commit();
+
+            Log::info('DocumentoSustento creado:', $documento->toArray());
 
             return response()->json([
                 'success' => true,
@@ -92,7 +99,8 @@ class DocumentoSustentoController extends Controller
                 'data' => $documento
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error al crear DocumentoSustento:', ['error' => $e->getMessage()]);
+            DB::rollBack();
+            Log::error('Error al crear DocumentoSustento:', ['error' => $e->getMessage()]);
 
             return response()->json([
                 'success' => false,
@@ -103,18 +111,29 @@ class DocumentoSustentoController extends Controller
 
     public function edit(DocumentoSustento $documentoSustento)
     {
+        // ⭐ MEJORADO: Incluir cantidad de bienes
+        $documentoSustento->loadCount('bienes');
         return response()->json($documentoSustento);
     }
 
     public function update(DocumentoSustentoRequest $request, DocumentoSustento $documentoSustento)
     {
         try {
+            DB::beginTransaction();
+
             $documentoSustento->update($request->validated());
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Documento sustento actualizado exitosamente'
+                'message' => 'Documento sustento actualizado exitosamente',
+                'data' => $documentoSustento
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al actualizar DocumentoSustento:', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar: ' . $e->getMessage()
@@ -125,15 +144,131 @@ class DocumentoSustentoController extends Controller
     public function destroy(DocumentoSustento $documentoSustento)
     {
         try {
+            // ⭐ CRÍTICO: Validar que no tenga bienes asociados
+            if ($documentoSustento->tieneBienes()) {
+                $cantidad = $documentoSustento->cantidadBienes();
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede eliminar. Tiene {$cantidad} bien(es) asociado(s).",
+                    'bienes_count' => $cantidad
+                ], 409); // 409 Conflict
+            }
+
+            DB::beginTransaction();
+
             $documentoSustento->delete();
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Documento sustento eliminado exitosamente'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al eliminar DocumentoSustento:', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al eliminar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ⭐ NUEVO: Método para obtener documentos (usado en BienController)
+    public function obtenerDocumentos()
+    {
+        try {
+            $documentos = DocumentoSustento::select(
+                    'id_documento',
+                    'tipo_documento',
+                    'numero_documento',
+                    'fecha_documento'
+                )
+                ->orderBy('fecha_documento', 'desc')
+                ->get()
+                ->map(function($doc) {
+                    return [
+                        'id' => $doc->id_documento,
+                        'text' => "{$doc->tipo_documento} - {$doc->numero_documento} ({$doc->fecha_formateada})"
+                    ];
+                });
+
+            return response()->json($documentos);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener documentos:', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener documentos'
+            ], 500);
+        }
+    }
+
+    // ⭐ NUEVO: Validar número de documento único
+    public function verificarNumero(Request $request)
+    {
+        $numero = $request->input('numero');
+        $id = $request->input('id'); // null si es creación, id_documento si es edición
+
+        $existe = DocumentoSustento::where('numero_documento', $numero)
+            ->when($id, function($query) use ($id) {
+                return $query->where('id_documento', '!=', $id);
+            })
+            ->exists();
+
+        return response()->json([
+            'existe' => $existe,
+            'disponible' => !$existe
+        ]);
+    }
+
+    // ⭐ NUEVO: Obtener bienes asociados a un documento
+    public function bienes(DocumentoSustento $documentoSustento)
+    {
+        try {
+            $bienes = $documentoSustento->bienesConDetalles();
+
+            return response()->json([
+                'success' => true,
+                'data' => $bienes,
+                'total' => $bienes->count()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener bienes del documento:', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener bienes'
+            ], 500);
+        }
+    }
+
+    // ⭐ NUEVO: Desvincular bienes (establecer id_documento a NULL)
+    public function desvincularBienes(Request $request, DocumentoSustento $documentoSustento)
+    {
+        try {
+            DB::beginTransaction();
+
+            $count = $documentoSustento->bienes()->update([
+                'id_documento' => null,
+                'NumDoc' => null
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} bien(es) desvinculado(s) exitosamente",
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al desvincular bienes:', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al desvincular bienes'
             ], 500);
         }
     }

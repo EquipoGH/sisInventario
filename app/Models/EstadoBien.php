@@ -23,7 +23,6 @@ class EstadoBien extends Model
         return 'id_estado';
     }
 
-    // Accessor para mostrar en mayúsculas (Laravel 9+)
     protected function nombreEstado(): Attribute
     {
         return Attribute::make(
@@ -31,9 +30,20 @@ class EstadoBien extends Model
         );
     }
 
-    // Relación con Bien (si la tienes configurada)
-    // public function bienes()
-    // {
-    //     return $this->hasMany(Bien::class, 'id_estado_bien', 'id_estado');
-    // }
+    // ⭐ MÉTODO HELPER PARA OBTENER ID POR NOMBRE
+    public static function obtenerIdPorNombre($nombre)
+    {
+        $estado = self::where('nombre_estado', 'ILIKE', $nombre)->first();
+
+        if (!$estado) {
+            throw new \Exception("Estado '{$nombre}' no encontrado");
+        }
+
+        return $estado->id_estado;
+    }
+
+    public function bienes()
+    {
+        return $this->hasMany(Bien::class, 'id_estado_bien', 'id_estado');
+    }
 }

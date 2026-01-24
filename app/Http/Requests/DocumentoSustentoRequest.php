@@ -14,19 +14,23 @@ class DocumentoSustentoRequest extends FormRequest
 
     public function rules(): array
     {
-        $documentoId = $this->route('documentoSustento') ? $this->route('documentoSustento')->id_documento : null;
+        // ⭐ CORREGIDO: Nombre del parámetro de ruta debe coincidir con web.php
+        $documentoId = $this->route('documento_sustento')
+            ? $this->route('documento_sustento')->id_documento
+            : null;
 
         return [
             'tipo_documento' => [
                 'required',
                 'string',
-                'max:20'
+                'max:50' // ⭐ CORREGIDO: De 20 a 50 (según migración)
             ],
             'numero_documento' => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('documento_sustento', 'numero_documento')->ignore($documentoId, 'id_documento')
+                Rule::unique('documento_sustento', 'numero_documento')
+                    ->ignore($documentoId, 'id_documento')
             ],
             'fecha_documento' => [
                 'required',
@@ -40,10 +44,12 @@ class DocumentoSustentoRequest extends FormRequest
     {
         return [
             'tipo_documento.required' => 'El tipo de documento es obligatorio',
-            'tipo_documento.max' => 'El tipo no puede exceder 20 caracteres',
+            'tipo_documento.max' => 'El tipo no puede exceder 50 caracteres', // ⭐ ACTUALIZADO
+
             'numero_documento.required' => 'El número de documento es obligatorio',
             'numero_documento.max' => 'El número no puede exceder 20 caracteres',
             'numero_documento.unique' => 'Este número de documento ya está registrado',
+
             'fecha_documento.required' => 'La fecha es obligatoria',
             'fecha_documento.date' => 'La fecha no es válida',
             'fecha_documento.before_or_equal' => 'La fecha no puede ser futura'

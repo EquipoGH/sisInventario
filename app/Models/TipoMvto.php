@@ -23,7 +23,6 @@ class TipoMvto extends Model
         return 'id_tipo_mvto';
     }
 
-    // Accessor para mostrar en mayúsculas
     protected function tipoMvto(): Attribute
     {
         return Attribute::make(
@@ -31,9 +30,20 @@ class TipoMvto extends Model
         );
     }
 
-    // Relación con Movimiento (cuando la implementes)
-    // public function movimientos()
-    // {
-    //     return $this->hasMany(Movimiento::class, 'tipo_mvto', 'id_tipo_mvto');
-    // }
+    // ⭐ MÉTODO HELPER PARA OBTENER ID POR NOMBRE
+    public static function obtenerIdPorNombre($nombre)
+    {
+        $tipo = self::where('tipo_mvto', 'ILIKE', $nombre)->first();
+
+        if (!$tipo) {
+            throw new \Exception("Tipo de movimiento '{$nombre}' no encontrado");
+        }
+
+        return $tipo->id_tipo_mvto;
+    }
+
+    public function movimientos()
+    {
+        return $this->hasMany(Movimiento::class, 'tipo_mvto', 'id_tipo_mvto');
+    }
 }

@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Movimiento;
 use App\Models\TipoMvto;
+use App\Models\EstadoBien;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class MovimientoService
 {
@@ -13,22 +15,36 @@ class MovimientoService
      */
     public function registrarCreacion($bien)
     {
-        $tipoRegistro = TipoMvto::where('tipo_mvto', 'ILIKE', 'REGISTRO')->first();
+        try {
+            $tipoRegistro = TipoMvto::where('tipo_mvto', 'ILIKE', 'REGISTRO')->first();
 
-        if (!$tipoRegistro) {
-            throw new \Exception('Tipo de movimiento "REGISTRO" no encontrado en la BD');
+            if (!$tipoRegistro) {
+                throw new \Exception('Tipo de movimiento "REGISTRO" no encontrado en la BD');
+            }
+
+            // ⭐ Obtener estado "BUENO"
+            $estadoBueno = EstadoBien::where('nombre_estado', 'ILIKE', 'BUENO')->first();
+
+            if (!$estadoBueno) {
+                Log::warning('Estado "BUENO" no encontrado, el movimiento se creará sin estado');
+            }
+
+            return Movimiento::create([
+                'idbien' => $bien->id_bien,
+                'tipo_mvto' => $tipoRegistro->id_tipo_mvto,
+                'fecha_mvto' => now(),
+                'detalle_tecnico' => 'Registro inicial del bien: ' . strtoupper($bien->denominacion_bien),
+                'documento_sustentatorio' => $bien->id_documento ?? null,
+                'NumDocto' => $bien->NumDoc ?? null,  // ⭐ NUEVO
+                'idubicacion' => $bien->idubicacion ?? null,
+                'id_estado_conservacion_bien' => $estadoBueno ? $estadoBueno->id_estado : null,  // ⭐ NUEVO
+                'idusuario' => Auth::id()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en registrarCreacion: ' . $e->getMessage());
+            throw $e;
         }
-
-        return Movimiento::create([
-            'idbien' => $bien->id_bien,
-            'tipo_mvto' => $tipoRegistro->id_tipo_mvto,
-            'fecha_mvto' => now(),
-            'detalle_tecnico' => 'Registro inicial del bien: ' . strtoupper($bien->denominacion_bien),
-            'documento_sustentatorio' => null,
-            'idubicacion' => $bien->idubicacion ?? null,
-            'id_estado_conservacion_bien' => $bien->id_estado_conservacion_bien ?? null,
-            'idusuario' => Auth::id()
-        ]);
     }
 
     /**
@@ -51,7 +67,8 @@ class MovimientoService
             'tipo_mvto' => $tipoMovimiento->id_tipo_mvto,
             'fecha_mvto' => now(),
             'detalle_tecnico' => $detalle,
-            'documento_sustentatorio' => null,
+            'documento_sustentatorio' => $bien->id_documento ?? null,
+            'NumDocto' => $bien->NumDoc ?? null,  // ⭐ NUEVO
             'idubicacion' => $bien->idubicacion ?? null,
             'id_estado_conservacion_bien' => $bien->id_estado_conservacion_bien ?? null,
             'idusuario' => Auth::id()
@@ -121,6 +138,7 @@ class MovimientoService
             'modelo_bien' => 'Modelo',
             'marca_bien' => 'Marca',
             'color_bien' => 'Color',
+            'NumDoc' => 'Número de Documento',
         ];
 
         return $nombres[$campo] ?? ucfirst($campo);

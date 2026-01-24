@@ -68,20 +68,24 @@
                             </div>
                         </th>
                         <th width="5%">Foto</th>
-                        <th width="12%" class="sortable" data-column="codigo" style="cursor:pointer;">
+                        <th width="10%" class="sortable" data-column="codigo" style="cursor:pointer;">
                             Código <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="25%" class="sortable" data-column="denominacion" style="cursor:pointer;">
+                        <th width="20%" class="sortable" data-column="denominacion" style="cursor:pointer;">
                             Denominación <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="12%">Tipo</th>
-                        <th width="10%">Marca</th>
-                        <th width="10%">Modelo</th>
-                        <th width="12%" class="sortable" data-column="fecha" style="cursor:pointer;">
+                        <th width="10%" class="sortable" data-column="numdoc" style="cursor:pointer;">
+                            Doc. Sustento <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th width="10%">Tipo</th>
+                        <th width="8%">Marca</th>
+                        <th width="8%">Modelo</th>
+                        <th width="10%" class="sortable" data-column="fecha" style="cursor:pointer;">
                             Fecha Registro <i class="fas fa-sort sort-icon"></i>
                         </th>
                     </tr>
                 </thead>
+
                 <tbody id="tablaBody">
                     @forelse($bienes as $bien)
                     <tr id="row-{{ $bien->id_bien }}">
@@ -96,7 +100,7 @@
                         <td class="text-center">
                             @if($bien->foto_bien)
                                 <button class="btn btn-sm btn-info btn-ver-foto" data-foto="{{ $bien->foto_bien }}">
-                                    <i class="fas fa-eye"></i> Ver
+                                    <i class="fas fa-eye"></i>
                                 </button>
                             @else
                                 <span class="text-muted">Sin foto</span>
@@ -110,6 +114,16 @@
                             {{ $bien->denominacion_bien }}
                         </td>
                         <td>
+                            @if($bien->NumDoc)
+                                <span class="badge badge-secondary"
+                                      title="{{ $bien->documentoSustento->tipo_documento ?? 'Documento' }}">
+                                    <i class="fas fa-file-alt"></i> {{ $bien->NumDoc }}
+                                </span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>
                             <span class="badge badge-info">{{ $bien->tipoBien->nombre_tipo ?? 'N/A' }}</span>
                         </td>
                         <td>{{ $bien->marca_bien ?? '-' }}</td>
@@ -118,7 +132,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted">
+                        <td colspan="9" class="text-center text-muted">
                             <i class="fas fa-inbox fa-2x mb-2"></i>
                             <p>No hay bienes registrados</p>
                         </td>
@@ -193,6 +207,26 @@
                                 </div>
                             </div>
 
+                            <!-- ⭐ DOCUMENTO SUSTENTO -->
+                            <div class="form-group">
+                                <label for="id_documento">
+                                    Documento Sustentatorio
+                                    <small class="text-muted">(Opcional)</small>
+                                </label>
+                                <select name="id_documento" id="id_documento" class="form-control">
+                                    <option value="">-- Sin documento --</option>
+                                </select>
+                                <span class="text-danger error-id_documento"></span>
+
+                                <div id="preview_numdoc" class="mt-2" style="display:none;">
+                                    <div class="alert alert-info alert-sm mb-0 py-2">
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>Número de Documento:</strong>
+                                        <span id="show_numdoc"></span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="denominacion_bien">Denominación <span class="text-danger">*</span></label>
                                 <input type="text" name="denominacion_bien" id="denominacion_bien"
@@ -200,28 +234,24 @@
                                 <span class="text-danger error-denominacion_bien"></span>
                             </div>
 
-                            <!-- MARCA - ANCHO COMPLETO -->
                             <div class="form-group">
                                 <label for="marca_bien">Marca</label>
                                 <input type="text" name="marca_bien" id="marca_bien"
                                        class="form-control" maxlength="20">
                             </div>
 
-                            <!-- MODELO - ANCHO COMPLETO -->
                             <div class="form-group">
                                 <label for="modelo_bien">Modelo</label>
                                 <input type="text" name="modelo_bien" id="modelo_bien"
                                        class="form-control" maxlength="20">
                             </div>
 
-                            <!-- COLOR - ANCHO COMPLETO -->
                             <div class="form-group">
                                 <label for="color_bien">Color</label>
                                 <input type="text" name="color_bien" id="color_bien"
                                        class="form-control" maxlength="20">
                             </div>
 
-                            <!-- DIMENSIONES Y N° SERIE EN LA MISMA FILA -->
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -323,6 +353,26 @@
                                 </div>
                             </div>
 
+                            <!-- ⭐ DOCUMENTO SUSTENTO -->
+                            <div class="form-group">
+                                <label for="edit_id_documento">
+                                    Documento Sustentatorio
+                                    <small class="text-muted">(Opcional)</small>
+                                </label>
+                                <select name="id_documento" id="edit_id_documento" class="form-control">
+                                    <option value="">-- Sin documento --</option>
+                                </select>
+                                <span class="text-danger error-edit-id_documento"></span>
+
+                                <div id="edit_preview_numdoc" class="mt-2" style="display:none;">
+                                    <div class="alert alert-info alert-sm mb-0 py-2">
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>Número de Documento:</strong>
+                                        <span id="edit_show_numdoc"></span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="edit_denominacion_bien">Denominación <span class="text-danger">*</span></label>
                                 <input type="text" name="denominacion_bien" id="edit_denominacion_bien"
@@ -330,28 +380,24 @@
                                 <span class="text-danger error-edit-denominacion_bien"></span>
                             </div>
 
-                            <!-- MARCA - ANCHO COMPLETO -->
                             <div class="form-group">
                                 <label for="edit_marca_bien">Marca</label>
                                 <input type="text" name="marca_bien" id="edit_marca_bien"
                                        class="form-control" maxlength="20">
                             </div>
 
-                            <!-- MODELO - ANCHO COMPLETO -->
                             <div class="form-group">
                                 <label for="edit_modelo_bien">Modelo</label>
                                 <input type="text" name="modelo_bien" id="edit_modelo_bien"
                                        class="form-control" maxlength="20">
                             </div>
 
-                            <!-- COLOR - ANCHO COMPLETO -->
                             <div class="form-group">
                                 <label for="edit_color_bien">Color</label>
                                 <input type="text" name="color_bien" id="edit_color_bien"
                                        class="form-control" maxlength="20">
                             </div>
 
-                            <!-- DIMENSIONES Y N° SERIE EN LA MISMA FILA -->
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -439,7 +485,68 @@ $(document).ready(function() {
     let paginaActual = 1;
     let searchTimeout;
     let codigoTimeout;
-    let ordenActual = { columna: 'fecha', direccion: 'desc' }; // 🔥 ORDENAMIENTO
+    let ordenActual = { columna: 'fecha', direccion: 'desc' };
+    let documentos = [];
+
+    // ===============================
+    // ⭐ CARGAR DOCUMENTOS AL INICIAR
+    // ===============================
+    cargarDocumentos();
+
+    function cargarDocumentos() {
+        $.get('{{ route("bien.obtener-documentos") }}', function(data) {
+            documentos = data;
+            llenarSelectDocumentos('#id_documento', data);
+            llenarSelectDocumentos('#edit_id_documento', data);
+        }).fail(function() {
+            console.error('Error al cargar documentos sustento');
+        });
+    }
+
+    function llenarSelectDocumentos(selector, data) {
+        const select = $(selector);
+        select.find('option:not(:first)').remove();
+
+        data.forEach(doc => {
+            select.append(`<option value="${doc.id}">${doc.text}</option>`);
+        });
+    }
+
+    // ⭐ DETECTAR CAMBIO EN SELECT DE DOCUMENTO (CREAR)
+    $('#id_documento').on('change', function() {
+        const docId = $(this).val();
+
+        if (docId) {
+            const doc = documentos.find(d => d.id == docId);
+            if (doc) {
+                const numeroMatch = doc.text.match(/-\s*([^\s]+)\s*\(/);
+                const numero = numeroMatch ? numeroMatch[1] : 'N/A';
+
+                $('#show_numdoc').text(numero);
+                $('#preview_numdoc').slideDown(200);
+            }
+        } else {
+            $('#preview_numdoc').slideUp(200);
+        }
+    });
+
+    // ⭐ DETECTAR CAMBIO EN SELECT DE DOCUMENTO (EDITAR)
+    $('#edit_id_documento').on('change', function() {
+        const docId = $(this).val();
+
+        if (docId) {
+            const doc = documentos.find(d => d.id == docId);
+            if (doc) {
+                const numeroMatch = doc.text.match(/-\s*([^\s]+)\s*\(/);
+                const numero = numeroMatch ? numeroMatch[1] : 'N/A';
+
+                $('#edit_show_numdoc').text(numero);
+                $('#edit_preview_numdoc').slideDown(200);
+            }
+        } else {
+            $('#edit_preview_numdoc').slideUp(200);
+        }
+    });
 
     // 🔥 ESTABLECER ICONO INICIAL
     actualizarIconosOrdenamiento();
@@ -562,8 +669,8 @@ $(document).ready(function() {
             data: {
                 search: termino,
                 page: page,
-                orden: ordenActual.columna,      // 🔥 ENVIAR ORDEN
-                direccion: ordenActual.direccion // 🔥 ENVIAR DIRECCIÓN
+                orden: ordenActual.columna,
+                direccion: ordenActual.direccion
             },
             dataType: 'json',
             success: function(res) {
@@ -593,49 +700,60 @@ $(document).ready(function() {
     }
 
     function actualizarTabla(bienes) {
-        const tbody = $('#tablaBody');
-        tbody.empty();
+    const tbody = $('#tablaBody');
+    tbody.empty();
 
-        if (bienes.length === 0) return;
+    if (bienes.length === 0) return;
 
-        bienes.forEach(b => {
-            const fecha = new Date(b.fecha_registro).toLocaleDateString('es-PE', {
-                day: '2-digit', month: '2-digit', year: 'numeric'
-            });
-
-            const fotoHtml = b.foto_bien
-                ? `<button class="btn btn-sm btn-info btn-ver-foto" data-foto="${b.foto_bien}">
-                       <i class="fas fa-eye"></i> Ver
-                   </button>`
-                : `<span class="text-muted">Sin foto</span>`;
-
-            const tipoNombre = b.tipo_bien ? b.tipo_bien.nombre_tipo : 'N/A';
-
-            tbody.append(`
-                <tr id="row-${b.id_bien}">
-                    <td class="text-center">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input checkbox-item"
-                                   id="check-${b.id_bien}"
-                                   value="${b.id_bien}">
-                            <label class="custom-control-label" for="check-${b.id_bien}"></label>
-                        </div>
-                    </td>
-                    <td class="text-center">${fotoHtml}</td>
-                    <td><strong>${b.codigo_patrimonial}</strong></td>
-                    <td class="editable-cell" data-id="${b.id_bien}" style="cursor:pointer"
-                        title="Doble click para editar">${b.denominacion_bien.toUpperCase()}</td>
-                    <td><span class="badge badge-info">${tipoNombre}</span></td>
-                    <td>${b.marca_bien || '-'}</td>
-                    <td>${b.modelo_bien || '-'}</td>
-                    <td>${fecha}</td>
-                </tr>
-            `);
+    bienes.forEach(b => {
+        const fecha = new Date(b.fecha_registro).toLocaleDateString('es-PE', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
         });
 
-        $('.checkbox-item').on('change', actualizarBotonEliminar);
-        $('#checkAll').prop('checked', false);
-    }
+        const fotoHtml = b.foto_bien
+            ? `<button class="btn btn-sm btn-info btn-ver-foto" data-foto="${b.foto_bien}">
+                   <i class="fas fa-eye"></i>
+               </button>`
+            : `<span class="text-muted">Sin foto</span>`;
+
+        // ⭐ CORREGIDO: nombre_tipo NO nombre
+        const tipoNombre = b.tipo_bien ? b.tipo_bien.nombre_tipo : 'N/A';
+
+        // ⭐ CORREGIDO: NumDoc (mayúsculas) y documento_sustento
+        const numDocHtml = b.NumDoc
+            ? `<span class="badge badge-secondary" title="${b.documento_sustento?.tipo_documento || 'Documento'}">
+                   <i class="fas fa-file-alt"></i> ${b.NumDoc}
+               </span>`
+            : `<span class="text-muted">-</span>`;
+
+        tbody.append(`
+            <tr id="row-${b.id_bien}">
+                <td class="text-center">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input checkbox-item"
+                               id="check-${b.id_bien}"
+                               value="${b.id_bien}">
+                        <label class="custom-control-label" for="check-${b.id_bien}"></label>
+                    </div>
+                </td>
+                <td class="text-center">${fotoHtml}</td>
+                <td><strong>${b.codigo_patrimonial}</strong></td>
+                <td class="editable-cell" data-id="${b.id_bien}" style="cursor:pointer"
+                    title="Doble click para editar">${b.denominacion_bien.toUpperCase()}</td>
+                <td>${numDocHtml}</td>
+                <td><span class="badge badge-info">${tipoNombre}</span></td>
+                <td>${b.marca_bien || '-'}</td>
+                <td>${b.modelo_bien || '-'}</td>
+                <td>${fecha}</td>
+            </tr>
+        `);
+    });
+
+    $('.checkbox-item').on('change', actualizarBotonEliminar);
+    $('#checkAll').prop('checked', false);
+}
+
+
 
     function actualizarContadores(res) {
         $('#from').text(res.from || 0);
@@ -703,7 +821,7 @@ $(document).ready(function() {
     $('#btnLimpiar, #btnMostrarTodo').on('click', function() {
         $('#searchInput').val('');
         paginaActual = 1;
-        ordenActual = { columna: 'fecha', direccion: 'desc' }; // 🔥 RESETEAR ORDEN
+        ordenActual = { columna: 'fecha', direccion: 'desc' };
         actualizarIconosOrdenamiento();
         buscar('', 1);
     });
@@ -743,7 +861,9 @@ $(document).ready(function() {
         $('#modalFoto').modal('show');
     });
 
-    // Checkbox seleccionar todos
+    // ===============================
+    // CHECKBOX SELECCIONAR TODOS
+    // ===============================
     $('#checkAll').on('change', function() {
         $('.checkbox-item').prop('checked', $(this).is(':checked'));
         actualizarBotonEliminar();
@@ -765,7 +885,9 @@ $(document).ready(function() {
         seleccionados > 0 ? $('#btnEliminarSeleccionados').fadeIn() : $('#btnEliminarSeleccionados').fadeOut();
     }
 
-    // Eliminar seleccionados
+    // ===============================
+    // ELIMINAR SELECCIONADOS
+    // ===============================
     $('#btnEliminarSeleccionados').on('click', function() {
         let ids = [];
         $('.checkbox-item:checked').each(function() {
@@ -826,7 +948,9 @@ $(document).ready(function() {
         });
     }
 
-    // Doble click para editar
+    // ===============================
+    // DOBLE CLICK PARA EDITAR
+    // ===============================
     $(document).on('dblclick', '.editable-cell', function() {
         let id = $(this).data('id');
         cargarDatosEdicion(id);
@@ -838,6 +962,15 @@ $(document).ready(function() {
             $('#edit_codigo_patrimonial').val(data.codigo_patrimonial);
             $('#edit_denominacion_bien').val(data.denominacion_bien);
             $('#edit_id_tipobien').val(data.id_tipobien);
+
+            // ⭐ Cargar documento
+            if (data.id_documento) {
+                $('#edit_id_documento').val(data.id_documento).trigger('change');
+            } else {
+                $('#edit_id_documento').val('');
+                $('#edit_preview_numdoc').hide();
+            }
+
             $('#edit_marca_bien').val(data.marca_bien);
             $('#edit_modelo_bien').val(data.modelo_bien);
             $('#edit_color_bien').val(data.color_bien);
@@ -852,77 +985,166 @@ $(document).ready(function() {
             }
 
             $('#modalEdit').modal('show');
+        }).fail(function() {
+            Swal.fire('Error', 'No se pudo cargar los datos del bien', 'error');
         });
     }
 
-    // Crear
-    $('#formCreate').on('submit', function(e) {
-        e.preventDefault();
+    // ===============================
+// GUARDAR NUEVO BIEN
+// ===============================
+$('#formCreate').on('submit', function(e) {
+    e.preventDefault();
 
-        $('.text-danger').text('');
-        let btnGuardar = $('#btnGuardar');
-        btnGuardar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+    $('.error-codigo_patrimonial, .error-id_tipobien, .error-denominacion_bien').text('');
 
-        let formData = new FormData(this);
+    let btnGuardar = $('#btnGuardar');
+    btnGuardar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
 
-        $.ajax({
-            url: '{{ route("bien.store") }}',
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                btnGuardar.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
+    let formData = new FormData(this);
 
-                if(response.success) {
-                    $('#modalCreate').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Éxito!',
-                        text: response.message,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => buscar('', 1));
-                }
-            },
-            error: function(xhr) {
-                btnGuardar.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
+    $.ajax({
+        url: '{{ route("bien.store") }}',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(response) {
+            btnGuardar.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
 
-                if(xhr.status === 422) {
-                    let errors = xhr.responseJSON.errors;
-                    $.each(errors, function(key, value) {
-                        $('.error-' + key).text(value[0]);
-                    });
-                } else {
-                    Swal.fire('Error', 'No se pudo guardar', 'error');
-                }
+            if(response.success) {
+                $('#modalCreate').modal('hide');
+                $('#formCreate')[0].reset();
+                $('#preview_placeholder').show();
+                $('#img_preview_create').hide();
+                $('#preview_numdoc').hide();
+
+                // ⭐ AGREGAR LA FILA DIRECTAMENTE CON NOMBRES CORRECTOS
+                const bien = response.data;
+
+                const fechaRegistro = new Date(bien.fecha_registro).toLocaleDateString('es-PE', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                });
+
+                // ⭐ DOCUMENTO SUSTENTO (con nombres correctos)
+                const docSustento = bien.documento_sustento ?
+                    `<span class="badge badge-secondary" title="${bien.documento_sustento.tipo_documento || 'Documento'}">
+                        <i class="fas fa-file-alt"></i> ${bien.NumDoc}
+                     </span>` :
+                    '<span class="text-muted">-</span>';
+
+                // ⭐ TIPO DE BIEN (nombre_tipo NO nombre)
+                const tipoNombre = bien.tipo_bien ? bien.tipo_bien.nombre_tipo : 'N/A';
+
+                // ⭐ FOTO (foto_bien NO foto)
+                const fotoHtml = bien.foto_bien ?
+                    `<button class="btn btn-sm btn-info btn-ver-foto" data-foto="${bien.foto_bien}">
+                        <i class="fas fa-eye"></i>
+                     </button>` :
+                    '<span class="text-muted">Sin foto</span>';
+
+                const nuevaFila = `
+                    <tr id="row-${bien.id_bien}">
+                        <td class="text-center">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input checkbox-item"
+                                       id="check-${bien.id_bien}"
+                                       value="${bien.id_bien}">
+                                <label class="custom-control-label" for="check-${bien.id_bien}"></label>
+                            </div>
+                        </td>
+                        <td class="text-center">${fotoHtml}</td>
+                        <td><strong>${bien.codigo_patrimonial}</strong></td>
+                        <td class="editable-cell" data-id="${bien.id_bien}" style="cursor:pointer" title="Doble click para editar">
+                            ${bien.denominacion_bien.toUpperCase()}
+                        </td>
+                        <td>${docSustento}</td>
+                        <td><span class="badge badge-info">${tipoNombre}</span></td>
+                        <td>${bien.marca_bien || '-'}</td>
+                        <td>${bien.modelo_bien || '-'}</td>
+                        <td>${fechaRegistro}</td>
+                    </tr>
+                `;
+
+                // ⭐ AGREGAR AL INICIO DE LA TABLA
+                $('#tablaBody').prepend(nuevaFila);
+
+                // ⭐ ACTUALIZAR CONTADORES
+                const totalActual = parseInt($('#totalCount').text()) + 1;
+                $('#totalCount').text(totalActual);
+                $('#resultadosCount').text(totalActual);
+
+                const fromActual = parseInt($('#from').text());
+                const toActual = parseInt($('#to').text()) + 1;
+                $('#from').text(fromActual);
+                $('#to').text(toActual);
+                $('#paginaInfo').text(fromActual + ' - ' + toActual);
+
+                // ⭐ REACTIVAR EVENTOS
+                $('.checkbox-item').off('change').on('change', actualizarBotonEliminar);
+
+                $('.editable-cell').off('dblclick').on('dblclick', function() {
+                    let id = $(this).data('id');
+                    cargarDatosEdicion(id);
+                });
+
+                $('.btn-ver-foto').off('click').on('click', function() {
+                    const foto = $(this).data('foto');
+                    $('#foto_grande').attr('src', foto);
+                    $('#modalFoto').modal('show');
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: response.message,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             }
-        });
-    });
+        },
+        error: function(xhr) {
+            btnGuardar.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
 
-    // Actualizar
+            if(xhr.status === 422) {
+                let errors = xhr.responseJSON.errors;
+                if(errors.codigo_patrimonial) $('.error-codigo_patrimonial').text(errors.codigo_patrimonial[0]);
+                if(errors.id_tipobien) $('.error-id_tipobien').text(errors.id_tipobien[0]);
+                if(errors.denominacion_bien) $('.error-denominacion_bien').text(errors.denominacion_bien[0]);
+            } else {
+                Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo guardar el bien', 'error');
+            }
+        }
+    });
+});
+
+
+
+    // ===============================
+    // ACTUALIZAR BIEN
+    // ===============================
     $('#formEdit').on('submit', function(e) {
         e.preventDefault();
 
-        $('.text-danger').text('');
-        let btnActualizar = $('#btnActualizar');
-        btnActualizar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
-
-        let id = $('#edit_id').val();
         let formData = new FormData(this);
-        formData.append('_method', 'PUT');
+        let id = $('#edit_id').val();
+        let btnActualizar = $('#btnActualizar');
+
+        btnActualizar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
 
         $.ajax({
             url: '/bien/' + id,
             method: 'POST',
             data: formData,
-            processData: false,
             contentType: false,
+            processData: false,
             success: function(response) {
                 btnActualizar.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
 
                 if(response.success) {
                     $('#modalEdit').modal('hide');
+
                     Swal.fire({
                         icon: 'success',
                         title: '¡Actualizado!',
@@ -937,59 +1159,41 @@ $(document).ready(function() {
 
                 if(xhr.status === 422) {
                     let errors = xhr.responseJSON.errors;
-                    $.each(errors, function(key, value) {
-                        $('.error-edit-' + key).text(value[0]);
-                    });
+                    $('.error-edit-codigo_patrimonial, .error-edit-denominacion_bien, .error-edit-id_tipobien, .error-edit-id_documento, .error-edit-fecha_registro, .error-edit-foto_bien').text('');
+
+                    if(errors.codigo_patrimonial) $('.error-edit-codigo_patrimonial').text(errors.codigo_patrimonial[0]);
+                    if(errors.denominacion_bien) $('.error-edit-denominacion_bien').text(errors.denominacion_bien[0]);
+                    if(errors.id_tipobien) $('.error-edit-id_tipobien').text(errors.id_tipobien[0]);
+                    if(errors.id_documento) $('.error-edit-id_documento').text(errors.id_documento[0]);
+                    if(errors.fecha_registro) $('.error-edit-fecha_registro').text(errors.fecha_registro[0]);
+                    if(errors.foto_bien) $('.error-edit-foto_bien').text(errors.foto_bien[0]);
                 } else {
-                    Swal.fire('Error', 'No se pudo actualizar', 'error');
+                    Swal.fire('Error', 'No se pudo actualizar el bien', 'error');
                 }
             }
         });
     });
 
-    // Limpiar formularios
+    // ===============================
+    // LIMPIAR FORMULARIOS AL CERRAR MODALES
+    // ===============================
     $('#modalCreate').on('hidden.bs.modal', function() {
         $('#formCreate')[0].reset();
-        $('.text-danger').text('');
-        $('#codigo_feedback').text('').removeClass('text-danger text-success text-info');
-        $('#img_preview_create').hide();
+        $('#preview_numdoc').hide();
         $('#preview_placeholder').show();
+        $('#img_preview_create').hide();
+        $('.error-codigo_patrimonial, .error-denominacion_bien, .error-id_tipobien, .error-id_documento, .error-fecha_registro, .error-foto_bien').text('');
         $('#btnGuardar').prop('disabled', false);
+        $('#codigo_feedback').text('');
     });
 
     $('#modalEdit').on('hidden.bs.modal', function() {
         $('#formEdit')[0].reset();
-        $('.text-danger').text('');
-        $('#edit_codigo_feedback').text('').removeClass('text-danger text-success text-info');
+        $('#edit_preview_numdoc').hide();
+        $('.error-edit-codigo_patrimonial, .error-edit-denominacion_bien, .error-edit-id_tipobien, .error-edit-id_documento, .error-edit-fecha_registro, .error-edit-foto_bien').text('');
         $('#btnActualizar').prop('disabled', false);
+        $('#edit_codigo_feedback').text('');
     });
 });
 </script>
-@stop
-
-@section('css')
-<style>
-    .editable-cell {
-        transition: all 0.2s ease;
-        user-select: none;
-    }
-    .editable-cell:hover {
-        background-color: #e3f2fd !important;
-        font-weight: bold;
-    }
-    .btn-ver-foto {
-        font-size: 0.8rem;
-        padding: 0.25rem 0.5rem;
-    }
-    .sortable {
-        transition: all 0.2s ease;
-    }
-    .sortable:hover {
-        background-color: #495057 !important;
-    }
-    .sort-icon {
-        font-size: 0.8rem;
-        margin-left: 5px;
-    }
-</style>
 @endsection
