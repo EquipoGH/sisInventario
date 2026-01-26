@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class Perfil extends Model
 {
@@ -32,6 +33,35 @@ class Perfil extends Model
         'display_name',
         'nomperfil_normalizado',
     ]; 
+
+
+    public function usuarios()
+{
+    return $this->belongsToMany(
+        User::class,
+        'usuario_perfil',
+        'idperfil',
+        'idusuario',
+        'idperfil',
+        'id'
+    )->withTimestamps();
+}
+
+public function modulos()
+{
+    return $this->belongsToMany(
+        Modulo::class,
+        'perfil_modulo',
+        'idperfil',   // FK en pivot hacia perfil
+        'idmodulo',   // FK en pivot hacia modulo  <-- IMPORTANTE
+        'idperfil',
+        'idmodulo'
+    )->using(\App\Models\PerfilModulo::class)
+     ->withPivot('idperfilmodulo')
+     ->withTimestamps();
+}
+
+
 
     /*
     |--------------------------------------------------------------------------

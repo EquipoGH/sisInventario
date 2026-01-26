@@ -27,6 +27,15 @@ class Modulo extends Model
         'color' => 'string',
     ];
 
+    public function perfiles()
+{
+    return $this->belongsToMany(Perfil::class, 'perfil_modulo', 'idmodulo', 'idperfil')
+        ->using(PerfilModulo::class)
+        ->withPivot('idperfilmodulo')
+        ->withTimestamps();
+}
+
+
     // Normaliza nombre
     protected function nommodulo(): Attribute
     {

@@ -12,10 +12,14 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\ResponsableAreaController;
 use App\Http\Controllers\MovimientoController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PermisoController;
 use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\UserPerfilController;
+use App\Http\Controllers\PerfilModuloController;
+use App\Http\Controllers\PerfilModuloPermisoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -83,6 +87,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==================== SEGURIDAD ====================
 
+    // Módulo
+    Route::delete('user/bulk-destroy', [UserController::class, 'bulkDestroy'])
+        ->name('user.bulk-destroy');
+    Route::resource('user', UserController::class)->except(['show', 'create']);
+
     // Perfil
     Route::delete('perfil/bulk-destroy', [PerfilController::class, 'bulkDestroy'])
         ->name('perfil.bulk-destroy');
@@ -97,6 +106,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('modulo/bulk-destroy', [ModuloController::class, 'bulkDestroy'])
         ->name('modulo.bulk-destroy');
     Route::resource('modulo', ModuloController::class)->except(['show', 'create']);
+
+    // Usuario Perfil
+    Route::get('/user/{user}/perfiles', [UserPerfilController::class, 'edit'])->name('users.perfiles.edit');
+    Route::put('/user/{user}/perfiles', [UserPerfilController::class, 'update'])->name('users.perfiles.update');
+
+    // Perfil Modulo
+    Route::get('/perfil/{perfil}/modulos', [PerfilModuloController::class, 'edit'])
+        ->name('perfil.modulos.edit');
+    Route::put('/perfil/{perfil}/modulos', [PerfilModuloController::class, 'update'])
+        ->name('perfil.modulos.update');
+
+    // Modulo Permisos
+    Route::get('/perfil-modulo/{perfilModulo}/permisos', [PerfilModuloPermisoController::class, 'edit'])
+        ->name('perfil-modulo.permisos.edit');
+    Route::put('/perfil-modulo/{perfilModulo}/permisos', [PerfilModuloPermisoController::class, 'update'])
+        ->name('perfil-modulo.permisos.update');
+    Route::get('/perfil-modulo/{perfilModulo}/permisos/json', [PerfilModuloPermisoController::class, 'index'])
+        ->name('perfil-modulo.permisos.index');
+
+
 });
 
 require __DIR__.'/auth.php';

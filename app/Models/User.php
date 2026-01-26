@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification; // 👈 AGREGAR ESTA LÍNEA
+use App\Models\Perfil;
 
 class User extends Authenticatable
 {
@@ -25,7 +26,6 @@ class User extends Authenticatable
         'dni_usuario',           // ✅ NUEVO
         'rol_usuario',           // ✅ NUEVO
         'estado_usuario',        // ✅ NUEVO
-        'ultimo_acceso',         // ✅ NUEVO
     ];
 
     /**
@@ -70,9 +70,17 @@ class User extends Authenticatable
      * Relación muchos a muchos con Perfil
      */
     public function perfiles()
-    {
-        return $this->belongsToMany(Perfil::class, 'usuario_perfil', 'idusuario', 'idperfil');
-    }
+{
+    return $this->belongsToMany(
+        Perfil::class,
+        'usuario_perfil', // tabla pivot
+        'idusuario',      // pivot -> users.id
+        'idperfil',       // pivot -> perfil.idperfil
+        'id',             // PK de users
+        'idperfil'        // PK de perfil
+    )->withTimestamps();
+}
+
 
     /**
      * Relación uno a muchos con Historial

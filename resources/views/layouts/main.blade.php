@@ -177,9 +177,15 @@
                     <!-- Seguridad -->
         <li class="nav-header">SEGURIDAD</li>
                     <li class="nav-item">
+    <a href="{{ route('user.index') }}" class="nav-link {{ request()->routeIs('user.*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-users"></i>
+        <p>Usuarios</p>
+    </a>
+</li>
+                    <li class="nav-item">
             <a href="{{ route('perfil.index') }}" class="nav-link {{ request()->routeIs('perfil.*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-id-card"></i>
-                <p>Perfil Usuario</p>
+                <p>Perfiles</p>
             </a>
         </li>
         <li class="nav-item">

@@ -8,13 +8,10 @@ class UsuarioPerfil extends Model
 {
     protected $table = 'usuario_perfil';
     protected $primaryKey = 'idusuarioperfil';
+    public $timestamps = true;
 
-    protected $fillable = [
-        'idusuario',
-        'idperfil',
-    ];
+    protected $fillable = ['idusuario','idperfil'];
 
-    // Relaciones
     public function usuario()
     {
         return $this->belongsTo(User::class, 'idusuario', 'id');
@@ -25,3 +22,4 @@ class UsuarioPerfil extends Model
         return $this->belongsTo(Perfil::class, 'idperfil', 'idperfil');
     }
 }
+

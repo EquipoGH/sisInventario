@@ -70,4 +70,10 @@ class Permiso extends Model
     {
         return $query->where('estadopermiso', 'A');
     }
+
+    public function moduloPermisos()
+{
+    return $this->hasMany(ModuloPermiso::class, 'idpermiso', 'idpermiso');
+}
+
 }

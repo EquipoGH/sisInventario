@@ -88,12 +88,13 @@
             <th class="sortable" data-column="nombre">
               Nombre <i class="fas fa-sort sort-icon"></i>
             </th>
+            <th width="8%" class="text-center">ACCIONES</th>
           </tr>
         </thead>
 
         <tbody id="tablaBody">
           <tr id="filaVacia">
-            <td colspan="3" class="text-center text-muted py-4">
+            <td colspan="4" class="text-center text-muted py-4">
               <i class="fas fa-spinner fa-spin mr-1"></i> Cargando...
             </td>
           </tr>
@@ -193,6 +194,57 @@
     </div>
   </div>
 </div>
+{{-- MODAL MÓDULOS --}}
+<div class="modal fade" id="modalModulos" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalModulosTitle">
+          <i class="fas fa-layer-group mr-1"></i> Módulos
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div id="modulosLoading" class="text-center py-5">
+          <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+          <div class="text-muted mt-2">Cargando módulos...</div>
+        </div>
+
+        <div id="modulosContent" style="display:none;"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{-- MODAL PERMISOS --}}
+<div class="modal fade" id="modalPermisos" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="modalPermisosTitle">
+          <i class="fas fa-key mr-1"></i> Permisos
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div id="permisosLoading" class="text-center py-5">
+          <i class="fas fa-spinner fa-spin fa-2x text-info"></i>
+          <div class="text-muted mt-2">Cargando permisos...</div>
+        </div>
+
+        <div id="permisosContent" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 @stop
 
 @section('css')
@@ -222,6 +274,13 @@ $(document).ready(function() {
   let perPage = parseInt($('#perPage').val() || '10', 10);
 
   actualizarIconosOrdenamiento();
+
+  $('#paginacionLinks').on('click', '.paginar', function(e){
+  e.preventDefault();
+  paginaActual = $(this).data('page');
+  buscar(terminoBusqueda, paginaActual);
+  $('html, body').animate({ scrollTop: 0 }, 300);
+});
 
   // per_page
   $('#perPage').on('change', function(){
@@ -279,34 +338,60 @@ $(document).ready(function() {
     tbody.empty();
 
     if (!perfiles.length) {
-      tbody.append(`
-        <tr id="filaVacia">
-          <td colspan="3" class="text-center text-muted py-4">
-            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-            No hay perfiles registrados
-          </td>
-        </tr>
-      `);
-      $('#checkAll').prop('checked', false).prop('disabled', true);
-      actualizarBotonEliminar();
-      return;
-    }
+  tbody.append(`
+    <tr id="filaVacia">
+      <td colspan="4" class="text-center text-muted py-4">
+        <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+        No hay perfiles registrados
+      </td>
+    </tr>
+  `);
+  $('#checkAll').prop('checked', false).prop('disabled', true);
+  actualizarBotonEliminar();
+  return;
+}
+
 
     $('#checkAll').prop('disabled', false);
 
     perfiles.forEach(p => {
-      tbody.append(`
-        <tr id="row-${p.idperfil}">
-          <td class="text-center"><input type="checkbox" class="checkbox-item" value="${p.idperfil}"></td>
-          <td class="text-center"><strong>${p.idperfil}</strong></td>
-          <td class="editable-cell" data-id="${p.idperfil}" title="Doble click para editar">
-            <strong>${(p.nomperfil || '').toUpperCase()}</strong>
-          </td>
-        </tr>
-      `);
-    });
+  tbody.append(`
+    <tr id="row-${p.idperfil}">
+      <td class="text-center">
+        <input type="checkbox" class="checkbox-item" value="${p.idperfil}">
+      </td>
 
-    $('.checkbox-item').on('change', actualizarBotonEliminar);
+      <td class="text-center"><strong>${p.idperfil}</strong></td>
+
+      <td class="editable-cell" data-id="${p.idperfil}" title="Doble click para editar">
+        <strong>${(p.nomperfil || '').toUpperCase()}</strong>
+      </td>
+
+      <td class="text-center">
+        <div class="btn-group">
+          <button type="button"
+                  class="btn btn-sm btn-light border dropdown-toggle"
+                  data-toggle="dropdown"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  style="border-radius:999px;">
+            <i class="fas fa-cog"></i>
+          </button>
+
+          <div class="dropdown-menu dropdown-menu-right">
+            <a class="dropdown-item btn-modulos" href="#"
+               data-id="${p.idperfil}"
+               data-name="${(p.nomperfil || '').replace(/"/g,'&quot;')}">
+              <i class="fas fa-layer-group mr-2"></i> Módulos
+            </a>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `);
+});
+
+
     $('#checkAll').prop('checked', false);
     actualizarBotonEliminar();
   }
@@ -321,36 +406,30 @@ $(document).ready(function() {
   }
 
   function actualizarPaginacion(res) {
-    const links = $('#paginacionLinks');
-    links.empty();
-    if (!res.last_page || res.last_page <= 1) return;
+  const links = $('#paginacionLinks');
+  links.empty();
+  if (!res.last_page || res.last_page <= 1) return;
 
-    let html = '<ul class="pagination pagination-sm m-0">';
-    html += generarBtn(res.current_page > 1, res.current_page - 1, '<i class="fas fa-chevron-left"></i>');
+  let html = '<ul class="pagination pagination-sm m-0">';
+  html += generarBtn(res.current_page > 1, res.current_page - 1, '<i class="fas fa-chevron-left"></i>');
 
-    const rango = 2;
-    for (let i=1; i<=res.last_page; i++) {
-      const esActual = i === res.current_page;
-      const esPrimera = i === 1;
-      const esUltima = i === res.last_page;
-      const cerca = Math.abs(i - res.current_page) <= rango;
+  const rango = 2;
+  for (let i=1; i<=res.last_page; i++) {
+    const esActual = i === res.current_page;
+    const esPrimera = i === 1;
+    const esUltima = i === res.last_page;
+    const cerca = Math.abs(i - res.current_page) <= rango;
 
-      if (esActual) html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
-      else if (esPrimera || esUltima || cerca) html += `<li class="page-item"><a class="page-link paginar" href="#" data-page="${i}">${i}</a></li>`;
-      else if (i === res.current_page - rango - 1 || i === res.current_page + rango + 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-    }
-
-    html += generarBtn(res.current_page < res.last_page, res.current_page + 1, '<i class="fas fa-chevron-right"></i>');
-    html += '</ul>';
-    links.html(html);
-
-    $('.paginar').on('click', function(e){
-      e.preventDefault();
-      paginaActual = $(this).data('page');
-      buscar(terminoBusqueda, paginaActual);
-      $('html, body').animate({ scrollTop: 0 }, 300);
-    });
+    if (esActual) html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+    else if (esPrimera || esUltima || cerca) html += `<li class="page-item"><a class="page-link paginar" href="#" data-page="${i}">${i}</a></li>`;
+    else if (i === res.current_page - rango - 1 || i === res.current_page + rango + 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
   }
+
+  html += generarBtn(res.current_page < res.last_page, res.current_page + 1, '<i class="fas fa-chevron-right"></i>');
+  html += '</ul>';
+
+  links.html(html);
+}
 
   function generarBtn(activo, pagina, contenido) {
     if (activo) return `<li class="page-item"><a class="page-link paginar" href="#" data-page="${pagina}">${contenido}</a></li>`;
@@ -534,6 +613,123 @@ $(document).ready(function() {
   $('#modalEdit').on('hidden.bs.modal', function(){ $('#formEdit')[0].reset(); $('.text-danger').text(''); });
 
   buscar('', 1);
+  // Abrir modal módulos y cargar formulario
+$(document).on('click', '.btn-modulos', function(e){
+  e.preventDefault();
+
+  const id = $(this).data('id');
+  const name = $(this).data('name') || '';
+
+  $('#modalModulosTitle').html(`<i class="fas fa-layer-group mr-1"></i> Módulos de: ${name}`);
+
+  $('#modalModulos').modal('show');
+  $('#modulosLoading').show();
+  $('#modulosContent').hide().empty();
+
+  $.ajax({
+    url: `/perfil/${id}/modulos`,
+    method: 'GET',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    success: function(html){
+      $('#modulosContent').html(html);
+      // Si tu partial trae su propio JS (como el que te pasé), acá no necesitas más.
+      $('#modulosLoading').hide();
+      $('#modulosContent').fadeIn(150);
+    },
+    error: function(xhr){
+      $('#modulosLoading').hide();
+      $('#modulosContent').show().html(
+        `<div class="alert alert-danger">Error al cargar módulos (HTTP ${xhr.status})</div>`
+      );
+    }
+  });
+});
+// Guardar módulos (AJAX)
+$(document).on('submit', '#formPerfilModulosModal', function(e){
+  e.preventDefault();
+
+  const id = $(this).data('perfil-id');
+  const $btn = $('#btnGuardarModulos');
+
+  $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
+
+  $.ajax({
+    url: `/perfil/${id}/modulos`,
+    method: 'POST',
+    data: $(this).serialize() + '&_method=PUT',
+    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    success: function(){
+      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+      $('#modalModulos').modal('hide');
+      Toast.fire({ icon: 'success', title: 'Módulos actualizados' });
+    },
+    error: function(xhr){
+      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+      Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
+    }
+  });
+});
+// Abrir modal permisos y cargar formulario
+$(document).on('click', '.btn-permisos', function(e){
+  e.preventDefault();
+
+  const idperfilmodulo = $(this).data('perfilmodulo-id');
+  const nomModulo = $(this).data('modulo') || '';
+
+  if(!idperfilmodulo){
+    Toast.fire({ icon: 'error', title: 'Primero guarda el módulo en el perfil' });
+    return;
+  }
+
+  $('#modalPermisosTitle').html(`<i class="fas fa-key mr-1"></i> Permisos: ${nomModulo}`);
+  $('#modalPermisos').modal('show');
+  $('#permisosLoading').show();
+  $('#permisosContent').hide().empty();
+
+  $.ajax({
+    url: `/perfil-modulo/${idperfilmodulo}/permisos`,
+    method: 'GET',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    success: function(html){
+      $('#permisosContent').html(html);
+      $('#permisosLoading').hide();
+      $('#permisosContent').fadeIn(150);
+    },
+    error: function(xhr){
+      $('#permisosLoading').hide();
+      $('#permisosContent').show().html(
+        `<div class="alert alert-danger">Error al cargar permisos (HTTP ${xhr.status})</div>`
+      );
+    }
+  });
+});
+
+// Guardar permisos (AJAX)
+$(document).on('submit', '#formPerfilModuloPermisos', function(e){
+  e.preventDefault();
+
+  const idperfilmodulo = $(this).data('perfilmodulo-id');
+  const $btn = $('#btnGuardarPermisos');
+
+  $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
+
+  $.ajax({
+    url: `/perfil-modulo/${idperfilmodulo}/permisos`,
+    method: 'POST',
+    data: $(this).serialize() + '&_method=PUT',
+    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    success: function(){
+      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+      $('#modalPermisos').modal('hide');
+      Toast.fire({ icon: 'success', title: 'Permisos actualizados' });
+    },
+    error: function(xhr){
+      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+      Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
+    }
+  });
+});
+
 });
 </script>
 @stop
