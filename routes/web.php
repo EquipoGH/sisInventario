@@ -83,6 +83,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('responsable', ResponsableController::class);
     Route::resource('ubicacion', UbicacionController::class);
     Route::resource('responsable-area', ResponsableAreaController::class);
+
+    // ==================== MOVIMIENTO ====================
+    // ⚠️ IMPORTANTE: Rutas específicas ANTES del resource
+
+    // Asignación masiva de movimientos
+    Route::post('movimiento/asignar-masivo', [MovimientoController::class, 'asignarMasivo'])
+        ->name('movimiento.asignar-masivo');
+
+    // Crear movimientos masivos
+    Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
+        ->name('movimiento.crear-masivo');
+
+    // Eliminar movimientos masivos
+    Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
+        ->name('movimiento.eliminar-masivo');
+
+    // Filtros adicionales
+    Route::get('movimiento/por-tipo', [MovimientoController::class, 'porTipo'])
+        ->name('movimiento.por-tipo');
+
+    Route::get('movimiento/por-bien', [MovimientoController::class, 'porBien'])
+        ->name('movimiento.por-bien');
+
+    Route::get('movimiento/por-fecha', [MovimientoController::class, 'porFecha'])
+        ->name('movimiento.por-fecha');
+
+    Route::get('movimiento/estadisticas', [MovimientoController::class, 'estadisticas'])
+        ->name('movimiento.estadisticas');
+
+    // Resource CRUD (SIEMPRE AL FINAL)
     Route::resource('movimiento', MovimientoController::class);
 
     // ==================== SEGURIDAD ====================
@@ -124,7 +154,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('perfil-modulo.permisos.update');
     Route::get('/perfil-modulo/{perfilModulo}/permisos/json', [PerfilModuloPermisoController::class, 'index'])
         ->name('perfil-modulo.permisos.index');
-
 
 });
 

@@ -208,24 +208,35 @@
                             </div>
 
                             <!-- ⭐ DOCUMENTO SUSTENTO -->
-                            <div class="form-group">
-                                <label for="id_documento">
-                                    Documento Sustentatorio
-                                    <small class="text-muted">(Opcional)</small>
-                                </label>
-                                <select name="id_documento" id="id_documento" class="form-control">
-                                    <option value="">-- Sin documento --</option>
-                                </select>
-                                <span class="text-danger error-id_documento"></span>
+<div class="form-group">
+    <label for="id_documento">
+        Documento Sustentatorio
+        <small class="text-muted">(Opcional)</small>
+    </label>
+    <select name="id_documento" id="id_documento" class="form-control">
+        <option value="">-- Sin documento --</option>
+    </select>
+    <span class="text-danger error-id_documento"></span>
+</div>
 
-                                <div id="preview_numdoc" class="mt-2" style="display:none;">
-                                    <div class="alert alert-info alert-sm mb-0 py-2">
-                                        <i class="fas fa-info-circle"></i>
-                                        <strong>Número de Documento:</strong>
-                                        <span id="show_numdoc"></span>
-                                    </div>
-                                </div>
-                            </div>
+<!-- ⭐⭐⭐ NUMDOC MANUAL ⭐⭐⭐ -->
+<div class="form-group">
+    <label for="NumDoc">
+        Número de Documento
+        <small class="text-muted">(Opcional - Texto libre)</small>
+    </label>
+    <input type="text"
+           name="NumDoc"
+           id="NumDoc"
+           class="form-control"
+           maxlength="50"
+           placeholder="Ej: DOC-2024-001">
+    <small class="form-text text-muted">
+        <i class="fas fa-info-circle"></i> Campo libre para ingresar número de documento
+    </small>
+    <span class="text-danger error-NumDoc"></span>
+</div>
+
 
                             <div class="form-group">
                                 <label for="denominacion_bien">Denominación <span class="text-danger">*</span></label>
@@ -353,25 +364,36 @@
                                 </div>
                             </div>
 
-                            <!-- ⭐ DOCUMENTO SUSTENTO -->
-                            <div class="form-group">
-                                <label for="edit_id_documento">
-                                    Documento Sustentatorio
-                                    <small class="text-muted">(Opcional)</small>
-                                </label>
-                                <select name="id_documento" id="edit_id_documento" class="form-control">
-                                    <option value="">-- Sin documento --</option>
-                                </select>
-                                <span class="text-danger error-edit-id_documento"></span>
+                           <!-- ⭐ DOCUMENTO SUSTENTO -->
+<div class="form-group">
+    <label for="edit_id_documento">
+        Documento Sustentatorio
+        <small class="text-muted">(Opcional)</small>
+    </label>
+    <select name="id_documento" id="edit_id_documento" class="form-control">
+        <option value="">-- Sin documento --</option>
+    </select>
+    <span class="text-danger error-edit-id_documento"></span>
+</div>
 
-                                <div id="edit_preview_numdoc" class="mt-2" style="display:none;">
-                                    <div class="alert alert-info alert-sm mb-0 py-2">
-                                        <i class="fas fa-info-circle"></i>
-                                        <strong>Número de Documento:</strong>
-                                        <span id="edit_show_numdoc"></span>
-                                    </div>
-                                </div>
-                            </div>
+<!-- ⭐⭐⭐ NUMDOC MANUAL (EDITAR) ⭐⭐⭐ -->
+<div class="form-group">
+    <label for="edit_NumDoc">
+        Número de Documento
+        <small class="text-muted">(Opcional - Texto libre)</small>
+    </label>
+    <input type="text"
+           name="NumDoc"
+           id="edit_NumDoc"
+           class="form-control"
+           maxlength="50"
+           placeholder="Ej: DOC-2024-001">
+    <small class="form-text text-muted">
+        <i class="fas fa-info-circle"></i> Campo libre para ingresar número de documento
+    </small>
+    <span class="text-danger error-edit-NumDoc"></span>
+</div>
+
 
                             <div class="form-group">
                                 <label for="edit_denominacion_bien">Denominación <span class="text-danger">*</span></label>
@@ -512,41 +534,7 @@ $(document).ready(function() {
         });
     }
 
-    // ⭐ DETECTAR CAMBIO EN SELECT DE DOCUMENTO (CREAR)
-    $('#id_documento').on('change', function() {
-        const docId = $(this).val();
 
-        if (docId) {
-            const doc = documentos.find(d => d.id == docId);
-            if (doc) {
-                const numeroMatch = doc.text.match(/-\s*([^\s]+)\s*\(/);
-                const numero = numeroMatch ? numeroMatch[1] : 'N/A';
-
-                $('#show_numdoc').text(numero);
-                $('#preview_numdoc').slideDown(200);
-            }
-        } else {
-            $('#preview_numdoc').slideUp(200);
-        }
-    });
-
-    // ⭐ DETECTAR CAMBIO EN SELECT DE DOCUMENTO (EDITAR)
-    $('#edit_id_documento').on('change', function() {
-        const docId = $(this).val();
-
-        if (docId) {
-            const doc = documentos.find(d => d.id == docId);
-            if (doc) {
-                const numeroMatch = doc.text.match(/-\s*([^\s]+)\s*\(/);
-                const numero = numeroMatch ? numeroMatch[1] : 'N/A';
-
-                $('#edit_show_numdoc').text(numero);
-                $('#edit_preview_numdoc').slideDown(200);
-            }
-        } else {
-            $('#edit_preview_numdoc').slideUp(200);
-        }
-    });
 
     // 🔥 ESTABLECER ICONO INICIAL
     actualizarIconosOrdenamiento();
@@ -957,38 +945,46 @@ $(document).ready(function() {
     });
 
     function cargarDatosEdicion(id) {
-        $.get('/bien/' + id + '/edit', function(data) {
-            $('#edit_id').val(data.id_bien);
-            $('#edit_codigo_patrimonial').val(data.codigo_patrimonial);
-            $('#edit_denominacion_bien').val(data.denominacion_bien);
-            $('#edit_id_tipobien').val(data.id_tipobien);
+    $.get('/bien/' + id + '/edit', function(data) {
+        $('#edit_id').val(data.id_bien);
+        $('#edit_codigo_patrimonial').val(data.codigo_patrimonial);
+        $('#edit_denominacion_bien').val(data.denominacion_bien);
+        $('#edit_id_tipobien').val(data.id_tipobien);
 
-            // ⭐ Cargar documento
-            if (data.id_documento) {
-                $('#edit_id_documento').val(data.id_documento).trigger('change');
-            } else {
-                $('#edit_id_documento').val('');
-                $('#edit_preview_numdoc').hide();
-            }
+        // ⭐ Cargar documento sustento
+        if (data.id_documento) {
+            $('#edit_id_documento').val(data.id_documento);
+        } else {
+            $('#edit_id_documento').val('');
+        }
 
-            $('#edit_marca_bien').val(data.marca_bien);
-            $('#edit_modelo_bien').val(data.modelo_bien);
-            $('#edit_color_bien').val(data.color_bien);
-            $('#edit_dimensiones_bien').val(data.dimensiones_bien);
-            $('#edit_nserie_bien').val(data.nserie_bien);
+        // ⭐⭐⭐ AGREGAR NUMDOC ⭐⭐⭐
+        $('#edit_NumDoc').val(data.NumDoc || '');
 
-            const hoy = new Date().toISOString().split('T')[0];
-            $('#edit_fecha_registro').val(hoy);
+        $('#edit_marca_bien').val(data.marca_bien || '');
+        $('#edit_modelo_bien').val(data.modelo_bien || '');
+        $('#edit_color_bien').val(data.color_bien || '');
+        $('#edit_dimensiones_bien').val(data.dimensiones_bien || '');
+        $('#edit_nserie_bien').val(data.nserie_bien || '');
 
-            if (data.foto_bien) {
-                $('#img_preview_edit').attr('src', data.foto_bien).show();
-            }
+        // Fecha actual para modificación
+        const hoy = new Date().toISOString().split('T')[0];
+        $('#edit_fecha_registro').val(hoy);
 
-            $('#modalEdit').modal('show');
-        }).fail(function() {
-            Swal.fire('Error', 'No se pudo cargar los datos del bien', 'error');
-        });
-    }
+        // Cargar foto si existe
+        if (data.foto_bien) {
+            $('#img_preview_edit').attr('src', data.foto_bien).show();
+        } else {
+            $('#img_preview_edit').hide();
+        }
+
+        // Abrir modal
+        $('#modalEdit').modal('show');
+    }).fail(function() {
+        Swal.fire('Error', 'No se pudo cargar los datos del bien', 'error');
+    });
+}
+
 
     // ===============================
 // GUARDAR NUEVO BIEN
@@ -1179,6 +1175,7 @@ $('#formCreate').on('submit', function(e) {
     // ===============================
     $('#modalCreate').on('hidden.bs.modal', function() {
         $('#formCreate')[0].reset();
+        $('#NumDoc').val(''); // ⭐ LIMPIAR NUMDOC
         $('#preview_numdoc').hide();
         $('#preview_placeholder').show();
         $('#img_preview_create').hide();
@@ -1189,6 +1186,7 @@ $('#formCreate').on('submit', function(e) {
 
     $('#modalEdit').on('hidden.bs.modal', function() {
         $('#formEdit')[0].reset();
+        $('#edit_NumDoc').val(''); // ⭐ LIMPIAR NUMDOC
         $('#edit_preview_numdoc').hide();
         $('.error-edit-codigo_patrimonial, .error-edit-denominacion_bien, .error-edit-id_tipobien, .error-edit-id_documento, .error-edit-fecha_registro, .error-edit-foto_bien').text('');
         $('#btnActualizar').prop('disabled', false);

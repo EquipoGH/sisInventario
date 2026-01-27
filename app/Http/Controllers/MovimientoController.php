@@ -8,6 +8,7 @@ use App\Models\TipoMvto;
 use App\Models\User;
 use App\Models\Ubicacion;
 use App\Models\EstadoBien;
+use App\Models\DocumentoSustento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,8 @@ class MovimientoController extends Controller
             'tipoMovimiento',
             'usuario',
             'ubicacion.area',
-            'estadoConservacion'
+            'estadoConservacion',
+            'documentoSustento'
         ]);
 
         // 🔍 BÚSQUEDA AVANZADA
@@ -35,7 +37,7 @@ class MovimientoController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('id_movimiento', 'LIKE', "%{$search}%")
                   ->orWhere('detalle_tecnico', 'ILIKE', "%{$search}%")
-                //   ->orWhere('detalle_administrativo', 'ILIKE', "%{$search}%")
+                  ->orWhere('NumDocto', 'ILIKE', "%{$search}%")
                   ->orWhereHas('bien', function($q) use ($search) {
                       $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
                         ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%");
@@ -45,6 +47,10 @@ class MovimientoController extends Controller
                   })
                   ->orWhereHas('usuario', function($q) use ($search) {
                       $q->where('name', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('documentoSustento', function($q) use ($search) {
+                      $q->where('numero_documento', 'ILIKE', "%{$search}%")
+                        ->orWhere('tipo_documento', 'ILIKE', "%{$search}%");
                   });
             });
         }
@@ -70,21 +76,22 @@ class MovimientoController extends Controller
             $query->where('idusuario', $request->usuario_id);
         }
 
-        // 📊 ORDENAMIENTO DINÁMICO
-        $columna = $request->get('orden', 'fecha');
+        // ⭐⭐⭐ ORDENAMIENTO DINÁMICO ⭐⭐⭐
+        $columna = $request->get('orden', 'id');
         $direccion = $request->get('direccion', 'desc');
 
         $columnasPermitidas = [
             'id' => 'id_movimiento',
             'fecha' => 'fecha_mvto',
             'tipo' => 'tipo_mvto',
-            'bien' => 'idbien'
+            'bien' => 'idbien',
+            'responsable' => 'idusuario'
         ];
 
         if (array_key_exists($columna, $columnasPermitidas)) {
             $columnaReal = $columnasPermitidas[$columna];
         } else {
-            $columnaReal = 'fecha_mvto';
+            $columnaReal = 'id_movimiento';
         }
 
         $direccion = in_array(strtolower($direccion), ['asc', 'desc'])
@@ -96,31 +103,29 @@ class MovimientoController extends Controller
         // 📄 PAGINACIÓN
         $movimientos = $query->paginate($perPage);
 
-        // Datos para los selectores
+        // ⭐ DATOS PARA LOS SELECTORES
         $tiposMovimiento = TipoMvto::orderBy('tipo_mvto')->get();
         $bienes = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
         $usuarios = User::orderBy('name')->get();
         $ubicaciones = Ubicacion::with('area')->orderBy('nombre_sede')->get();
         $estadosConservacion = EstadoBien::orderBy('nombre_estado')->get();
+        $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
 
-        // ✅ RESPUESTA AJAX COMPLETA CON TODAS LAS RELACIONES
+        // ✅ RESPUESTA AJAX
         if ($request->ajax()) {
-            // Transformar cada movimiento para incluir todas las relaciones
             $movimientosData = $movimientos->getCollection()->map(function ($movimiento) {
                 return [
                     'id_movimiento' => $movimiento->id_movimiento,
                     'fecha_mvto' => $movimiento->fecha_mvto,
                     'detalle_tecnico' => $movimiento->detalle_tecnico,
-                    'detalle_administrativo' => $movimiento->detalle_administrativo,
                     'idbien' => $movimiento->idbien,
                     'tipo_mvto' => $movimiento->tipo_mvto,
                     'idubicacion' => $movimiento->idubicacion,
-                    'id_estado_conservacion_bien' => $movimiento->id_estado_conservacion_bien,  // ✅ CORREGIDO
+                    'id_estado_conservacion_bien' => $movimiento->id_estado_conservacion_bien,
                     'idusuario' => $movimiento->idusuario,
-                    'created_at' => $movimiento->created_at,
-                    'updated_at' => $movimiento->updated_at,
+                    'documento_sustentatorio' => $movimiento->documento_sustentatorio,
+                    'NumDocto' => $movimiento->NumDocto,
 
-                    // ✅ BIEN CON TIPO
                     'bien' => [
                         'id_bien' => $movimiento->bien->id_bien,
                         'codigo_patrimonial' => $movimiento->bien->codigo_patrimonial,
@@ -131,20 +136,17 @@ class MovimientoController extends Controller
                         ] : null
                     ],
 
-                    // ✅ TIPO DE MOVIMIENTO
                     'tipo_movimiento' => [
                         'id_tipo_mvto' => $movimiento->tipoMovimiento->id_tipo_mvto,
                         'tipo_mvto' => $movimiento->tipoMovimiento->tipo_mvto
                     ],
 
-                    // ✅ USUARIO
                     'usuario' => [
                         'id' => $movimiento->usuario->id,
                         'name' => $movimiento->usuario->name,
                         'email' => $movimiento->usuario->email
                     ],
 
-                    // ✅ UBICACIÓN COMPLETA
                     'ubicacion' => $movimiento->ubicacion ? [
                         'id_ubicacion' => $movimiento->ubicacion->id_ubicacion,
                         'nombre_sede' => $movimiento->ubicacion->nombre_sede,
@@ -157,10 +159,16 @@ class MovimientoController extends Controller
                         ] : null
                     ] : null,
 
-                    // ✅ ESTADO DE CONSERVACIÓN
                     'estado_conservacion' => $movimiento->estadoConservacion ? [
                         'id_estado' => $movimiento->estadoConservacion->id_estado,
                         'nombre_estado' => $movimiento->estadoConservacion->nombre_estado
+                    ] : null,
+
+                    'documento_sustento' => $movimiento->documentoSustento ? [
+                        'id_documento' => $movimiento->documentoSustento->id_documento,
+                        'tipo_documento' => $movimiento->documentoSustento->tipo_documento,
+                        'numero_documento' => $movimiento->documentoSustento->numero_documento,
+                        'fecha_documento' => $movimiento->documentoSustento->fecha_documento
                     ] : null
                 ];
             });
@@ -185,6 +193,7 @@ class MovimientoController extends Controller
             'usuarios',
             'ubicaciones',
             'estadosConservacion',
+            'documentos',
             'total'
         ));
     }
@@ -197,22 +206,31 @@ class MovimientoController extends Controller
                 'tipo_mvto' => 'required|exists:tipo_mvto,id_tipo_mvto',
                 'fecha_mvto' => 'required|date',
                 'detalle_tecnico' => 'nullable|string|max:500',
-                // 'detalle_administrativo' => 'nullable|string|max:500',
                 'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
-                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado'  // ✅ CORREGIDO
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
+                'NumDocto' => 'nullable|string|max:20'
             ]);
 
             $validated['idusuario'] = Auth::id();
 
+            // Si la fecha no tiene hora, agregar hora actual
+            if ($validated['fecha_mvto']) {
+                $fecha = \Carbon\Carbon::parse($validated['fecha_mvto']);
+                if ($fecha->format('H:i:s') === '00:00:00') {
+                    $validated['fecha_mvto'] = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+                }
+            }
+
             $movimiento = Movimiento::create($validated);
 
-            // Cargar relaciones completas
             $movimiento->load([
                 'bien.tipoBien',
                 'tipoMovimiento',
                 'usuario',
                 'ubicacion.area',
-                'estadoConservacion'
+                'estadoConservacion',
+                'documentoSustento'
             ]);
 
             return response()->json([
@@ -245,7 +263,8 @@ class MovimientoController extends Controller
             'tipoMovimiento',
             'usuario',
             'ubicacion.area',
-            'estadoConservacion'
+            'estadoConservacion',
+            'documentoSustento'
         ]);
 
         return response()->json([
@@ -261,13 +280,15 @@ class MovimientoController extends Controller
             'tipoMovimiento',
             'usuario',
             'ubicacion.area',
-            'estadoConservacion'
+            'estadoConservacion',
+            'documentoSustento'
         ]);
 
         $tiposMovimiento = TipoMvto::orderBy('tipo_mvto')->get();
         $bienes = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
         $ubicaciones = Ubicacion::with('area')->orderBy('nombre_sede')->get();
         $estadosConservacion = EstadoBien::orderBy('nombre_estado')->get();
+        $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
 
         return response()->json([
             'success' => true,
@@ -276,7 +297,8 @@ class MovimientoController extends Controller
                 'tiposMovimiento' => $tiposMovimiento,
                 'bienes' => $bienes,
                 'ubicaciones' => $ubicaciones,
-                'estadosConservacion' => $estadosConservacion
+                'estadosConservacion' => $estadosConservacion,
+                'documentos' => $documentos
             ]
         ]);
     }
@@ -284,41 +306,28 @@ class MovimientoController extends Controller
     public function update(Request $request, Movimiento $movimiento)
     {
         try {
-            // 🔍 DEBUGGING
-            \Log::info('═══════════════════════════════════════');
-            \Log::info('📥 UPDATE - DATOS RECIBIDOS:', $request->all());
-
             $validated = $request->validate([
                 'idbien' => 'required|exists:bien,id_bien',
                 'tipo_mvto' => 'required|exists:tipo_mvto,id_tipo_mvto',
                 'fecha_mvto' => 'required|date',
                 'detalle_tecnico' => 'nullable|string|max:500',
-                // 'detalle_administrativo' => 'nullable|string|max:500',
                 'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
-                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado'  // ✅ CORREGIDO
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
+                'NumDocto' => 'nullable|string|max:20'
             ]);
-
-            \Log::info('✅ DATOS VALIDADOS:', $validated);
 
             $movimiento->update($validated);
-
             $movimiento->refresh();
 
-            \Log::info('💾 DESPUÉS DE ACTUALIZAR:', [
-                'id' => $movimiento->id_movimiento,
-                'estado' => $movimiento->id_estado_conservacion_bien
-            ]);
-
-            // Cargar relaciones completas
             $movimiento->load([
                 'bien.tipoBien',
                 'tipoMovimiento',
                 'usuario',
                 'ubicacion.area',
-                'estadoConservacion'
+                'estadoConservacion',
+                'documentoSustento'
             ]);
-
-            \Log::info('═══════════════════════════════════════');
 
             return response()->json([
                 'success' => true,
@@ -327,8 +336,6 @@ class MovimientoController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('❌ ERROR DE VALIDACIÓN:', $e->errors());
-
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación',
@@ -382,7 +389,8 @@ class MovimientoController extends Controller
                 'tipoMovimiento',
                 'usuario',
                 'ubicacion.area',
-                'estadoConservacion'
+                'estadoConservacion',
+                'documentoSustento'
             ])
             ->where('tipo_mvto', $tipoId)
             ->orderBy('fecha_mvto', 'desc')
@@ -421,7 +429,8 @@ class MovimientoController extends Controller
                 'tipoMovimiento',
                 'usuario',
                 'ubicacion.area',
-                'estadoConservacion'
+                'estadoConservacion',
+                'documentoSustento'
             ])
             ->where('idbien', $bienId)
             ->orderBy('fecha_mvto', 'desc')
@@ -461,7 +470,8 @@ class MovimientoController extends Controller
                 'tipoMovimiento',
                 'usuario',
                 'ubicacion.area',
-                'estadoConservacion'
+                'estadoConservacion',
+                'documentoSustento'
             ])
             ->whereBetween('fecha_mvto', [$desde, $hasta])
             ->orderBy('fecha_mvto', 'desc')
@@ -499,7 +509,8 @@ class MovimientoController extends Controller
                 'ultimos_5' => Movimiento::with([
                     'bien.tipoBien',
                     'tipoMovimiento',
-                    'usuario'
+                    'usuario',
+                    'documentoSustento'
                 ])
                 ->orderBy('fecha_mvto', 'desc')
                 ->limit(5)
@@ -517,6 +528,247 @@ class MovimientoController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ⭐⭐⭐ ASIGNACIÓN MASIVA DE MOVIMIENTOS ⭐⭐⭐
+     * Recibe bienes_ids como array directo (desde el modal)
+     */
+    public function asignarMasivo(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $validated = $request->validate([
+                'bienes_ids' => 'required|array|min:1',
+                'bienes_ids.*' => 'exists:bien,id_bien',
+                'tipo_mvto' => 'required|exists:tipo_mvto,id_tipo_mvto',
+                'fecha_mvto' => 'required|date',
+                'detalle_tecnico' => 'nullable|string|max:500',
+                'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
+                'NumDocto' => 'nullable|string|max:20'
+            ]);
+
+            $movimientosCreados = [];
+            $usuarioId = Auth::id();
+
+            foreach ($validated['bienes_ids'] as $bienId) {
+                $bien = Bien::find($bienId);
+
+                if (!$bien) {
+                    continue;
+                }
+
+                // Si la fecha no tiene hora, agregar hora actual
+                $fechaMovimiento = $validated['fecha_mvto'];
+                $fecha = \Carbon\Carbon::parse($fechaMovimiento);
+                if ($fecha->format('H:i:s') === '00:00:00') {
+                    $fechaMovimiento = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+                }
+
+                $movimiento = Movimiento::create([
+                    'idbien' => $bienId,
+                    'tipo_mvto' => $validated['tipo_mvto'],
+                    'fecha_mvto' => $fechaMovimiento,
+                    'detalle_tecnico' => $validated['detalle_tecnico'] ?? 'Asignación masiva: ' . strtoupper($bien->denominacion_bien),
+                    'idubicacion' => $validated['idubicacion'] ?? null,
+                    'id_estado_conservacion_bien' => $validated['id_estado_conservacion_bien'] ?? null,
+                    'idusuario' => $usuarioId,
+                    'documento_sustentatorio' => $validated['documento_sustentatorio'] ?? null,
+                    'NumDocto' => $validated['NumDocto'] ?? null
+                ]);
+
+                $movimiento->load([
+                    'bien.tipoBien',
+                    'tipoMovimiento',
+                    'usuario',
+                    'ubicacion.area',
+                    'estadoConservacion',
+                    'documentoSustento'
+                ]);
+
+                $movimientosCreados[] = $movimiento;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => count($movimientosCreados) . ' movimiento(s) creado(s) exitosamente',
+                'data' => $movimientosCreados,
+                'cantidad' => count($movimientosCreados)
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en asignación masiva: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear movimientos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ⭐ CREAR MOVIMIENTOS MASIVOS
+     * Recibe bienes_ids como JSON string
+     */
+    public function crearMasivo(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Decodificar el JSON de IDs de bienes
+            $bienesIds = json_decode($request->input('bienes_ids'), true);
+
+            if (empty($bienesIds) || !is_array($bienesIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se proporcionaron bienes válidos'
+                ], 400);
+            }
+
+            $validated = $request->validate([
+                'tipo_mvto' => 'required|exists:tipo_mvto,id_tipo_mvto',
+                'fecha_mvto' => 'required|date',
+                'detalle_tecnico' => 'nullable|string|max:500',
+                'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
+                'NumDocto' => 'nullable|string|max:20'
+            ]);
+
+            $movimientosCreados = [];
+            $usuarioId = Auth::id();
+
+            foreach ($bienesIds as $bienId) {
+                $bien = Bien::find($bienId);
+
+                if (!$bien) {
+                    continue;
+                }
+
+                // Si la fecha no tiene hora, agregar hora actual
+                $fechaMovimiento = $validated['fecha_mvto'];
+                $fecha = \Carbon\Carbon::parse($fechaMovimiento);
+                if ($fecha->format('H:i:s') === '00:00:00') {
+                    $fechaMovimiento = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+                }
+
+                $movimiento = Movimiento::create([
+                    'idbien' => $bienId,
+                    'tipo_mvto' => $validated['tipo_mvto'],
+                    'fecha_mvto' => $fechaMovimiento,
+                    'detalle_tecnico' => $validated['detalle_tecnico'] ?? 'Movimiento masivo: ' . strtoupper($bien->denominacion_bien),
+                    'idubicacion' => $validated['idubicacion'] ?? null,
+                    'id_estado_conservacion_bien' => $validated['id_estado_conservacion_bien'] ?? null,
+                    'idusuario' => $usuarioId,
+                    'documento_sustentatorio' => $validated['documento_sustentatorio'] ?? null,
+                    'NumDocto' => $validated['NumDocto'] ?? null
+                ]);
+
+                $movimiento->load([
+                    'bien.tipoBien',
+                    'tipoMovimiento',
+                    'usuario',
+                    'ubicacion.area',
+                    'estadoConservacion',
+                    'documentoSustento'
+                ]);
+
+                $movimientosCreados[] = $movimiento;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => count($movimientosCreados) . ' movimiento(s) creado(s) exitosamente',
+                'data' => $movimientosCreados,
+                'cantidad' => count($movimientosCreados)
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en creación masiva: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear movimientos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ⭐ ELIMINAR MOVIMIENTOS MASIVOS
+     */
+    public function eliminarMasivo(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $ids = $request->input('ids');
+
+            if (empty($ids) || !is_array($ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se proporcionaron IDs válidos'
+                ], 400);
+            }
+
+            // Validar que todos los IDs existan
+            $movimientos = Movimiento::whereIn('id_movimiento', $ids)->get();
+
+            if ($movimientos->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontraron movimientos para eliminar'
+                ], 404);
+            }
+
+            // Eliminar movimientos
+            $eliminados = Movimiento::whereIn('id_movimiento', $ids)->delete();
+
+            DB::commit();
+
+            Log::info("Usuario " . Auth::id() . " eliminó {$eliminados} movimiento(s): " . implode(', ', $ids));
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$eliminados} movimiento(s) eliminado(s) correctamente",
+                'cantidad' => $eliminados
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al eliminar movimientos masivos: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar movimientos: ' . $e->getMessage()
             ], 500);
         }
     }

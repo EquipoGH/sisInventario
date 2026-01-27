@@ -127,98 +127,87 @@ class BienController extends Controller
      * Guardar nuevo bien
      */
     public function store(BienRequest $request)
-    {
-        try {
-            DB::beginTransaction();
+{
+    try {
+        DB::beginTransaction();
 
-            $data = $request->validated();
+        $data = $request->validated();
 
-            // ⭐ SINCRONIZAR NumDoc desde documento_sustento
-            if (!empty($data['id_documento'])) {
-                $documento = DocumentoSustento::find($data['id_documento']);
+        // ⭐ NumDoc ahora viene del formulario (manual)
+        // NO se sincroniza automáticamente
 
-                if ($documento) {
-                    $data['NumDoc'] = $documento->numero_documento;
-                } else {
-                    throw new \Exception('El documento sustento seleccionado no existe.');
-                }
-            } else {
-                $data['NumDoc'] = null;
-            }
-
-            // 📸 Subir imagen a Cloudinary
-            if ($request->hasFile('foto_bien')) {
-                $uploadedFile = Cloudinary::upload(
-                    $request->file('foto_bien')->getRealPath(),
-                    [
-                        'folder' => 'bienes',
-                        'transformation' => [
-                            'width' => 800,
-                            'height' => 800,
-                            'crop' => 'limit',
-                            'quality' => 'auto:best',
-                            'fetch_format' => 'auto'
-                        ]
+        // 📸 Subir imagen a Cloudinary
+        if ($request->hasFile('foto_bien')) {
+            $uploadedFile = Cloudinary::upload(
+                $request->file('foto_bien')->getRealPath(),
+                [
+                    'folder' => 'bienes',
+                    'transformation' => [
+                        'width' => 800,
+                        'height' => 800,
+                        'crop' => 'limit',
+                        'quality' => 'auto:best',
+                        'fetch_format' => 'auto'
                     ]
-                );
-
-                $data['foto_bien'] = $uploadedFile->getSecurePath();
-                $data['public_id'] = $uploadedFile->getPublicId();
-            }
-
-            $bien = Bien::create($data);
-
-    
-
-            // ⭐ CRÍTICO: Cargar relaciones antes de retornar
-            $bien->load('documentoSustento', 'tipoBien');
-
-            DB::commit();
-
-            // ⭐ FORMATEAR RESPUESTA CON RELACIONES
-            return response()->json([
-                'success' => true,
-                'message' => 'Bien registrado exitosamente con movimiento inicial',
-                'data' => [
-                    'id_bien' => $bien->id_bien,
-                    'codigo_patrimonial' => $bien->codigo_patrimonial,
-                    'denominacion_bien' => $bien->denominacion_bien,
-                    'id_tipobien' => $bien->id_tipobien,
-                    'modelo_bien' => $bien->modelo_bien,
-                    'marca_bien' => $bien->marca_bien,
-                    'color_bien' => $bien->color_bien,
-                    'dimensiones_bien' => $bien->dimensiones_bien,
-                    'nserie_bien' => $bien->nserie_bien,
-                    'fecha_registro' => $bien->fecha_registro,
-                    'foto_bien' => $bien->foto_bien,
-                    'NumDoc' => $bien->NumDoc,
-                    'tipo_bien' => $bien->tipoBien ? [
-                        'id_tipo_bien' => $bien->tipoBien->id_tipo_bien,
-                        'nombre_tipo' => $bien->tipoBien->nombre_tipo
-                    ] : null,
-                    'documento_sustento' => $bien->documentoSustento ? [
-                        'id_documento' => $bien->documentoSustento->id_documento,
-                        'tipo_documento' => $bien->documentoSustento->tipo_documento,
-                        'numero_documento' => $bien->documentoSustento->numero_documento,
-                        'NumDoc' => $bien->documentoSustento->numero_documento
-                    ] : null
                 ]
-            ]);
+            );
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error al crear bien:', [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear: ' . $e->getMessage()
-            ], 500);
+            $data['foto_bien'] = $uploadedFile->getSecurePath();
+            $data['public_id'] = $uploadedFile->getPublicId();
         }
+
+        $bien = Bien::create($data);
+
+        // ⭐ CRÍTICO: Cargar relaciones antes de retornar
+        $bien->load('documentoSustento', 'tipoBien');
+
+        DB::commit();
+
+        // ⭐ FORMATEAR RESPUESTA CON RELACIONES
+        return response()->json([
+            'success' => true,
+            'message' => 'Bien registrado exitosamente',
+            'data' => [
+                'id_bien' => $bien->id_bien,
+                'codigo_patrimonial' => $bien->codigo_patrimonial,
+                'denominacion_bien' => $bien->denominacion_bien,
+                'id_tipobien' => $bien->id_tipobien,
+                'modelo_bien' => $bien->modelo_bien,
+                'marca_bien' => $bien->marca_bien,
+                'color_bien' => $bien->color_bien,
+                'dimensiones_bien' => $bien->dimensiones_bien,
+                'nserie_bien' => $bien->nserie_bien,
+                'fecha_registro' => $bien->fecha_registro,
+                'foto_bien' => $bien->foto_bien,
+                'id_documento' => $bien->id_documento,
+                'NumDoc' => $bien->NumDoc,
+                'tipo_bien' => $bien->tipoBien ? [
+                    'id_tipo_bien' => $bien->tipoBien->id_tipo_bien,
+                    'nombre_tipo' => $bien->tipoBien->nombre_tipo
+                ] : null,
+                'documento_sustento' => $bien->documentoSustento ? [
+                    'id_documento' => $bien->documentoSustento->id_documento,
+                    'tipo_documento' => $bien->documentoSustento->tipo_documento,
+                    'numero_documento' => $bien->documentoSustento->numero_documento
+                ] : null
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error al crear bien:', [
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al crear: ' . $e->getMessage()
+        ], 500);
     }
+}
+
 
     /**
      * Obtener datos para editar
@@ -249,83 +238,95 @@ class BienController extends Controller
      * Actualizar bien existente
      */
     public function update(BienRequest $request, Bien $bien)
-    {
-        try {
-            DB::beginTransaction();
+{
+    try {
+        DB::beginTransaction();
 
-            $data = $request->validated();
+        $data = $request->validated();
 
-            // ⭐ SINCRONIZAR NumDoc si cambió el documento
-            if (isset($data['id_documento'])) {
-                if (!empty($data['id_documento'])) {
-                    $documento = DocumentoSustento::find($data['id_documento']);
+        // ⭐ NumDoc ahora viene del formulario (manual)
+        // NO se sincroniza automáticamente
 
-                    if ($documento) {
-                        $data['NumDoc'] = $documento->numero_documento;
-                    } else {
-                        throw new \Exception('El documento sustento seleccionado no existe.');
-                    }
-                } else {
-                    $data['NumDoc'] = null;
+        // 📸 Si hay nueva imagen
+        if ($request->hasFile('foto_bien')) {
+            // Eliminar imagen anterior
+            if ($bien->public_id) {
+                try {
+                    Cloudinary::destroy($bien->public_id);
+                } catch (\Exception $e) {
+                    Log::warning('Error al eliminar imagen anterior: ' . $e->getMessage());
                 }
             }
 
-            // 📸 Si hay nueva imagen
-            if ($request->hasFile('foto_bien')) {
-                // Eliminar imagen anterior
-                if ($bien->public_id) {
-                    try {
-                        Cloudinary::destroy($bien->public_id);
-                    } catch (\Exception $e) {
-                        Log::warning('Error al eliminar imagen anterior: ' . $e->getMessage());
-                    }
-                }
-
-                $uploadedFile = Cloudinary::upload(
-                    $request->file('foto_bien')->getRealPath(),
-                    [
-                        'folder' => 'bienes',
-                        'transformation' => [
-                            'width' => 800,
-                            'height' => 800,
-                            'crop' => 'limit',
-                            'quality' => 'auto:best',
-                            'fetch_format' => 'auto'
-                        ]
+            $uploadedFile = Cloudinary::upload(
+                $request->file('foto_bien')->getRealPath(),
+                [
+                    'folder' => 'bienes',
+                    'transformation' => [
+                        'width' => 800,
+                        'height' => 800,
+                        'crop' => 'limit',
+                        'quality' => 'auto:best',
+                        'fetch_format' => 'auto'
                     ]
-                );
+                ]
+            );
 
-                $data['foto_bien'] = $uploadedFile->getSecurePath();
-                $data['public_id'] = $uploadedFile->getPublicId();
-            }
-
-            $bien->update($data);
-
-            // ⭐ CRÍTICO: Cargar relaciones antes de retornar
-            $bien->load('documentoSustento', 'tipoBien');
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Bien actualizado exitosamente',
-                'data' => $bien
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error al actualizar bien:', [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar: ' . $e->getMessage()
-            ], 500);
+            $data['foto_bien'] = $uploadedFile->getSecurePath();
+            $data['public_id'] = $uploadedFile->getPublicId();
         }
+
+        $bien->update($data);
+
+        // ⭐ CRÍTICO: Cargar relaciones antes de retornar
+        $bien->load('documentoSustento', 'tipoBien');
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bien actualizado exitosamente',
+            'data' => [
+                'id_bien' => $bien->id_bien,
+                'codigo_patrimonial' => $bien->codigo_patrimonial,
+                'denominacion_bien' => $bien->denominacion_bien,
+                'id_tipobien' => $bien->id_tipobien,
+                'modelo_bien' => $bien->modelo_bien,
+                'marca_bien' => $bien->marca_bien,
+                'color_bien' => $bien->color_bien,
+                'dimensiones_bien' => $bien->dimensiones_bien,
+                'nserie_bien' => $bien->nserie_bien,
+                'fecha_registro' => $bien->fecha_registro,
+                'foto_bien' => $bien->foto_bien,
+                'id_documento' => $bien->id_documento,
+                'NumDoc' => $bien->NumDoc,
+                'tipo_bien' => $bien->tipoBien ? [
+                    'id_tipo_bien' => $bien->tipoBien->id_tipo_bien,
+                    'nombre_tipo' => $bien->tipoBien->nombre_tipo
+                ] : null,
+                'documento_sustento' => $bien->documentoSustento ? [
+                    'id_documento' => $bien->documentoSustento->id_documento,
+                    'tipo_documento' => $bien->documentoSustento->tipo_documento,
+                    'numero_documento' => $bien->documentoSustento->numero_documento
+                ] : null
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error al actualizar bien:', [
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al actualizar: ' . $e->getMessage()
+        ], 500);
     }
+}
+
 
     /**
      * Eliminar bien

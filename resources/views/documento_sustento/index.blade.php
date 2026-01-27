@@ -214,13 +214,18 @@
                     <div class="form-group">
                         <label for="fecha_documento">Fecha de Documento <span class="text-danger">*</span></label>
                         <input type="date"
-                               name="fecha_documento"
-                               id="fecha_documento"
-                               class="form-control"
-                               required
-                               max="{{ date('Y-m-d') }}">
+                            name="fecha_documento"
+                            id="fecha_documento"
+                            class="form-control"
+                            required
+                            value="{{ date('Y-m-d') }}"
+                            max="{{ date('Y-m-d') }}">
+                        <small class="form-text text-muted">
+                            <i class="fas fa-calendar-check"></i> Fecha actual por defecto (puedes cambiarla)
+                        </small>
                         <span class="text-danger error-fecha_documento d-block mt-1"></span>
                     </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">

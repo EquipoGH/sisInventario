@@ -12,18 +12,16 @@ class BienRequest extends FormRequest
         return true;
     }
 
-    // ⭐ Preparar datos antes de validación
     protected function prepareForValidation()
     {
-        // El NumDoc se sincroniza automáticamente en el controlador
-        // No debe venir desde el formulario por seguridad
-        if ($this->has('NumDoc')) {
-            $this->request->remove('NumDoc');
-        }
-
-        // ⭐ NUEVO: Convertir id_documento vacío a null
+        // ⭐ Convertir id_documento vacío a null
         if ($this->id_documento === '' || $this->id_documento === '0') {
             $this->merge(['id_documento' => null]);
+        }
+
+        // ⭐ Convertir NumDoc vacío a null
+        if ($this->NumDoc === '') {
+            $this->merge(['NumDoc' => null]);
         }
     }
 
@@ -50,6 +48,9 @@ class BienRequest extends FormRequest
                 'exists:documento_sustento,id_documento'
             ],
 
+            // ⭐⭐⭐ NumDoc MANUAL (OPCIONAL) ⭐⭐⭐
+            'NumDoc' => 'nullable|string|max:50',
+
             // ==================== CAMPOS OPCIONALES ====================
             'modelo_bien' => 'nullable|string|max:20',
             'marca_bien' => 'nullable|string|max:20',
@@ -57,7 +58,7 @@ class BienRequest extends FormRequest
             'dimensiones_bien' => 'nullable|string|max:50',
             'nserie_bien' => 'nullable|string|max:20',
 
-            // ⭐ CORREGIDO: El input se llama "foto" NO "foto_bien"
+            // ⭐ Foto
             'foto' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ];
     }
@@ -78,6 +79,9 @@ class BienRequest extends FormRequest
             'id_documento.integer' => 'El documento sustento no es válido',
             'id_documento.exists' => 'El documento sustento seleccionado no existe',
 
+            'NumDoc.string' => 'El número de documento debe ser texto',
+            'NumDoc.max' => 'El número de documento no puede exceder 50 caracteres',
+
             'fecha_registro.required' => 'La fecha de registro es obligatoria',
             'fecha_registro.date' => 'La fecha no es válida',
             'fecha_registro.before_or_equal' => 'La fecha no puede ser futura',
@@ -95,6 +99,7 @@ class BienRequest extends FormRequest
             'denominacion_bien' => 'denominación',
             'id_tipobien' => 'tipo de bien',
             'id_documento' => 'documento sustento',
+            'NumDoc' => 'número de documento',
             'fecha_registro' => 'fecha de registro',
             'modelo_bien' => 'modelo',
             'marca_bien' => 'marca',

@@ -13,19 +13,30 @@ class Movimiento extends Model
     protected $primaryKey = 'id_movimiento';
     public $incrementing = true;
 
+    // ⭐ IMPORTANTE: Desactivar timestamps automáticos de Laravel
+    public $timestamps = false;
+
     protected $fillable = [
         'idbien',
         'tipo_mvto',
         'fecha_mvto',
         'detalle_tecnico',
         'documento_sustentatorio',
-        'NumDocto',  // ⭐ NUEVO
+        'NumDocto',
         'idubicacion',
         'id_estado_conservacion_bien',
         'idusuario'
     ];
 
-    protected $dates = ['fecha_mvto'];
+    // ⭐⭐⭐ CAMBIO CRÍTICO: Usar $casts en vez de $dates ⭐⭐⭐
+    protected $casts = [
+        'fecha_mvto' => 'datetime',
+        'idbien' => 'integer',
+        'tipo_mvto' => 'integer',
+        'idubicacion' => 'integer',
+        'id_estado_conservacion_bien' => 'integer',
+        'idusuario' => 'integer'
+    ];
 
     public function getRouteKeyName()
     {
