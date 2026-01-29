@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class ModuloController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permiso:Modulos');
+    }
     public function index(Request $request)
     {
         $perPage = (int) $request->get('per_page', 10);

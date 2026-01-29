@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 
 class PerfilModuloController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permiso:Perfiles');
+    }
     /**
      * Formulario (modal o página) para asignar módulos a un perfil
      */

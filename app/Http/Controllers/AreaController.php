@@ -7,7 +7,12 @@ use App\Http\Requests\AreaRequest;
 use Illuminate\Http\Request;
 
 class AreaController extends Controller
-{
+{   
+    public function __construct()
+    {
+        $this->middleware('permiso:Areas');
+    }
+
     /**
      * Listar áreas con búsqueda, ordenamiento dinámico y paginación
      */

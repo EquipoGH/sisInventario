@@ -18,12 +18,15 @@ use Illuminate\Support\Facades\DB;
 class BienController extends Controller
 {
     protected $movimientoService;
-
+    
     /**
      * Inyectar MovimientoService
      */
     public function __construct(MovimientoService $movimientoService)
     {
+        // ✅ Doble capa: además de routes/web.php
+        $this->middleware('permiso:Bienes');
+        
         $this->movimientoService = $movimientoService;
     }
 

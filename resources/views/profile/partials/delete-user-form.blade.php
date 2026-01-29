@@ -1,55 +1,60 @@
-<section class="space-y-6">
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Delete Account') }}
-        </h2>
+<p class="mb-3" style="color:#991b1b;font-weight:900;font-size:13px;">
+    Una vez eliminada tu cuenta, todos tus datos se borrarán permanentemente.
+</p>
 
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.') }}
-        </p>
-    </header>
+<button type="button" class="gi-btn gi-btn-danger" onclick="giToggleBox('gi-delete-box')">
+    <i class="fas fa-trash mr-2"></i>
+    Eliminar mi cuenta
+</button>
 
-    <x-danger-button
-        x-data=""
-        x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
-    >{{ __('Delete Account') }}</x-danger-button>
+<div id="gi-delete-box" class="d-none mt-3">
+    <div class="gi-alert gi-alert-danger mb-3">
+        <i class="fas fa-circle-exclamation mr-2"></i>
+        Confirma tu contraseña para continuar.
+    </div>
 
-    <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>
-        <form method="post" action="{{ route('profile.destroy') }}" class="p-6">
-            @csrf
-            @method('delete')
+    <form method="post" action="{{ route('profile.destroy') }}">
+        @csrf
+        @method('delete')
 
-            <h2 class="text-lg font-medium text-gray-900">
-                {{ __('Are you sure you want to delete your account?') }}
-            </h2>
+        <div class="form-group mb-3">
+            <label for="password_delete" class="gi-label">
+                <i class="fas fa-lock mr-2" style="color:#dc2626;"></i>
+                Contraseña
+            </label>
 
-            <p class="mt-1 text-sm text-gray-600">
-                {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.') }}
-            </p>
-
-            <div class="mt-6">
-                <x-input-label for="password" value="{{ __('Password') }}" class="sr-only" />
-
-                <x-text-input
-                    id="password"
+            <div style="position:relative;">
+                <input
+                    id="password_delete"
                     name="password"
                     type="password"
-                    class="mt-1 block w-3/4"
-                    placeholder="{{ __('Password') }}"
+                    class="gi-input"
+                    placeholder="••••••••"
                 />
-
-                <x-input-error :messages="$errors->userDeletion->get('password')" class="mt-2" />
+                <button type="button" class="gi-eye-btn" onclick="togglePassword('password_delete')">
+                    <i class="fas fa-eye" id="password_delete-eye"></i>
+                </button>
             </div>
 
-            <div class="mt-6 flex justify-end">
-                <x-secondary-button x-on:click="$dispatch('close')">
-                    {{ __('Cancel') }}
-                </x-secondary-button>
+            @if ($errors->userDeletion->get('password'))
+                <p class="mt-2" style="color:#dc2626;font-weight:900;font-size:13px;">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    {{ $errors->userDeletion->first('password') }}
+                </p>
+            @endif
+        </div>
 
-                <x-danger-button class="ms-3">
-                    {{ __('Delete Account') }}
-                </x-danger-button>
+        <div class="row">
+            <div class="col-6">
+                <button type="button" class="gi-btn gi-btn-outline" onclick="giToggleBox('gi-delete-box')">
+                    Cancelar
+                </button>
             </div>
-        </form>
-    </x-modal>
-</section>
+            <div class="col-6">
+                <button type="submit" class="gi-btn gi-btn-danger">
+                    Sí, eliminar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

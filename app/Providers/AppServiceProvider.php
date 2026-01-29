@@ -24,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Registrar el Observer de Bien
         Bien::observe(BienObserver::class);
+
+        // Bootstrap 5 para paginación (no se rompe nada en vistas)
         Paginator::useBootstrapFive();
     }
 }

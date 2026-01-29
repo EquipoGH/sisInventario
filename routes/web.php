@@ -20,6 +20,7 @@ use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\UserPerfilController;
 use App\Http\Controllers\PerfilModuloController;
 use App\Http\Controllers\PerfilModuloPermisoController;
+use App\Http\Controllers\ReporteKardexController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,122 +40,179 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ==================== DASHBOARD ====================
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // ==================== PROFILE (Breeze/Jetstream) ====================
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
     // ==================== CONFIGURACIÓN ====================
-    Route::get('/configuracion', [ConfiguracionController::class, 'index'])
-        ->name('configuracion.index');
-    Route::post('/configuracion', [ConfiguracionController::class, 'actualizar'])
-        ->name('configuracion.actualizar');
+    Route::middleware('permiso:Apariencia Del Sistema')->group(function () {
+        Route::get('/configuracion', [ConfiguracionController::class, 'index'])
+            ->name('configuracion.index');
+
+        Route::post('/configuracion', [ConfiguracionController::class, 'actualizar'])
+            ->name('configuracion.actualizar');
+    });
+
 
     // ==================== DOCUMENTO SUSTENTO ====================
-    // ⚠️ IMPORTANTE: Rutas específicas ANTES del resource
+    Route::middleware('permiso:Documentos Sustento')->group(function () {
 
-    Route::post('/documento-sustento/verificar-numero', [DocumentoSustentoController::class, 'verificarNumero'])
-        ->name('documento-sustento.verificar-numero');
+        // ⚠️ Rutas específicas ANTES del resource
+        Route::post('/documento-sustento/verificar-numero', [DocumentoSustentoController::class, 'verificarNumero'])
+            ->name('documento-sustento.verificar-numero');
 
-    Route::get('/documento-sustento/obtener', [DocumentoSustentoController::class, 'obtenerDocumentos'])
-        ->name('documento-sustento.obtener-documentos');
+        Route::get('/documento-sustento/obtener', [DocumentoSustentoController::class, 'obtenerDocumentos'])
+            ->name('documento-sustento.obtener-documentos');
 
-    Route::get('/documento-sustento/{documento_sustento}/bienes', [DocumentoSustentoController::class, 'bienes'])
-        ->name('documento-sustento.bienes');
+        Route::get('/documento-sustento/{documento_sustento}/bienes', [DocumentoSustentoController::class, 'bienes'])
+            ->name('documento-sustento.bienes');
 
-    Route::post('/documento-sustento/{documento_sustento}/desvincular-bienes', [DocumentoSustentoController::class, 'desvincularBienes'])
-        ->name('documento-sustento.desvincular-bienes');
+        Route::post('/documento-sustento/{documento_sustento}/desvincular-bienes', [DocumentoSustentoController::class, 'desvincularBienes'])
+            ->name('documento-sustento.desvincular-bienes');
 
-    // Resource CRUD
-    Route::resource('documento-sustento', DocumentoSustentoController::class);
+        // Resource CRUD
+        Route::resource('documento-sustento', DocumentoSustentoController::class);
+    });
+
 
     // ==================== BIEN ====================
-    // ⚠️ IMPORTANTE: Rutas específicas ANTES del resource
+    Route::middleware('permiso:Bienes')->group(function () {
 
-    Route::post('/bien/verificar-codigo', [BienController::class, 'verificarCodigo'])
-        ->name('bien.verificar-codigo');
+        // ⚠️ Rutas específicas ANTES del resource
+        Route::post('/bien/verificar-codigo', [BienController::class, 'verificarCodigo'])
+            ->name('bien.verificar-codigo');
 
-    Route::get('/bien/obtener-documentos', [BienController::class, 'obtenerDocumentos'])
-        ->name('bien.obtener-documentos');
+        Route::get('/bien/obtener-documentos', [BienController::class, 'obtenerDocumentos'])
+            ->name('bien.obtener-documentos');
 
-    // Resource CRUD
-    Route::resource('bien', BienController::class);
+        // Resource CRUD
+        Route::resource('bien', BienController::class);
+    });
+
 
     // ==================== GESTIÓN DE INVENTARIO ====================
-    Route::resource('area', AreaController::class);
-    Route::resource('tipo-bien', TipoBienController::class);
-    Route::resource('estado-bien', EstadoBienController::class);
-    Route::resource('tipo-mvto', TipoMvtoController::class);
-    Route::resource('responsable', ResponsableController::class);
-    Route::resource('ubicacion', UbicacionController::class);
-    Route::resource('responsable-area', ResponsableAreaController::class);
+    Route::resource('area', AreaController::class)->middleware('permiso:Areas');
+
+    Route::resource('tipo-bien', TipoBienController::class)->middleware('permiso:Tipos De Bien');
+
+    Route::resource('estado-bien', EstadoBienController::class)->middleware('permiso:Estados Del Bien');
+
+    // En tu menú sale "Tipo De Movimientos"
+    Route::resource('tipo-mvto', TipoMvtoController::class)->middleware('permiso:Tipo De Movimientos');
+
+    Route::resource('responsable', ResponsableController::class)->middleware('permiso:Responsables');
+
+    Route::resource('ubicacion', UbicacionController::class)->middleware('permiso:Ubicaciones');
+
+    Route::resource('responsable-area', ResponsableAreaController::class)->middleware('permiso:Asignaciones');
+
 
     // ==================== MOVIMIENTO ====================
-    // ⚠️ IMPORTANTE: Rutas específicas ANTES del resource
+    Route::middleware('permiso:Movimientos')->group(function () {
 
-    // Asignación masiva de movimientos
-    Route::post('movimiento/asignar-masivo', [MovimientoController::class, 'asignarMasivo'])
-        ->name('movimiento.asignar-masivo');
+        // ⚠️ Rutas específicas ANTES del resource
 
-    // Crear movimientos masivos
-    Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
-        ->name('movimiento.crear-masivo');
+        // Asignación masiva de movimientos
+        Route::post('movimiento/asignar-masivo', [MovimientoController::class, 'asignarMasivo'])
+            ->name('movimiento.asignar-masivo');
 
-    // Eliminar movimientos masivos
-    Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
-        ->name('movimiento.eliminar-masivo');
+        // Crear movimientos masivos
+        Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
+            ->name('movimiento.crear-masivo');
 
-    // Filtros adicionales
-    Route::get('movimiento/por-tipo', [MovimientoController::class, 'porTipo'])
-        ->name('movimiento.por-tipo');
+        // Eliminar movimientos masivos
+        Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
+            ->name('movimiento.eliminar-masivo');
 
-    Route::get('movimiento/por-bien', [MovimientoController::class, 'porBien'])
-        ->name('movimiento.por-bien');
+        // Filtros adicionales
+        Route::get('movimiento/por-tipo', [MovimientoController::class, 'porTipo'])
+            ->name('movimiento.por-tipo');
 
-    Route::get('movimiento/por-fecha', [MovimientoController::class, 'porFecha'])
-        ->name('movimiento.por-fecha');
+        Route::get('movimiento/por-bien', [MovimientoController::class, 'porBien'])
+            ->name('movimiento.por-bien');
 
-    Route::get('movimiento/estadisticas', [MovimientoController::class, 'estadisticas'])
-        ->name('movimiento.estadisticas');
+        Route::get('movimiento/por-fecha', [MovimientoController::class, 'porFecha'])
+            ->name('movimiento.por-fecha');
 
-    // Resource CRUD (SIEMPRE AL FINAL)
-    Route::resource('movimiento', MovimientoController::class);
+        Route::get('movimiento/estadisticas', [MovimientoController::class, 'estadisticas'])
+            ->name('movimiento.estadisticas');
+
+        // Resource CRUD (SIEMPRE AL FINAL)
+        Route::resource('movimiento', MovimientoController::class);
+    });
+
 
     // ==================== SEGURIDAD ====================
 
-    // Módulo
-    Route::delete('user/bulk-destroy', [UserController::class, 'bulkDestroy'])
-        ->name('user.bulk-destroy');
-    Route::resource('user', UserController::class)->except(['show', 'create']);
+    // Usuarios
+    Route::middleware('permiso:Usuarios')->group(function () {
+        Route::delete('user/bulk-destroy', [UserController::class, 'bulkDestroy'])
+            ->name('user.bulk-destroy');
 
-    // Perfil
-    Route::delete('perfil/bulk-destroy', [PerfilController::class, 'bulkDestroy'])
-        ->name('perfil.bulk-destroy');
-    Route::resource('perfil', PerfilController::class)->except(['show', 'create']);
+        Route::resource('user', UserController::class)->except(['show', 'create']);
 
-    // Permiso
-    Route::delete('permiso/bulk-destroy', [PermisoController::class, 'bulkDestroy'])
-        ->name('permiso.bulk-destroy');
-    Route::resource('permiso', PermisoController::class)->except(['show', 'create']);
+        // Usuario Perfil (lo dejo dentro de Usuarios)
+        Route::get('/user/{user}/perfiles', [UserPerfilController::class, 'edit'])
+            ->name('users.perfiles.edit');
 
-    // Módulo
-    Route::delete('modulo/bulk-destroy', [ModuloController::class, 'bulkDestroy'])
-        ->name('modulo.bulk-destroy');
-    Route::resource('modulo', ModuloController::class)->except(['show', 'create']);
+        Route::put('/user/{user}/perfiles', [UserPerfilController::class, 'update'])
+            ->name('users.perfiles.update');
+    });
 
-    // Usuario Perfil
-    Route::get('/user/{user}/perfiles', [UserPerfilController::class, 'edit'])->name('users.perfiles.edit');
-    Route::put('/user/{user}/perfiles', [UserPerfilController::class, 'update'])->name('users.perfiles.update');
+    // Perfiles
+    Route::middleware('permiso:Perfiles')->group(function () {
+        Route::delete('perfil/bulk-destroy', [PerfilController::class, 'bulkDestroy'])
+            ->name('perfil.bulk-destroy');
 
-    // Perfil Modulo
-    Route::get('/perfil/{perfil}/modulos', [PerfilModuloController::class, 'edit'])
-        ->name('perfil.modulos.edit');
-    Route::put('/perfil/{perfil}/modulos', [PerfilModuloController::class, 'update'])
-        ->name('perfil.modulos.update');
+        Route::resource('perfil', PerfilController::class)->except(['show', 'create']);
 
-    // Modulo Permisos
-    Route::get('/perfil-modulo/{perfilModulo}/permisos', [PerfilModuloPermisoController::class, 'edit'])
-        ->name('perfil-modulo.permisos.edit');
-    Route::put('/perfil-modulo/{perfilModulo}/permisos', [PerfilModuloPermisoController::class, 'update'])
-        ->name('perfil-modulo.permisos.update');
-    Route::get('/perfil-modulo/{perfilModulo}/permisos/json', [PerfilModuloPermisoController::class, 'index'])
-        ->name('perfil-modulo.permisos.index');
+        // Perfil Modulo
+        Route::get('/perfil/{perfil}/modulos', [PerfilModuloController::class, 'edit'])
+            ->name('perfil.modulos.edit');
+
+        Route::put('/perfil/{perfil}/modulos', [PerfilModuloController::class, 'update'])
+            ->name('perfil.modulos.update');
+    });
+
+    // Permisos
+    Route::middleware('permiso:Permisos')->group(function () {
+        Route::delete('permiso/bulk-destroy', [PermisoController::class, 'bulkDestroy'])
+            ->name('permiso.bulk-destroy');
+
+        Route::resource('permiso', PermisoController::class)->except(['show', 'create']);
+
+        // Modulo Permisos
+        Route::get('/perfil-modulo/{perfilModulo}/permisos', [PerfilModuloPermisoController::class, 'edit'])
+            ->name('perfil-modulo.permisos.edit');
+
+        Route::put('/perfil-modulo/{perfilModulo}/permisos', [PerfilModuloPermisoController::class, 'update'])
+            ->name('perfil-modulo.permisos.update');
+
+        Route::get('/perfil-modulo/{perfilModulo}/permisos/json', [PerfilModuloPermisoController::class, 'index'])
+            ->name('perfil-modulo.permisos.index');
+    });
+
+    // Módulos
+    Route::middleware('permiso:Modulos')->group(function () {
+        Route::delete('modulo/bulk-destroy', [ModuloController::class, 'bulkDestroy'])
+            ->name('modulo.bulk-destroy');
+
+        Route::resource('modulo', ModuloController::class)->except(['show', 'create']);
+    });
+
+    // ==================== REPORTES ====================
+    Route::middleware('permiso:Reportes')
+        ->prefix('reportes')
+        ->name('reportes.')
+        ->group(function () {
+
+        Route::get('/kardex', [ReporteKardexController::class, 'index'])->name('kardex.index');
+        Route::get('/kardex/data', [ReporteKardexController::class, 'data'])->name('kardex.data');
+        Route::get('/kardex/pdf', [ReporteKardexController::class, 'pdf'])->name('kardex.pdf');
+        Route::get('/kardex/excel', [ReporteKardexController::class, 'excel'])->name('kardex.excel');
+    });
 
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

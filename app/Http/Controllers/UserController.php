@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permiso:Usuarios');
+    }
     public function index(Request $request)
 {
     $perPage = (int) $request->get('per_page', 10);

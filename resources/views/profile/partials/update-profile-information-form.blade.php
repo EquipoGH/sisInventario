@@ -1,64 +1,108 @@
-<section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Profile Information') }}
-        </h2>
+<form id="send-verification" method="post" action="{{ route('verification.send') }}">
+    @csrf
+</form>
 
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __("Update your account's profile information and email address.") }}
-        </p>
-    </header>
+<form method="post" action="{{ route('profile.update') }}">
+    @csrf
+    @method('patch')
 
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}">
-        @csrf
-    </form>
+    {{-- DNI (nuevo) --}}
+    <div class="form-group mb-3">
+        <label for="dni_usuario" class="gi-label">
+            <i class="fas fa-id-card mr-2" style="color:#7c3aed;"></i>
+            DNI
+        </label>
 
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
-        @csrf
-        @method('patch')
+        <input
+            id="dni_usuario"
+            name="dni_usuario"
+            type="text"
+            class="gi-input"
+            value="{{ old('dni_usuario', $user->dni_usuario ?? '') }}"
+            maxlength="8"
+            required
+            placeholder="12345678"
+            inputmode="numeric"
+            autocomplete="off"
+        />
 
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
-        </div>
+        @error('dni_usuario')
+            <p class="mt-2" style="color:#dc2626;font-weight:900;font-size:13px;">
+                <i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}
+            </p>
+        @enderror
 
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
+        <div class="gi-help">Solo números, 8 dígitos.</div>
+    </div>
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-gray-800">
-                        {{ __('Your email address is unverified.') }}
+    {{-- Nombre --}}
+    <div class="form-group mb-3">
+        <label for="name" class="gi-label">
+            <i class="fas fa-user mr-2" style="color:#7c3aed;"></i>
+            Nombre completo
+        </label>
 
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </button>
-                    </p>
+        <input
+            id="name"
+            name="name"
+            type="text"
+            class="gi-input"
+            value="{{ old('name', $user->name) }}"
+            required
+            autofocus
+            autocomplete="name"
+            placeholder="Tu nombre"
+        />
 
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
-                            {{ __('A new verification link has been sent to your email address.') }}
-                        </p>
-                    @endif
+        @error('name')
+            <p class="mt-2" style="color:#dc2626;font-weight:900;font-size:13px;">
+                <i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}
+            </p>
+        @enderror
+    </div>
+
+    {{-- Email --}}
+    <div class="form-group mb-3">
+        <label for="email" class="gi-label">
+            <i class="fas fa-envelope mr-2" style="color:#7c3aed;"></i>
+            Correo electrónico
+        </label>
+
+        <input
+            id="email"
+            name="email"
+            type="email"
+            class="gi-input"
+            value="{{ old('email', $user->email) }}"
+            required
+            autocomplete="username"
+            placeholder="correo@ejemplo.com"
+        />
+
+        @error('email')
+            <p class="mt-2" style="color:#dc2626;font-weight:900;font-size:13px;">
+                <i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}
+            </p>
+        @enderror
+
+        @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
+            <div class="gi-alert gi-alert-warn mt-3">
+                <div style="font-weight:900;">
+                    <i class="fas fa-circle-exclamation mr-2"></i>
+                    Tu correo no está verificado.
                 </div>
-            @endif
-        </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+                <button type="submit" form="send-verification"
+                        style="border:0;background:transparent;color:#4f46e5;font-weight:900;margin-top:6px;">
+                    <i class="fas fa-paper-plane mr-1"></i>
+                    Reenviar correo de verificación
+                </button>
+            </div>
+        @endif
+    </div>
 
-            @if (session('status') === 'profile-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
-            @endif
-        </div>
-    </form>
-</section>
+    <button type="submit" class="gi-btn gi-btn-primary">
+        <i class="fas fa-save mr-2"></i>
+        Guardar cambios
+    </button>
+</form>

@@ -8,6 +8,10 @@ use App\Models\User;
 
 class UserPerfilController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permiso:Usuarios');
+    }
     /**
      * Formulario para asignar perfiles a un usuario
      */

@@ -19,9 +19,16 @@
             <div class="icon">
                 <i class="fas fa-building"></i>
             </div>
-            <a href="{{ route('area.index') }}" class="small-box-footer">
-                Ver más <i class="fas fa-arrow-circle-right"></i>
-            </a>
+
+            @can('permiso','Areas')
+                <a href="{{ route('area.index') }}" class="small-box-footer">
+                    Ver más <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            @else
+                <span class="small-box-footer" style="opacity:.65; cursor:not-allowed;">
+                    Sin acceso <i class="fas fa-lock"></i>
+                </span>
+            @endcan
         </div>
     </div>
 
@@ -35,9 +42,16 @@
             <div class="icon">
                 <i class="fas fa-tags"></i>
             </div>
-            <a href="{{ route('tipo-bien.index') }}" class="small-box-footer">
-                Ver más <i class="fas fa-arrow-circle-right"></i>
-            </a>
+
+            @can('permiso','Tipos De Bien')
+                <a href="{{ route('tipo-bien.index') }}" class="small-box-footer">
+                    Ver más <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            @else
+                <span class="small-box-footer" style="opacity:.65; cursor:not-allowed;">
+                    Sin acceso <i class="fas fa-lock"></i>
+                </span>
+            @endcan
         </div>
     </div>
 
@@ -51,9 +65,16 @@
             <div class="icon">
                 <i class="fas fa-box"></i>
             </div>
-            <a href="{{ route('bien.index') }}" class="small-box-footer">
-                Ver más <i class="fas fa-arrow-circle-right"></i>
-            </a>
+
+            @can('permiso','Bienes')
+                <a href="{{ route('bien.index') }}" class="small-box-footer">
+                    Ver más <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            @else
+                <span class="small-box-footer" style="opacity:.65; cursor:not-allowed;">
+                    Sin acceso <i class="fas fa-lock"></i>
+                </span>
+            @endcan
         </div>
     </div>
 </div>
@@ -65,6 +86,7 @@
             <i class="fas fa-list"></i> Últimos Bienes Registrados
         </h3>
     </div>
+
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
@@ -79,35 +101,38 @@
                 </thead>
                 <tbody>
                     @forelse($ultimosBienes as $bien)
-                    <tr>
-                        <td class="text-center"><strong>{{ $bien->id_bien }}</strong></td>
-                        <td><strong>{{ $bien->codigo_patrimonial }}</strong></td>
-                        <td>{{ strtoupper($bien->denominacion_bien) }}</td>
-                        <td>
-                            <span class="badge badge-custom-info">
-                                {{ $bien->tipoBien->nombre ?? 'N/A' }}
-                            </span>
-                        </td>
-                        <td>{{ $bien->fecha_registro->format('d/m/Y') }}</td>
-                    </tr>
+                        <tr>
+                            <td class="text-center"><strong>{{ $bien->id_bien }}</strong></td>
+                            <td><strong>{{ $bien->codigo_patrimonial }}</strong></td>
+                            <td>{{ strtoupper($bien->denominacion_bien) }}</td>
+                            <td>
+                                <span class="badge badge-custom-info">
+                                    {{ $bien->tipoBien->nombre ?? 'N/A' }}
+                                </span>
+                            </td>
+                            <td>{{ $bien->fecha_registro->format('d/m/Y') }}</td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-4">
-                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                            No hay bienes registrados
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                No hay bienes registrados
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
+
     @if($ultimosBienes->count() > 0)
-    <div class="card-footer text-center">
-        <a href="{{ route('bien.index') }}" class="btn btn-custom-primary">
-            <i class="fas fa-eye"></i> Ver todos los bienes
-        </a>
-    </div>
+        <div class="card-footer text-center">
+            @can('permiso','Bienes')
+                <a href="{{ route('bien.index') }}" class="btn btn-custom-primary">
+                    <i class="fas fa-eye"></i> Ver todos los bienes
+                </a>
+            @endcan
+        </div>
     @endif
 </div>
 @stop

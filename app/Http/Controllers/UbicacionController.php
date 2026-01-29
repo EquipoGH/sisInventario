@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 
 class UbicacionController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permiso:Ubicaciones');
+    }
     /**
      * Listar ubicaciones con búsqueda, ordenamiento dinámico y paginación
      */

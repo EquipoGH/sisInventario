@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 
 class TipoBienController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permiso:Tipos De Bien');
+    }
     public function index(Request $request)
     {
         $search = $request->get('search', '');

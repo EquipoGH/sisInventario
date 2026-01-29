@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 class MovimientoController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permiso:Movimientos');
+    }
+
     public function index(Request $request)
     {
         $search = $request->get('search', '');
