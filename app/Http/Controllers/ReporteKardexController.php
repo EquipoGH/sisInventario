@@ -10,10 +10,6 @@ use App\Exports\KardexMovimientosExport;
 
 class ReporteKardexController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Reportes');
-    }
 
     public function index()
     {

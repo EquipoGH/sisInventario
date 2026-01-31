@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class PermisoController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Permisos');
-    }
     public function index(Request $request)
     {
         // ====== Parámetros ======

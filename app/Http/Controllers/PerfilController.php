@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class PerfilController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Perfiles');
-    }
     public function index(Request $request)
     {
         // ====== Parámetros ======

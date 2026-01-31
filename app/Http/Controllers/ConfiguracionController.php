@@ -7,10 +7,6 @@ use Illuminate\Http\Request;
 
 class ConfiguracionController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Apariencia Del Sistema');
-    }
     /**
      * Mostrar panel de configuración
      */

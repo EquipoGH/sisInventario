@@ -20,15 +20,9 @@
                 <i class="fas fa-building"></i>
             </div>
 
-            @can('permiso','Areas')
-                <a href="{{ route('area.index') }}" class="small-box-footer">
-                    Ver más <i class="fas fa-arrow-circle-right"></i>
-                </a>
-            @else
-                <span class="small-box-footer" style="opacity:.65; cursor:not-allowed;">
-                    Sin acceso <i class="fas fa-lock"></i>
-                </span>
-            @endcan
+            <a href="{{ route('area.index') }}" class="small-box-footer">
+                Ver más <i class="fas fa-arrow-circle-right"></i>
+            </a>
         </div>
     </div>
 
@@ -43,15 +37,9 @@
                 <i class="fas fa-tags"></i>
             </div>
 
-            @can('permiso','Tipos De Bien')
-                <a href="{{ route('tipo-bien.index') }}" class="small-box-footer">
-                    Ver más <i class="fas fa-arrow-circle-right"></i>
-                </a>
-            @else
-                <span class="small-box-footer" style="opacity:.65; cursor:not-allowed;">
-                    Sin acceso <i class="fas fa-lock"></i>
-                </span>
-            @endcan
+            <a href="{{ route('tipo-bien.index') }}" class="small-box-footer">
+                Ver más <i class="fas fa-arrow-circle-right"></i>
+            </a>
         </div>
     </div>
 
@@ -66,15 +54,9 @@
                 <i class="fas fa-box"></i>
             </div>
 
-            @can('permiso','Bienes')
-                <a href="{{ route('bien.index') }}" class="small-box-footer">
-                    Ver más <i class="fas fa-arrow-circle-right"></i>
-                </a>
-            @else
-                <span class="small-box-footer" style="opacity:.65; cursor:not-allowed;">
-                    Sin acceso <i class="fas fa-lock"></i>
-                </span>
-            @endcan
+            <a href="{{ route('bien.index') }}" class="small-box-footer">
+                Ver más <i class="fas fa-arrow-circle-right"></i>
+            </a>
         </div>
     </div>
 </div>
@@ -127,11 +109,9 @@
 
     @if($ultimosBienes->count() > 0)
         <div class="card-footer text-center">
-            @can('permiso','Bienes')
-                <a href="{{ route('bien.index') }}" class="btn btn-custom-primary">
-                    <i class="fas fa-eye"></i> Ver todos los bienes
-                </a>
-            @endcan
+            <a href="{{ route('bien.index') }}" class="btn btn-custom-primary">
+                <i class="fas fa-eye"></i> Ver todos los bienes
+            </a>
         </div>
     @endif
 </div>

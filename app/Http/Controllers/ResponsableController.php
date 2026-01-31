@@ -8,10 +8,6 @@ use Illuminate\Http\Request;
 
 class ResponsableController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Responsables');
-    }
     /**
      * Listar responsables con búsqueda, ordenamiento dinámico y paginación
      */

@@ -10,10 +10,6 @@ use Illuminate\Http\Request;
 
 class ResponsableAreaController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Asignaciones');
-    }
     /**
      * Listar asignaciones con búsqueda, ordenamiento y filtros
      */

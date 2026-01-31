@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Gate;
+// use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -24,8 +24,8 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         // Gate genérico: @can('permiso','Bienes') o Gate::authorize('permiso','Bienes')
-        Gate::define('permiso', function ($user, string $permisoNombre) {
-            return $user->tienePermiso($permisoNombre);
-        });
+        // Gate::define('permiso', function ($user, string $permisoNombre) {
+        //     return $user->tienePermiso($permisoNombre);
+        // });
     }
 }

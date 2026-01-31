@@ -25,8 +25,6 @@ class BienController extends Controller
     public function __construct(MovimientoService $movimientoService)
     {
         // ✅ Doble capa: además de routes/web.php
-        $this->middleware('permiso:Bienes');
-        
         $this->movimientoService = $movimientoService;
     }
 

@@ -8,10 +8,6 @@ use Illuminate\Http\Request;
 
 class TipoMvtoController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Tipo De Movimientos');
-    }
     public function index(Request $request)
     {
         $search = $request->get('search', '');

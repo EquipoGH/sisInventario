@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class DocumentoSustentoController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Documentos Sustento');
-    }
     public function index(Request $request)
     {
         $search = $request->get('search', '');

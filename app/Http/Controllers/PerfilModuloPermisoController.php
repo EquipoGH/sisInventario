@@ -10,10 +10,6 @@ use Illuminate\Http\Request;
 
 class PerfilModuloPermisoController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permiso:Permisos');
-    }
     public function edit(GetPerfilModuloPermisosRequest $request, PerfilModulo $perfilModulo)
     {
         $perfilModulo->load(['perfil', 'modulo', 'permisos']);
