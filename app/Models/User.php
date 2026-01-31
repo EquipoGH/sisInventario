@@ -8,7 +8,6 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
 use App\Models\Perfil;
-use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -80,14 +79,4 @@ class User extends Authenticatable
             ->unique('idmodulo');
     }
 
-    public function tienePermiso(string $permisoNombre): bool
-    {
-        return DB::table('usuario_perfil as up')
-            ->join('perfil_modulo as pm', 'pm.idperfil', '=', 'up.idperfil')
-            ->join('modulo_permisos as mp', 'mp.idperfilmodulo', '=', 'pm.idperfilmodulo')
-            ->join('permisos as p', 'p.idpermiso', '=', 'mp.idpermiso')
-            ->where('up.idusuario', $this->id)
-            ->whereRaw('upper(p.nombpermiso) = upper(?)', [$permisoNombre])
-            ->exists();
-    }
 }
