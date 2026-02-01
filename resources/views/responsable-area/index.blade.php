@@ -143,16 +143,15 @@
                         <th width="12%" class="text-center sortable" data-column="dni">
                             DNI <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="30%" class="sortable" data-column="responsable">
+                        <th width="35%" class="sortable" data-column="responsable">
                             Responsable <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="15%" class="sortable" data-column="area">
+                        <th width="20%" class="sortable" data-column="area">
                             Área <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="15%" class="sortable" data-column="fecha">
+                        <th width="20%" class="sortable" data-column="fecha">
                             Fecha Asignación <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="15%" class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tablaBody">
@@ -176,15 +175,11 @@
                             </span>
                         </td>
                         <td>{{ \Carbon\Carbon::parse($asignacion->fecha_asignacion)->format('d/m/Y H:i') }}</td>
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-danger btn-eliminar" data-id="{{ $asignacion->id_responsable_area }}" title="Eliminar asignación">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
+
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="6" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay asignaciones registradas
                         </td>
@@ -475,7 +470,7 @@ $(document).ready(function() {
         if (asignaciones.length === 0) {
             tbody.append(`
                 <tr id="filaVacia">
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                         <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                         No hay asignaciones registradas
                     </td>
@@ -523,20 +518,13 @@ $(document).ready(function() {
                         </span>
                     </td>
                     <td>${fecha}</td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-danger btn-eliminar" data-id="${a.id_responsable_area}" title="Eliminar asignación">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
+
                 </tr>
             `);
         });
 
         $('.checkbox-item').on('change', actualizarBotonEliminar);
-        $('.btn-eliminar').on('click', function() {
-            const id = $(this).data('id');
-            eliminarUno(id);
-        });
+
     }
 
     // ==================== CONTADORES ====================
@@ -704,36 +692,6 @@ $(document).ready(function() {
         }
     }
 
-    // ==================== ELIMINAR UNO ====================
-    function eliminarUno(id) {
-        Swal.fire({
-            title: '¿Eliminar asignación?',
-            text: "Se eliminará la asignación del responsable al área",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: '<i class="fas fa-trash"></i> Sí, eliminar',
-            cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `/responsable-area/${id}`,
-                    method: 'POST',
-                    data: { _method: 'DELETE' },
-                    success: function(res) {
-                        if (res.success) {
-                            Toast.fire({ icon: 'success', title: res.message });
-                            buscar(terminoBusqueda, paginaActual);
-                        }
-                    },
-                    error: function(xhr) {
-                        Toast.fire({ icon: 'error', title: 'Error al eliminar' });
-                    }
-                });
-            }
-        });
-    }
 
     // ==================== ELIMINAR MÚLTIPLES ====================
     $('#btnEliminarSeleccionados').on('click', function() {

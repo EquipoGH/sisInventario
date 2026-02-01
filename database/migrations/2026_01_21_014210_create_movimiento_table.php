@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id('id_movimiento');
             $table->unsignedBigInteger('idbien');
             $table->unsignedBigInteger('tipo_mvto');
-            $table->date('fecha_mvto');
+            $table->dateTime('fecha_mvto');
             $table->string('detalle_tecnico', 200)->nullable();
             $table->unsignedBigInteger('documento_sustentatorio')->nullable();
             $table->unsignedBigInteger('idubicacion')->nullable();

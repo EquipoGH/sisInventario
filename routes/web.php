@@ -83,15 +83,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('responsable-area', ResponsableAreaController::class);
 
     // ==================== MOVIMIENTO ====================
-    Route::post('movimiento/asignar-masivo', [MovimientoController::class, 'asignarMasivo'])
-        ->name('movimiento.asignar-masivo');
+    // ⚠️ IMPORTANTE: Las rutas personalizadas DEBEN ir ANTES del Route::resource
 
-    Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
-        ->name('movimiento.crear-masivo');
+    // ⭐ ESTADÍSTICAS AJAX (PARA ACTUALIZAR CARDS EN TIEMPO REAL)
+    Route::get('movimiento/estadisticas', [MovimientoController::class, 'getEstadisticas'])
+        ->name('movimiento.estadisticas');
 
-    Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
-        ->name('movimiento.eliminar-masivo');
+    // ⭐ TRAZABILIDAD DE BIEN
+    Route::get('movimiento/trazabilidad/{bien}', [MovimientoController::class, 'trazabilidad'])
+        ->name('movimiento.trazabilidad');
 
+    // ⭐ FILTROS
     Route::get('movimiento/por-tipo', [MovimientoController::class, 'porTipo'])
         ->name('movimiento.por-tipo');
 
@@ -101,9 +103,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('movimiento/por-fecha', [MovimientoController::class, 'porFecha'])
         ->name('movimiento.por-fecha');
 
-    Route::get('movimiento/estadisticas', [MovimientoController::class, 'estadisticas'])
-        ->name('movimiento.estadisticas');
+    // ⭐ ASIGNACIÓN MASIVA (tipo forzado a ASIGNACIÓN)
+    Route::post('movimiento/asignar-masivo', [MovimientoController::class, 'asignarMasivo'])
+        ->name('movimiento.asignar-masivo');
 
+    // ⭐ BAJA MASIVA (tipo forzado a BAJA)
+    Route::post('movimiento/baja-masivo', [MovimientoController::class, 'bajarMasivo'])
+        ->name('movimiento.baja-masivo');
+
+    // ⭐ REVERTIR BAJA INDIVIDUAL (SOLO ADMIN)
+    Route::post('movimiento/revertir-baja/{bien}', [MovimientoController::class, 'revertirBaja'])
+        ->name('movimiento.revertir-baja');
+
+    // ⭐ CREAR MOVIMIENTOS MASIVOS
+    Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
+        ->name('movimiento.crear-masivo');
+
+    // ⭐ ELIMINAR MOVIMIENTOS MASIVOS
+    Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
+        ->name('movimiento.eliminar-masivo');
+
+    // ⭐ Generar PDF de trazabilidad
+    Route::get('/movimiento/pdf-trazabilidad/{bien}', [MovimientoController::class, 'generarPDFTrazabilidad'])
+    ->name('movimiento.pdf.trazabilidad');
+
+
+
+    // ⭐ RESOURCE AL FINAL (para que no sobreescriba las rutas personalizadas)
     Route::resource('movimiento', MovimientoController::class);
 
     // ==================== SEGURIDAD ====================

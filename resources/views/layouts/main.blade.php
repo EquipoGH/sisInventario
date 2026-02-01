@@ -18,14 +18,18 @@
     <!-- 4️⃣ CSS GLOBAL PERSONALIZADO -->
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
 
+    <!-- 5️⃣ DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap4.min.css">
 
+    <!-- ⭐⭐⭐ 6️⃣ SELECT2 CSS (AGREGADO) ⭐⭐⭐ -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.5.3/dist/select2-bootstrap4.min.css" rel="stylesheet" />
 
-    <!-- 5️⃣ CSS DINÁMICO DESDE BD -->
+    <!-- 7️⃣ CSS DINÁMICO DESDE BD -->
     @include('components.dynamic-styles')
 
-    <!-- 6️⃣ CSS ESPECÍFICO DE CADA VISTA -->
+    <!-- 8️⃣ CSS ESPECÍFICO DE CADA VISTA -->
     @yield('css')
 </head>
 <body class="hold-transition sidebar-mini">
@@ -246,8 +250,6 @@
         </div>
     </aside>
 
-
-
     <!-- Content Wrapper -->
     <div class="content-wrapper">
         <!-- Content Header (Page header) -->
@@ -280,19 +282,37 @@
     </footer>
 </div>
 
-<!-- jQuery -->
+{{-- ==========================================
+     ⭐⭐⭐ SCRIPTS EN ORDEN CORRECTO ⭐⭐⭐
+     ========================================== --}}
+
+<!-- 1️⃣ jQuery (PRIMERO - BASE DE TODO) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Bootstrap 4 -->
+
+<!-- 2️⃣ Bootstrap 4 (SEGUNDO - DEPENDE DE JQUERY) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- AdminLTE App -->
+
+<!-- 3️⃣ AdminLTE App (TERCERO - DEPENDE DE JQUERY Y BOOTSTRAP) -->
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 
+<!-- 4️⃣ DataTables (DEPENDE DE JQUERY) -->
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap4.min.js"></script>
 
+<!-- ⭐⭐⭐ 5️⃣ SELECT2 JS (AGREGADO - DEPENDE DE JQUERY) ⭐⭐⭐ -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+<!-- ⭐⭐⭐ 6️⃣ SWEETALERT2 (AGREGADO - PARA ALERTAS) ⭐⭐⭐ -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- ⭐⭐⭐ 7️⃣ MOMENT.JS (AGREGADO - PARA FECHAS) ⭐⭐⭐ -->
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/locale/es.js"></script>
+
+{{-- ⭐⭐⭐ 8️⃣ SCRIPTS PERSONALIZADOS DE CADA VISTA (ÚLTIMO) ⭐⭐⭐ --}}
 @yield('js')
+
 </body>
 </html>

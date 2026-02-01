@@ -79,4 +79,40 @@ class User extends Authenticatable
             ->unique('idmodulo');
     }
 
+    // ==========================================
+    // ⭐⭐⭐ MÉTODOS PARA REVERSIÓN DE BAJAS ⭐⭐⭐
+    // ==========================================
+
+    /**
+     * Verificar si el usuario es administrador
+     * Basado en el campo 'rol_usuario' de la BD
+     *
+     * @return bool
+     */
+    public function esAdmin(): bool
+    {
+        return strtoupper($this->rol_usuario) === 'ADMIN';
+    }
+
+    /**
+     * Verificar si el usuario puede revertir bajas
+     * (Solo administradores pueden revertir)
+     *
+     * @return bool
+     */
+    public function puedeRevertirBajas(): bool
+    {
+        return $this->esAdmin();
+    }
+
+    /**
+     * Relación: Movimientos revertidos por este usuario
+     * (Para auditoría y trazabilidad)
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function movimientosRevertidos()
+    {
+        return $this->hasMany(Movimiento::class, 'revertido_por', 'id');
+    }
 }
