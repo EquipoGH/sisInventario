@@ -22,6 +22,9 @@ use App\Http\Controllers\PerfilModuloController;
 use App\Http\Controllers\PerfilModuloPermisoController;
 use App\Http\Controllers\ReporteKardexController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\ReporteBienController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -46,8 +49,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // ==================== CONFIGURACIÓN ====================
+    // Apariencia
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
     Route::post('/configuracion', [ConfiguracionController::class, 'actualizar'])->name('configuracion.actualizar');
+    // Institución
+    Route::get('/configuracion/institucion', [SystemSettingController::class, 'edit'])->name('configuracion.institucion');
+    Route::put('/configuracion/institucion', [SystemSettingController::class, 'update'])->name('configuracion.institucion.update');
+
 
     // ==================== DOCUMENTO SUSTENTO ====================
     Route::post('/documento-sustento/verificar-numero', [DocumentoSustentoController::class, 'verificarNumero'])
@@ -164,6 +172,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/kardex/data', [ReporteKardexController::class, 'data'])->name('kardex.data');
         Route::get('/kardex/pdf', [ReporteKardexController::class, 'pdf'])->name('kardex.pdf');
         Route::get('/kardex/excel', [ReporteKardexController::class, 'excel'])->name('kardex.excel');
+
+    });
+    Route::prefix('reportes/bienes')->name('reportes.bienes.')->group(function () {
+    Route::get('/', [ReporteBienController::class, 'index'])->name('index');
+    Route::get('/data', [ReporteBienController::class, 'data'])->name('data');
+    Route::get('/pdf', [ReporteBienController::class, 'pdf'])->name('pdf');
+    Route::get('/excel', [ReporteBienController::class, 'excel'])->name('excel');
     });
 });
 
