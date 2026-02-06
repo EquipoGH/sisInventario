@@ -10,7 +10,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-use Carbon\Carbon;
+
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\ErrorCorrectionLevel;
 
 class ReporteBienController extends Controller
 {
@@ -18,7 +21,6 @@ class ReporteBienController extends Controller
     {
         $q = Bien::query()->with(['tipoBien', 'documentoSustento']);
 
-        // filtros (dropdowns/fechas)
         if ($request->filled('desde')) {
             $q->whereDate('fecha_registro', '>=', $request->desde);
         }
@@ -31,15 +33,16 @@ class ReporteBienController extends Controller
         if ($request->filled('documento')) {
             $q->where('id_documento', $request->documento);
         }
+
         if ($request->filled('con_documento')) {
             if ($request->con_documento === '1' || $request->con_documento == 1) {
                 $q->whereNotNull('id_documento');
-            } elseif ($request->con_documento === '0' || $request->con_documento == 0) {
+            }
+            if ($request->con_documento === '0' || $request->con_documento == 0) {
                 $q->whereNull('id_documento');
             }
         }
 
-        // BÚSQUEDA GLOBAL tipo Kardex: DataTables manda search[value] [file:89]
         $term = trim((string) $request->input('search.value', ''));
         if ($term === '') {
             $term = trim((string) $request->input('q', ''));
@@ -79,9 +82,35 @@ class ReporteBienController extends Controller
         return $s;
     }
 
+    private function qrBase64(?string $codigoPatrimonial): string
+    {
+        $texto = trim((string) $codigoPatrimonial);
+        if ($texto === '') {
+            $texto = 'SIN-CODIGO';
+        }
+
+        $writer = new PngWriter();
+        $qr = QrCode::create($texto)
+            ->setSize(180)
+            ->setMargin(1)
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
+
+        $result = $writer->write($qr);
+
+        return base64_encode($result->getString());
+    }
+
+    private function attachQrToBienes($bienes)
+    {
+        $bienes->each(function ($bien) {
+            $bien->qr_code = $this->qrBase64($bien->codigo_patrimonial);
+        });
+
+        return $bienes;
+    }
+
     public function index()
     {
-        // OJO: ya NO mandamos $bienes paginados, DataTables los pide por /data [file:89]
         $tiposBien = TipoBien::orderBy('nombre_tipo')->get();
         $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
         $settings = $this->reportSettings();
@@ -89,7 +118,6 @@ class ReporteBienController extends Controller
         return view('reportes.bienes.index', compact('tiposBien', 'documentos', 'settings'));
     }
 
-    // Endpoint DataTables: paginación como Kardex (Mostrar 10/25/50/100) [file:89]
     public function data(Request $request)
     {
         $draw   = (int) $request->input('draw', 1);
@@ -134,6 +162,8 @@ class ReporteBienController extends Controller
     public function pdf(Request $request)
     {
         $bienes = $this->buildQuery($request)->get();
+        $bienes = $this->attachQrToBienes($bienes);
+
         $settings = $this->reportSettings();
 
         $pdf = Pdf::loadView('reportes.bienes.pdf', [
@@ -148,6 +178,8 @@ class ReporteBienController extends Controller
     public function excel(Request $request)
     {
         $bienes = $this->buildQuery($request)->get();
+        $bienes = $this->attachQrToBienes($bienes);
+
         $settings = $this->reportSettings();
 
         return Excel::download(
