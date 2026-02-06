@@ -13,7 +13,7 @@ class Bien extends Model
     protected $table = 'bien';
     protected $primaryKey = 'id_bien';
     public $incrementing = true;
-    public $timestamps = true; // ⭐ IMPORTANTE: Si usas created_at/updated_at
+    public $timestamps = true;
 
     // ⭐ FILLABLE
     protected $fillable = [
@@ -28,18 +28,22 @@ class Bien extends Model
         'dimensiones_bien',
         'nserie_bien',
         'fecha_registro',
-        'foto_bien'
+        'foto_bien',
+
+        // ⭐ NUEVO: eliminación lógica
+        'activo',
+        'eliminado_en',
     ];
 
     protected $casts = [
-        'fecha_registro' => 'date'
+        'fecha_registro' => 'date',
+
+        // ⭐ NUEVO
+        'activo' => 'boolean',
+        'eliminado_en' => 'datetime',
     ];
 
-    // ⭐ AGREGAR ESTO - Para incluir relaciones en JSON/Array
     protected $appends = [];
-
-    // ⭐ NO uses $with aquí para evitar cargas innecesarias
-    // Solo carga con with() en el controlador cuando lo necesites
 
     public $valoresOriginales = [];
 
@@ -57,19 +61,19 @@ class Bien extends Model
         );
     }
 
-    // ⭐ CORREGIDO: Accessor simplificado para NumDoc
-    // NO lo hagas tan complejo, el NumDoc ya está en la BD
     protected function numDoc(): Attribute
     {
         return Attribute::make(
             get: function ($value) {
-                // Si ya tiene valor en la BD, retornarlo
                 if (!empty($value)) {
                     return $value;
                 }
 
-                // Si tiene documento relacionado, obtenerlo
-                if ($this->id_documento && $this->relationLoaded('documentoSustento') && $this->documentoSustento) {
+                if (
+                    $this->id_documento &&
+                    $this->relationLoaded('documentoSustento') &&
+                    $this->documentoSustento
+                ) {
                     return $this->documentoSustento->NumDoc ?? $this->documentoSustento->numero_documento;
                 }
 
@@ -80,25 +84,16 @@ class Bien extends Model
 
     // ==================== RELACIONES ====================
 
-    /**
-     * Relación con TipoBien
-     */
     public function tipoBien()
     {
         return $this->belongsTo(TipoBien::class, 'id_tipobien', 'id_tipo_bien');
     }
 
-    /**
-     * Relación con DocumentoSustento
-     */
     public function documentoSustento()
     {
         return $this->belongsTo(DocumentoSustento::class, 'id_documento', 'id_documento');
     }
 
-    /**
-     * Relación con Movimientos
-     */
     public function movimientos()
     {
         return $this->hasMany(Movimiento::class, 'idbien', 'id_bien');
@@ -106,56 +101,39 @@ class Bien extends Model
 
     // ==================== MÉTODOS AUXILIARES ====================
 
-    /**
-     * Obtener el último movimiento del bien
-     */
     public function ultimoMovimiento()
     {
         return $this->movimientos()
-                    ->orderBy('fecha_mvto', 'desc')
-                    ->first();
+            ->orderBy('fecha_mvto', 'desc')
+            ->first();
     }
 
-    /**
-     * Obtener historial completo de movimientos
-     */
     public function historialMovimientos()
     {
         return $this->movimientos()
-                    ->with(['tipoMovimiento', 'usuario', 'ubicacion', 'estadoConservacion'])
-                    ->orderBy('fecha_mvto', 'desc')
-                    ->get();
+            ->with(['tipoMovimiento', 'usuario', 'ubicacion', 'estadoConservacion'])
+            ->orderBy('fecha_mvto', 'desc')
+            ->get();
     }
 
-    /**
-     * Contar movimientos del bien
-     */
     public function cantidadMovimientos()
     {
         return $this->movimientos()->count();
     }
 
-    /**
-     * Verificar si tiene movimientos
-     */
     public function tieneMovimientos()
     {
         return $this->movimientos()->exists();
     }
 
-    /**
-     * ⭐ Sincronizar NumDoc desde documento_sustento
-     * Este método se llama desde el controlador después de crear/actualizar
-     */
     public function sincronizarNumDoc()
     {
         if ($this->id_documento) {
             $documento = DocumentoSustento::find($this->id_documento);
 
             if ($documento) {
-                // Usa NumDoc o numero_documento dependiendo de tu BD
                 $this->NumDoc = $documento->NumDoc ?? $documento->numero_documento;
-                $this->saveQuietly(); // No dispara eventos
+                $this->saveQuietly();
                 return true;
             }
         }
@@ -163,9 +141,6 @@ class Bien extends Model
         return false;
     }
 
-    /**
-     * ⭐ Obtener información completa del documento
-     */
     public function informacionDocumento()
     {
         if (!$this->documentoSustento) {
@@ -177,54 +152,66 @@ class Bien extends Model
             'numero' => $this->documentoSustento->NumDoc ?? $this->documentoSustento->numero_documento,
             'fecha' => $this->documentoSustento->fecha_documento,
             'descripcion' => "{$this->documentoSustento->tipo_documento} - " .
-                           ($this->documentoSustento->NumDoc ?? $this->documentoSustento->numero_documento)
+                ($this->documentoSustento->NumDoc ?? $this->documentoSustento->numero_documento),
         ];
+    }
+
+    // ==================== ELIMINACIÓN LÓGICA ====================
+
+    public function eliminarLogico(): bool
+    {
+        return $this->forceFill([
+            'activo' => false,
+            'eliminado_en' => now(),
+        ])->save();
+    }
+
+    public function restaurar(): bool
+    {
+        return $this->forceFill([
+            'activo' => true,
+            'eliminado_en' => null,
+        ])->save();
     }
 
     // ==================== SCOPES ====================
 
-    /**
-     * Scope: Bienes que tienen documento
-     */
+    public function scopeActivos($query)
+    {
+        return $query->where('activo', true);
+    }
+
+    public function scopeEliminados($query)
+    {
+        return $query->where('activo', false);
+    }
+
     public function scopeConDocumento($query)
     {
         return $query->whereNotNull('id_documento');
     }
 
-    /**
-     * Scope: Bienes sin documento
-     */
     public function scopeSinDocumento($query)
     {
         return $query->whereNull('id_documento');
     }
 
-    /**
-     * Scope: Buscar por número de documento
-     */
     public function scopePorNumeroDocumento($query, $numeroDocumento)
     {
         return $query->where('NumDoc', 'ILIKE', "%{$numeroDocumento}%");
     }
 
-    /**
-     * ⭐ NUEVO: Scope para búsqueda general
-     */
     public function scopeBuscar($query, $termino)
     {
-        return $query->where(function($q) use ($termino) {
+        return $query->where(function ($q) use ($termino) {
             $q->where('codigo_patrimonial', 'ILIKE', "%{$termino}%")
-              ->orWhere('denominacion_bien', 'ILIKE', "%{$termino}%")
-              ->orWhere('marca_bien', 'ILIKE', "%{$termino}%")
-              ->orWhere('modelo_bien', 'ILIKE', "%{$termino}%")
-              ->orWhere('NumDoc', 'ILIKE', "%{$termino}%");
+                ->orWhere('denominacion_bien', 'ILIKE', "%{$termino}%")
+                ->orWhere('marca_bien', 'ILIKE', "%{$termino}%")
+                ->orWhere('modelo_bien', 'ILIKE', "%{$termino}%")
+                ->orWhere('NumDoc', 'ILIKE', "%{$termino}%");
         });
     }
 
-    /**
-     * ⭐ NUEVO: Método para convertir a array con relaciones
-     * Este método asegura que las relaciones se incluyan
-     */
     public function toArrayConRelaciones()
     {
         return [
@@ -240,15 +227,20 @@ class Bien extends Model
             'fecha_registro' => $this->fecha_registro,
             'foto_bien' => $this->foto_bien,
             'NumDoc' => $this->NumDoc,
+
+            // ⭐ útil para UI
+            'activo' => $this->activo,
+            'eliminado_en' => $this->eliminado_en,
+
             'tipo_bien' => $this->tipoBien ? [
                 'id_tipo_bien' => $this->tipoBien->id_tipo_bien,
-                'nombre_tipo' => $this->tipoBien->nombre_tipo
+                'nombre_tipo' => $this->tipoBien->nombre_tipo,
             ] : null,
             'documento_sustento' => $this->documentoSustento ? [
                 'id_documento' => $this->documentoSustento->id_documento,
                 'tipo_documento' => $this->documentoSustento->tipo_documento,
-                'NumDoc' => $this->documentoSustento->NumDoc ?? $this->documentoSustento->numero_documento
-            ] : null
+                'NumDoc' => $this->documentoSustento->NumDoc ?? $this->documentoSustento->numero_documento,
+            ] : null,
         ];
     }
 }

@@ -17,6 +17,11 @@
                 <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
                     <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
                 </button>
+                <button type="button" class="btn btn-secondary ml-2" id="btnVerEliminados">
+                    <i class="fas fa-trash-restore"></i> Eliminados
+                    <span class="badge badge-light" id="badgeEliminados">0</span>
+                </button>
+
             </div>
             <div class="col-md-8">
                 <div class="float-right" style="width: 100%; max-width: 500px;">
@@ -365,34 +370,34 @@
                             </div>
 
                            <!-- ⭐ DOCUMENTO SUSTENTO -->
-<div class="form-group">
-    <label for="edit_id_documento">
-        Documento Sustentatorio
-        <small class="text-muted">(Opcional)</small>
-    </label>
-    <select name="id_documento" id="edit_id_documento" class="form-control">
-        <option value="">-- Sin documento --</option>
-    </select>
-    <span class="text-danger error-edit-id_documento"></span>
-</div>
+                            <div class="form-group">
+                                <label for="edit_id_documento">
+                                    Documento Sustentatorio
+                                    <small class="text-muted">(Opcional)</small>
+                                </label>
+                                <select name="id_documento" id="edit_id_documento" class="form-control">
+                                    <option value="">-- Sin documento --</option>
+                                </select>
+                                <span class="text-danger error-edit-id_documento"></span>
+                            </div>
 
-<!-- ⭐⭐⭐ NUMDOC MANUAL (EDITAR) ⭐⭐⭐ -->
-<div class="form-group">
-    <label for="edit_NumDoc">
-        Número de Documento
-        <small class="text-muted">(Opcional - Texto libre)</small>
-    </label>
-    <input type="text"
-           name="NumDoc"
-           id="edit_NumDoc"
-           class="form-control"
-           maxlength="50"
-           placeholder="Ej: DOC-2024-001">
-    <small class="form-text text-muted">
-        <i class="fas fa-info-circle"></i> Campo libre para ingresar número de documento
-    </small>
-    <span class="text-danger error-edit-NumDoc"></span>
-</div>
+                            <!-- ⭐⭐⭐ NUMDOC MANUAL (EDITAR) ⭐⭐⭐ -->
+                            <div class="form-group">
+                                <label for="edit_NumDoc">
+                                    Número de Documento
+                                    <small class="text-muted">(Opcional - Texto libre)</small>
+                                </label>
+                                <input type="text"
+                                    name="NumDoc"
+                                    id="edit_NumDoc"
+                                    class="form-control"
+                                    maxlength="50"
+                                    placeholder="Ej: DOC-2024-001">
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Campo libre para ingresar número de documento
+                                </small>
+                                <span class="text-danger error-edit-NumDoc"></span>
+                            </div>
 
 
                             <div class="form-group">
@@ -492,6 +497,61 @@
         </div>
     </div>
 </div>
+
+
+<!-- Modal Bienes Eliminados -->
+<div class="modal fade" id="modalBienesEliminados" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trash-restore"></i> Bienes Eliminados (Inactivos)
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Búsqueda -->
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-secondary text-white">
+                            <i class="fas fa-search"></i>
+                        </span>
+                    </div>
+                    <input type="text" id="searchEliminados" class="form-control"
+                           placeholder="Buscar por código o denominación...">
+                </div>
+
+                <!-- Tabla -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="thead-light">
+                            <tr>
+                                <th width="15%">Código</th>
+                                <th width="30%">Denominación</th>
+                                <th width="15%">Tipo</th>
+                                <th width="20%">Eliminado en</th>
+                                <th width="10%" class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEliminados">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Cargando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                <div id="paginacionEliminados" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @stop
 
 @section('js')
@@ -967,9 +1027,8 @@ $(document).ready(function() {
         $('#edit_dimensiones_bien').val(data.dimensiones_bien || '');
         $('#edit_nserie_bien').val(data.nserie_bien || '');
 
-        // Fecha actual para modificación
-        const hoy = new Date().toISOString().split('T')[0];
-        $('#edit_fecha_registro').val(hoy);
+        // ✅ FECHA ACTUAL PARA MODIFICACIÓN (CORREGIDO)
+        $('#edit_fecha_registro').val('{{ now()->format("Y-m-d") }}');
 
         // Cargar foto si existe
         if (data.foto_bien) {
@@ -1192,6 +1251,200 @@ $('#formCreate').on('submit', function(e) {
         $('#btnActualizar').prop('disabled', false);
         $('#edit_codigo_feedback').text('');
     });
+
+    // ===============================
+    // ✅ GESTIÓN DE BIENES ELIMINADOS
+    // ===============================
+
+    // Cargar contador al inicio
+    cargarContadorEliminados();
+
+    function cargarContadorEliminados() {
+        $.get('{{ route("bien.eliminados") }}', function(response) {
+            if (response.success) {
+                $('#badgeEliminados').text(response.data.total);
+            }
+        });
+    }
+
+    // Abrir modal de eliminados
+    $('#btnVerEliminados').on('click', function() {
+        $('#modalBienesEliminados').modal('show');
+        cargarBienesEliminados();
+    });
+
+    // Cargar bienes eliminados
+    function cargarBienesEliminados(page = 1) {
+        const search = $('#searchEliminados').val().trim();
+
+        $.ajax({
+            url: '{{ route("bien.eliminados") }}',
+            method: 'GET',
+            data: { search: search, page: page },
+            success: function(response) {
+                if (response.success) {
+                    renderizarTablaEliminados(response.data.data);
+                    renderizarPaginacionEliminados(response.data);
+                    $('#badgeEliminados').text(response.data.total);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error al cargar eliminados:', xhr);
+                $('#tablaEliminados').html(`
+                    <tr>
+                        <td colspan="5" class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Error al cargar datos
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+    }
+
+    // Renderizar tabla de eliminados
+    function renderizarTablaEliminados(bienes) {
+        const tbody = $('#tablaEliminados');
+        tbody.empty();
+
+        if (bienes.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2 d-block"></i>
+                        No hay bienes eliminados
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        bienes.forEach(function(bien) {
+            const fecha = bien.eliminado_en
+                ? new Date(bien.eliminado_en).toLocaleString('es-PE')
+                : 'N/A';
+
+            const tipoNombre = bien.tipo_bien ? bien.tipo_bien.nombre_tipo : 'N/A';
+
+            tbody.append(`
+                <tr>
+                    <td><strong>${bien.codigo_patrimonial}</strong></td>
+                    <td>${bien.denominacion_bien}</td>
+                    <td><span class="badge badge-secondary">${tipoNombre}</span></td>
+                    <td><small>${fecha}</small></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-success btn-restaurar"
+                                data-id="${bien.id_bien}"
+                                title="Restaurar bien">
+                            <i class="fas fa-undo"></i> Restaurar
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    // Renderizar paginación de eliminados
+    function renderizarPaginacionEliminados(data) {
+        const container = $('#paginacionEliminados');
+        container.empty();
+
+        if (data.last_page <= 1) return;
+
+        let html = '<ul class="pagination pagination-sm justify-content-center m-0">';
+
+        // Botón anterior
+        if (data.current_page > 1) {
+            html += `<li class="page-item">
+                        <a class="page-link paginar-eliminados" href="#" data-page="${data.current_page - 1}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>`;
+        }
+
+        // Páginas
+        for (let i = 1; i <= data.last_page; i++) {
+            if (i === data.current_page) {
+                html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+            } else {
+                html += `<li class="page-item">
+                            <a class="page-link paginar-eliminados" href="#" data-page="${i}">${i}</a>
+                        </li>`;
+            }
+        }
+
+        // Botón siguiente
+        if (data.current_page < data.last_page) {
+            html += `<li class="page-item">
+                        <a class="page-link paginar-eliminados" href="#" data-page="${data.current_page + 1}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>`;
+        }
+
+        html += '</ul>';
+        container.html(html);
+
+        // Eventos de paginación
+        $('.paginar-eliminados').on('click', function(e) {
+            e.preventDefault();
+            const page = $(this).data('page');
+            cargarBienesEliminados(page);
+        });
+    }
+
+    // Búsqueda en eliminados
+    $('#searchEliminados').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => cargarBienesEliminados(1), 400);
+    });
+
+    // Restaurar bien individual
+    $(document).on('click', '.btn-restaurar', function() {
+        const bienId = $(this).data('id');
+
+        Swal.fire({
+            title: '¿Restaurar bien?',
+            text: 'El bien volverá a estar activo',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: 'Sí, restaurar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/bien/restaurar/${bienId}`,
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Restaurado!',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+
+                            // Recargar datos
+                            cargarBienesEliminados();
+                            buscar($('#searchInput').val(), paginaActual);
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: xhr.responseJSON?.message || 'No se pudo restaurar el bien'
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+
 });
 </script>
 @endsection

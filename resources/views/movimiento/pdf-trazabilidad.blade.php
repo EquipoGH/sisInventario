@@ -8,17 +8,12 @@
            ⭐ CONFIGURACIÓN DE PÁGINA
         ======================================== */
         @page {
-            margin: 5mm 5mm 5mm 5mm; /* ⭐ Superior, Derecha, Inferior, Izquierda */
+            margin: 5mm 5mm 5mm 5mm;
         }
 
-        /* ⭐ Márgenes adicionales en el body para mayor seguridad */
         body {
             margin: 0;
-            padding: 15px; /* ⭐ Padding interno para separar del borde */
-        }
-
-
-        body {
+            padding: 15px;
             font-family: 'Arial', 'Helvetica', sans-serif;
             font-size: 9px;
             color: #2c3e50;
@@ -78,7 +73,7 @@
         }
 
         /* ========================================
-           📊 INFORMACIÓN DEL BIEN (TABLA CON BORDES)
+           📊 INFORMACIÓN DEL BIEN
         ======================================== */
         .info-table {
             width: 100%;
@@ -111,7 +106,7 @@
         }
 
         /* ========================================
-           📋 TABLA DE MOVIMIENTOS (CON BORDES COMPLETOS)
+           📋 TABLA DE MOVIMIENTOS (CON MOTIVO/DETALLE)
         ======================================== */
         .movements-table {
             width: 100%;
@@ -119,28 +114,25 @@
             margin-bottom: 14px;
         }
 
-        /* ⭐ ENCABEZADO DE LA TABLA */
         .movements-table thead th {
             background-color: #37474f;
             color: white;
             border: 1px solid #263238;
-            padding: 8px 5px;
+            padding: 8px 4px;
             text-align: center;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
-        /* ⭐ CELDAS DE LA TABLA (CON BORDES) */
         .movements-table tbody td {
-            border: 1px solid #b0bec5; /* ⭐ BORDE EN TODAS LAS CELDAS */
-            padding: 7px 5px;
-            font-size: 8px;
+            border: 1px solid #b0bec5;
+            padding: 6px 4px;
+            font-size: 7px;
             vertical-align: middle;
         }
 
-        /* Filas alternadas */
         .movements-table tbody tr:nth-child(even) {
             background-color: #f5f5f5;
         }
@@ -149,34 +141,41 @@
             background-color: #ffffff;
         }
 
-        /* ⭐ ANCHOS DE COLUMNA OPTIMIZADOS */
+        /* ⭐⭐⭐ ANCHOS DE COLUMNA AJUSTADOS (CON NUEVA COLUMNA) ⭐⭐⭐ */
         .col-id {
-            width: 5%;
+            width: 4%;
             text-align: center;
             font-weight: 700;
             color: #0277bd;
         }
         .col-fecha {
-            width: 11%;
+            width: 9%;
             text-align: center;
         }
         .col-tipo {
-            width: 14%;
+            width: 11%;
             text-align: center;
         }
         .col-usuario {
-            width: 12%;
+            width: 10%;
         }
         .col-ubicacion {
-            width: 26%;
+            width: 18%;
         }
         .col-estado {
-            width: 10%;
+            width: 8%;
             text-align: center;
+            font-size: 6px;
         }
         .col-doc {
-            width: 22%; /* ⭐ Ancho para nombre completo del documento */
+            width: 16%;
+            font-size: 6px;
+        }
+        .col-motivo {
+            width: 24%; /* ⭐ NUEVA COLUMNA PARA MOTIVO/DETALLE */
             font-size: 7px;
+            color: #37474f;
+            line-height: 1.3;
         }
 
         /* ========================================
@@ -184,9 +183,9 @@
         ======================================== */
         .badge {
             display: inline-block;
-            padding: 3px 7px;
+            padding: 3px 6px;
             border-radius: 3px;
-            font-size: 7px;
+            font-size: 6px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.2px;
@@ -198,11 +197,25 @@
         .badge-info { background-color: #00bcd4; color: white; }
         .badge-secondary { background-color: #9e9e9e; color: white; }
 
-        /* ⭐⭐⭐ ESTILO PARA NOMBRE DE DOCUMENTO ⭐⭐⭐ */
+        /* ⭐ ESTILOS PARA MOTIVO/DETALLE */
+        .motivo-text {
+            color: #263238;
+            font-weight: 600;
+            line-height: 1.3;
+            word-wrap: break-word;
+        }
+
+        .motivo-none {
+            color: #9e9e9e;
+            font-style: italic;
+            text-align: center;
+        }
+
+        /* ⭐ ESTILO PARA DOCUMENTO */
         .doc-name {
             color: #1b5e20;
             font-weight: 600;
-            font-size: 7px;
+            font-size: 6px;
             display: block;
             word-wrap: break-word;
             line-height: 1.3;
@@ -215,7 +228,7 @@
         }
 
         /* ========================================
-           📊 ESTADÍSTICAS (TABLA CON BORDES)
+           📊 ESTADÍSTICAS
         ======================================== */
         .stats-table {
             width: 100%;
@@ -253,7 +266,7 @@
         }
 
         /* ========================================
-           📋 RESUMEN POR TIPO (CON BORDES)
+           📋 RESUMEN POR TIPO
         ======================================== */
         .summary-box {
             padding: 10px;
@@ -332,7 +345,7 @@
     </div>
 
     {{-- ========================================
-         📦 INFORMACIÓN DEL BIEN (CON BORDES)
+         📦 INFORMACIÓN DEL BIEN
     ======================================== --}}
     <div class="section">
         <div class="section-title">🔍 Información del Bien</div>
@@ -357,22 +370,23 @@
     </div>
 
     {{-- ========================================
-         📋 HISTORIAL DE MOVIMIENTOS (CON BORDES)
+         📋 HISTORIAL DE MOVIMIENTOS (CON MOTIVO/DETALLE)
     ======================================== --}}
     <div class="section">
-        <div class="section-title">Historial de Movimientos</div>
+        <div class="section-title">📋 Historial de Movimientos</div>
 
         @if($movimientos->count() > 0)
             <table class="movements-table">
                 <thead>
                     <tr>
                         <th class="col-id">ID</th>
-                        <th class="col-fecha">FECHA/HORA</th>
+                        <th class="col-fecha">FECHA</th>
                         <th class="col-tipo">TIPO</th>
                         <th class="col-usuario">USUARIO</th>
                         <th class="col-ubicacion">UBICACIÓN</th>
                         <th class="col-estado">ESTADO</th>
-                        <th class="col-doc">DOCUMENTO SUSTENTO</th>
+                        <th class="col-doc">DOCUMENTO</th>
+                        <th class="col-motivo">MOTIVO/DETALLE</th> {{-- ⭐ NUEVA COLUMNA --}}
                     </tr>
                 </thead>
                 <tbody>
@@ -413,60 +427,41 @@
                                 </strong>
                             </td>
 
-                            {{-- ⭐⭐⭐ DOCUMENTO SUSTENTO - VERSIÓN CORREGIDA FINAL ⭐⭐⭐ --}}
+                            {{-- DOCUMENTO SUSTENTO --}}
                             <td class="col-doc">
                                 @php
-                                    // Obtener el documento
                                     $documento = $mov->documentoSustento;
                                     $nombreDocumento = null;
 
                                     if ($documento) {
-                                        // ⭐ CONSTRUIR NOMBRE DESDE LOS CAMPOS DISPONIBLES
-                                        // Tu tabla solo tiene: tipo_documento, numero_documento, fecha_documento
-                                        // Formato: "TIPO - NUMERO" (Ej: "GUIA REMISION - DOC1", "OTRO - ASDSD")
-
                                         $tipo = $documento->tipo_documento ?? null;
                                         $numero = $documento->numero_documento ?? null;
 
                                         if ($tipo && $numero) {
-                                            // Ambos campos disponibles
                                             $nombreDocumento = "{$tipo} - {$numero}";
                                         } elseif ($numero) {
-                                            // Solo número
                                             $nombreDocumento = $numero;
                                         } elseif ($tipo) {
-                                            // Solo tipo
                                             $nombreDocumento = $tipo;
                                         }
                                     }
-
-                                    // Verificar si hay FK aunque no se cargó la relación
-                                    $tieneFk = !empty($mov->documento_sustentatorio);
                                 @endphp
 
                                 @if($nombreDocumento)
-                                    {{-- ✅ CASO 1: Hay nombre de documento (ÉXITO) --}}
-                                    <span class="doc-name">
-                                        {{ $nombreDocumento }}
-                                    </span>
-
-                                @elseif($documento)
-                                    {{-- ⚠️ CASO 2: Hay documento pero sin datos (mostrar ID) --}}
-                                    <span style="color: #e65100; font-size: 7px; font-weight: 600; line-height: 1.2;">
-                                        📎 Doc. ID: {{ $documento->id_documento }}<br>
-                                        <small style="font-size: 6px; color: #666;">(sin información)</small>
-                                    </span>
-
-                                @elseif($tieneFk)
-                                    {{-- ⚠️ CASO 3: Hay FK pero relación no cargó (error de carga) --}}
-                                    <span style="color: #f57c00; font-size: 7px; font-weight: 600; line-height: 1.2;">
-                                        📋 Ref: {{ $mov->documento_sustentatorio }}<br>
-                                        <small style="font-size: 6px; color: #666;">(no cargado)</small>
-                                    </span>
-
+                                    <span class="doc-name">{{ $nombreDocumento }}</span>
                                 @else
-                                    {{-- ❌ CASO 4: No hay documento asignado --}}
-                                    <span class="doc-none">✗ Sin documento</span>
+                                    <span class="doc-none">✗ Sin doc</span>
+                                @endif
+                            </td>
+
+                            {{-- ⭐⭐⭐ MOTIVO/DETALLE (NUEVA COLUMNA) ⭐⭐⭐ --}}
+                            <td class="col-motivo">
+                                @if($mov->detalle_tecnico)
+                                    <span class="motivo-text">
+                                        {{ Str::limit($mov->detalle_tecnico, 120, '...') }}
+                                    </span>
+                                @else
+                                    <span class="motivo-none">Sin detalle</span>
                                 @endif
                             </td>
 
@@ -482,11 +477,11 @@
     </div>
 
     {{-- ========================================
-         📊 ESTADÍSTICAS (CON BORDES)
+         📊 ESTADÍSTICAS
     ======================================== --}}
     @if($movimientos->count() > 0)
         <div class="section">
-            <div class="section-title">Estadísticas</div>
+            <div class="section-title">📊 Estadísticas</div>
 
             <table class="stats-table">
                 <tr>

@@ -26,7 +26,7 @@ class MovimientoController extends Controller
         $total = Movimiento::count();
 
         // ⭐⭐⭐ ESTADÍSTICAS PARA LAS CARDS DE DASHBOARD ⭐⭐⭐
-        $totalBienes = Bien::count();
+        $totalBienes = Bien::where('activo', true)->count();
 
         // Obtener el último movimiento de cada bien y contar por tipo
         $estadisticas = DB::table('movimiento as m1')
@@ -65,6 +65,35 @@ class MovimientoController extends Controller
             'estadoConservacion',
             'documentoSustento'
         ]);
+
+        // ✅ FILTRO DE ESTADO DEL BIEN (NUEVO)
+        if ($request->filled('estado_bien')) {
+            $estadoBien = $request->estado_bien;
+
+            if ($estadoBien === 'todos') {
+                // No aplicar filtro, mostrar todos
+            } elseif ($estadoBien === '1') {
+                // Solo activos
+                $query->whereHas('bien', function($q) {
+                    $q->where('activo', true);
+                });
+            } elseif ($estadoBien === '0') {
+                // Solo inactivos
+                $query->whereHas('bien', function($q) {
+                    $q->where('activo', false);
+                });
+            }
+        } else {
+            // Por defecto: solo activos (comportamiento actual)
+            $query->whereHas('bien', function($q) {
+                $q->where('activo', true);
+            });
+        }
+
+        // ✅ FILTRO DE UBICACIÓN (NUEVO)
+        if ($request->filled('ubicacion')) {
+            $query->where('idubicacion', $request->ubicacion);
+        }
 
         // 🔍 BÚSQUEDA AVANZADA
         if (!empty($search)) {
@@ -110,8 +139,8 @@ class MovimientoController extends Controller
             $query->where('idusuario', $request->usuario_id);
         }
 
-        // ⭐⭐⭐ ORDENAMIENTO DINÁMICO ⭐⭐⭐
-        $columna = $request->get('orden', 'fecha');
+        // ⭐⭐⭐ ORDENAMIENTO DINÁMICO (POR DEFECTO ID DESC) ⭐⭐⭐
+        $columna = $request->get('orden', 'id');          // ✅ CAMBIADO DE 'fecha' A 'id'
         $direccion = $request->get('direccion', 'desc');
 
         $columnasPermitidas = [
@@ -125,16 +154,20 @@ class MovimientoController extends Controller
         if (array_key_exists($columna, $columnasPermitidas)) {
             $columnaReal = $columnasPermitidas[$columna];
         } else {
-            $columnaReal = 'fecha_mvto';
+            $columnaReal = 'id_movimiento';  // ✅ CAMBIADO DE 'fecha_mvto' A 'id_movimiento'
         }
 
         $direccion = in_array(strtolower($direccion), ['asc', 'desc'])
             ? strtolower($direccion)
             : 'desc';
 
-        // ✅ ORDENAMIENTO CON FALLBACK
-        $query->orderBy($columnaReal, $direccion)
-            ->orderBy('id_movimiento', 'desc');
+        // ✅ ORDENAMIENTO PRINCIPAL POR ID DESCENDENTE
+        $query->orderBy($columnaReal, $direccion);
+
+        // ✅ ORDENAMIENTO SECUNDARIO SOLO SI NO ES POR ID
+        if ($columnaReal !== 'id_movimiento') {
+            $query->orderBy('id_movimiento', 'desc');
+        }
 
         // 📄 PAGINACIÓN
         $movimientos = $query->paginate($perPage);
@@ -231,13 +264,13 @@ class MovimientoController extends Controller
             'estadosConservacion',
             'documentos',
             'total',
-            // ⭐ VARIABLES PARA LAS CARDS DE ESTADÍSTICAS
             'totalBienes',
             'bienesAsignados',
             'bienesRegistro',
             'bienesBaja'
         ));
     }
+
 
 
     public function store(Request $request)
@@ -412,6 +445,55 @@ class MovimientoController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Eliminar movimientos masivamente (hard delete)
+     */
+    public function eliminarMasivo(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'movimientos_ids' => 'required|array|min:1',
+                'movimientos_ids.*' => 'exists:movimiento,id_movimiento'
+            ], [
+                'movimientos_ids.required' => 'Debe seleccionar al menos un movimiento',
+                'movimientos_ids.*.exists' => 'Uno o más movimientos no existen'
+            ]);
+
+            $cantidadEliminados = 0;
+
+            foreach ($validated['movimientos_ids'] as $movimientoId) {
+                $movimiento = Movimiento::find($movimientoId);
+
+                if ($movimiento) {
+                    $movimiento->delete(); // Hard delete (elimina permanentemente)
+                    $cantidadEliminados++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$cantidadEliminados} movimiento(s) eliminado(s) exitosamente",
+                'cantidad' => $cantidadEliminados
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Error en eliminación masiva de movimientos: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     public function porTipo(Request $request)
     {
@@ -673,9 +755,9 @@ class MovimientoController extends Controller
     }
 
     /**
-     * ⭐⭐⭐ BAJA MASIVA DE BIENES (NUEVA FUNCIÓN) ⭐⭐⭐
-     * Tipo de movimiento forzado a BAJA
-     */
+    * ⭐⭐⭐ BAJA MASIVA DE BIENES (NUEVA FUNCIÓN) ⭐⭐⭐
+    * Tipo de movimiento forzado a BAJA
+    */
     public function bajarMasivo(Request $request)
     {
         try {
@@ -685,9 +767,15 @@ class MovimientoController extends Controller
                 'bienes_ids' => 'required|array|min:1',
                 'bienes_ids.*' => 'exists:bien,id_bien',
                 'fecha_mvto' => 'required|date',
-                'detalle_tecnico' => 'required|string|max:500',
+                'detalle_tecnico' => 'required|string|min:10|max:500', // ⭐ MÍNIMO 10 caracteres
                 'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
                 'NumDocto' => 'nullable|string|max:20'
+            ], [
+                'detalle_tecnico.required' => 'El motivo de baja es obligatorio',
+                'detalle_tecnico.min' => 'El motivo debe tener al menos 10 caracteres',
+                'detalle_tecnico.max' => 'El motivo no puede exceder los 500 caracteres',
+                'bienes_ids.required' => 'Debe seleccionar al menos un bien',
+                'fecha_mvto.required' => 'La fecha de baja es obligatoria'
             ]);
 
             // ⭐ FORZAR TIPO DE MOVIMIENTO A "BAJA"
@@ -701,26 +789,43 @@ class MovimientoController extends Controller
             }
 
             $movimientosCreados = [];
+            $bienesYaDeBaja = [];
             $usuarioId = Auth::id();
 
             foreach ($validated['bienes_ids'] as $bienId) {
-                $bien = Bien::find($bienId);
+                $bien = Bien::with('tipoBien')->find($bienId);
 
                 if (!$bien) {
                     continue;
                 }
 
+                // ⭐ VALIDAR QUE EL BIEN NO ESTÉ YA DE BAJA
+                $ultimoMovimiento = Movimiento::with('tipoMovimiento')
+                    ->where('idbien', $bienId)
+                    ->orderBy('fecha_mvto', 'desc')
+                    ->first();
+
+                if ($ultimoMovimiento) {
+                    $tipoUltimoMov = strtoupper($ultimoMovimiento->tipoMovimiento->tipo_mvto ?? '');
+                    if (str_contains($tipoUltimoMov, 'BAJA')) {
+                        $bienesYaDeBaja[] = $bien->codigo_patrimonial;
+                        continue; // Saltar este bien
+                    }
+                }
+
+                // ⭐ PREPARAR FECHA (con hora actual si no tiene)
                 $fechaMovimiento = $validated['fecha_mvto'];
                 $fecha = \Carbon\Carbon::parse($fechaMovimiento);
                 if ($fecha->format('H:i:s') === '00:00:00') {
                     $fechaMovimiento = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
                 }
 
+                // ⭐ CREAR MOVIMIENTO DE BAJA
                 $movimiento = Movimiento::create([
                     'idbien' => $bienId,
-                    'tipo_mvto' => $tipoBaja->id_tipo_mvto, // ⭐ FORZADO A BAJA
+                    'tipo_mvto' => $tipoBaja->id_tipo_mvto,
                     'fecha_mvto' => $fechaMovimiento,
-                    'detalle_tecnico' => $validated['detalle_tecnico'],
+                    'detalle_tecnico' => $validated['detalle_tecnico'], // ⭐ MOTIVO DE BAJA
                     'idubicacion' => null, // Sin ubicación (ya no está operativo)
                     'id_estado_conservacion_bien' => null,
                     'idusuario' => $usuarioId,
@@ -740,11 +845,30 @@ class MovimientoController extends Controller
 
             DB::commit();
 
+            // ⭐ LOG DE AUDITORÍA
+            Log::info("✅ BAJA MASIVA EJECUTADA", [
+                'cantidad_procesados' => count($validated['bienes_ids']),
+                'cantidad_dados_baja' => count($movimientosCreados),
+                'cantidad_ya_baja' => count($bienesYaDeBaja),
+                'usuario' => Auth::user()->name ?? 'Desconocido',
+                'usuario_id' => $usuarioId,
+                'motivo' => substr($validated['detalle_tecnico'], 0, 100), // Primeros 100 chars
+                'fecha' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            // ⭐ MENSAJE PERSONALIZADO
+            $mensaje = count($movimientosCreados) . ' bien(es) dado(s) de baja exitosamente';
+
+            if (count($bienesYaDeBaja) > 0) {
+                $mensaje .= '. ' . count($bienesYaDeBaja) . ' bien(es) ya estaban de baja y fueron omitidos.';
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => count($movimientosCreados) . ' bien(es) dado(s) de baja exitosamente',
+                'message' => $mensaje,
                 'data' => $movimientosCreados,
-                'cantidad' => count($movimientosCreados)
+                'cantidad' => count($movimientosCreados),
+                'bienes_omitidos' => $bienesYaDeBaja
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -758,7 +882,10 @@ class MovimientoController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error en baja masiva: ' . $e->getMessage());
+            Log::error('❌ ERROR EN BAJA MASIVA: ' . $e->getMessage(), [
+                'usuario_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,
@@ -766,6 +893,7 @@ class MovimientoController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * ⭐ CREAR MOVIMIENTOS MASIVOS
@@ -864,54 +992,8 @@ class MovimientoController extends Controller
         }
     }
 
-    /**
-     * ⭐ ELIMINAR MOVIMIENTOS MASIVOS
-     */
-    public function eliminarMasivo(Request $request)
-    {
-        try {
-            DB::beginTransaction();
 
-            $ids = $request->input('ids');
 
-            if (empty($ids) || !is_array($ids)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se proporcionaron IDs válidos'
-                ], 400);
-            }
-
-            $movimientos = Movimiento::whereIn('id_movimiento', $ids)->get();
-
-            if ($movimientos->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se encontraron movimientos para eliminar'
-                ], 404);
-            }
-
-            $eliminados = Movimiento::whereIn('id_movimiento', $ids)->delete();
-
-            DB::commit();
-
-            Log::info("Usuario " . Auth::id() . " eliminó {$eliminados} movimiento(s): " . implode(', ', $ids));
-
-            return response()->json([
-                'success' => true,
-                'message' => "{$eliminados} movimiento(s) eliminado(s) correctamente",
-                'cantidad' => $eliminados
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error al eliminar movimientos masivos: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar movimientos: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * ⭐⭐⭐ TRAZABILIDAD DE UN BIEN (NUEVA FUNCIÓN) ⭐⭐⭐
@@ -954,7 +1036,11 @@ class MovimientoController extends Controller
                 // 'todos' no aplica filtro
             }
 
-            $movimientos = $query->orderBy('fecha_mvto', 'desc')->get();
+            // ✅✅✅ ORDENAMIENTO CORREGIDO: PRIMERO FECHA, LUEGO ID ✅✅✅
+            $movimientos = $query
+                ->orderBy('fecha_mvto', 'desc')
+                ->orderBy('id_movimiento', 'desc')  // ⭐ AGREGADO PARA DESEMPATAR
+                ->get();
 
             // Estadísticas rápidas
             $estadisticas = [
@@ -1018,10 +1104,9 @@ class MovimientoController extends Controller
                 'usuario',
                 'ubicacion.area',
                 'estadoConservacion',
-                'documentoSustento' // ⭐ Sin función anónima (causaba error)
+                'documentoSustento'
             ])
             ->where('idbien', $bienId);
-
 
             // Aplicar filtros de fecha
             switch($filtro) {
@@ -1041,7 +1126,11 @@ class MovimientoController extends Controller
                     $periodoTexto = 'Todos los Movimientos';
             }
 
-            $movimientos = $query->orderBy('fecha_mvto', 'desc')->get();
+            // ✅✅✅ ORDENAMIENTO CORREGIDO: PRIMERO FECHA, LUEGO ID ✅✅✅
+            $movimientos = $query
+                ->orderBy('fecha_mvto', 'desc')
+                ->orderBy('id_movimiento', 'desc')  // ⭐ AGREGADO PARA DESEMPATAR
+                ->get();
 
             // ⭐⭐⭐ DEBUG - Registrar en log qué se está cargando ⭐⭐⭐
             \Log::info('=== PDF TRAZABILIDAD - DEBUG ===');
@@ -1120,191 +1209,197 @@ class MovimientoController extends Controller
 
 
 
+
     /**
-     * ⭐⭐⭐ REVERTIR BAJA (CTRL+Z) - SOLO ADMIN ⭐⭐⭐
-     * Revierte un movimiento de tipo BAJA, creando un movimiento de REVERSIÓN
+     * ⭐⭐⭐ REVERTIR BAJA - CLONA EL MOVIMIENTO ANTERIOR ⭐⭐⭐
+     * Cuando se revierte una baja, se crea un NUEVO movimiento que es COPIA EXACTA
+     * del movimiento anterior a la baja (mismo tipo, ubicación, estado, etc.)
      */
     public function revertirBaja(Request $request, $bienId)
-    {
-        try {
-            // 1️⃣ VALIDAR QUE SOLO EL ADMIN PUEDA EJECUTAR
-            $usuario = Auth::user();
+{
+    try {
+        // 1️⃣ VALIDAR QUE SOLO EL ADMIN PUEDA EJECUTAR
+        $usuario = Auth::user();
 
-            // Validación flexible (funciona con método o campo rol)
-            if (method_exists($usuario, 'esAdmin')) {
-                if (!$usuario->esAdmin()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => '❌ Solo el administrador puede revertir bajas'
-                    ], 403);
-                }
-            } else {
-                if (!isset($usuario->rol) || ($usuario->rol !== 'admin' && $usuario->rol !== 'administrador')) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => '❌ Solo el administrador puede revertir bajas'
-                    ], 403);
-                }
-            }
-
-            // ✅ VALIDAR DATOS DE ENTRADA (NOMBRES Y VALIDACIONES CORREGIDAS)
-            $validated = $request->validate([
-                'detalle_tecnico' => 'required|string|max:200',
-                'fechamvto' => 'required|date',
-                'documentosustentatorio' => 'nullable|integer',  // ✅ CORRECCIÓN: sin exists
-                'NumDocto' => 'nullable|string|max:20',
-            ], [
-                'detalle_tecnico.required' => 'El motivo de reversión es obligatorio',
-                'detalle_tecnico.max' => 'El motivo no puede exceder los 200 caracteres',
-                'fechamvto.required' => 'La fecha de reversión es obligatoria',
-                'fechamvto.date' => 'La fecha debe ser válida',
-            ]);
-
-            // 2️⃣ BUSCAR EL ÚLTIMO MOVIMIENTO DEL BIEN
-            $ultimoMovimiento = Movimiento::with(['tipoMovimiento', 'bien'])
-                ->where('idbien', $bienId)
-                ->orderBy('fecha_mvto', 'desc')
-                ->first();
-
-            if (!$ultimoMovimiento) {
+        if (method_exists($usuario, 'esAdmin')) {
+            if (!$usuario->esAdmin()) {
                 return response()->json([
                     'success' => false,
-                    'message' => '❌ Este bien no tiene movimientos registrados'
-                ], 404);
+                    'message' => '❌ Solo el administrador puede revertir bajas'
+                ], 403);
             }
-
-            // 3️⃣ VALIDAR QUE SEA UN MOVIMIENTO DE BAJA
-            $tipoBaja = strtoupper($ultimoMovimiento->tipoMovimiento->tipo_mvto);
-            if (!str_contains($tipoBaja, 'BAJA')) {
+        } else {
+            if (!isset($usuario->rol) || ($usuario->rol !== 'admin' && $usuario->rol !== 'administrador')) {
                 return response()->json([
                     'success' => false,
-                    'message' => '❌ Este movimiento no es de tipo BAJA (tipo actual: ' . $ultimoMovimiento->tipoMovimiento->tipo_mvto . ')'
-                ], 400);
+                    'message' => '❌ Solo el administrador puede revertir bajas'
+                ], 403);
             }
+        }
 
-            // 4️⃣ VALIDAR QUE NO ESTÉ YA REVERTIDO
-            if ($ultimoMovimiento->revertido) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '⚠️ Este movimiento ya fue revertido anteriormente el ' .
-                                \Carbon\Carbon::parse($ultimoMovimiento->fecha_reversion)->format('d/m/Y H:i')
-                ], 400);
-            }
+        // 2️⃣ VALIDAR DATOS DE ENTRADA
+        $validated = $request->validate([
+            'detalle_tecnico' => 'required|string|max:200',
+            'fecha_mvto' => 'nullable|date',  // ✅ Cambié a nullable
+            'documento_sustentatorio' => 'nullable|integer',
+            'NumDocto' => 'nullable|string|max:20',
+        ], [
+            'detalle_tecnico.required' => 'El motivo de reversión es obligatorio',
+            'detalle_tecnico.max' => 'El motivo no puede exceder los 200 caracteres',
+            'fecha_mvto.date' => 'La fecha debe ser válida',
+        ]);
 
-            DB::beginTransaction();
+        // 3️⃣ BUSCAR EL ÚLTIMO MOVIMIENTO DEL BIEN (debe ser BAJA)
+        $ultimoMovimiento = Movimiento::with(['tipoMovimiento', 'bien'])
+            ->where('idbien', $bienId)
+            ->orderBy('fecha_mvto', 'desc')
+            ->orderBy('id_movimiento', 'desc')  // ✅ Agregado para desempate
+            ->first();
 
-            // 5️⃣ OBTENER O CREAR EL TIPO DE MOVIMIENTO "REVERSIÓN DE BAJA"
-            $tipoReversion = TipoMvto::where('tipo_mvto', 'ILIKE', '%revers%')->first();
-
-            if (!$tipoReversion) {
-                $tipoReversion = TipoMvto::create([
-                    'tipo_mvto' => 'REVERSIÓN DE BAJA'
-                ]);
-                Log::info('Se creó automáticamente el tipo de movimiento REVERSIÓN DE BAJA');
-            }
-
-            // 6️⃣ BUSCAR EL MOVIMIENTO ANTERIOR AL DE BAJA (para restaurar estado)
-            $movimientoAnterior = Movimiento::where('idbien', $ultimoMovimiento->idbien)
-                ->where('fecha_mvto', '<', $ultimoMovimiento->fecha_mvto)
-                ->where('id_movimiento', '!=', $ultimoMovimiento->id_movimiento)
-                ->orderBy('fecha_mvto', 'DESC')
-                ->first();
-
-            // 7️⃣ CREAR MOVIMIENTO DE REVERSIÓN
-            $fechaReversion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
-            $motivoUsuario = $request->input('detalle_tecnico', 'Sin motivo especificado');
-
-            // ⭐ DETALLE COMPACTO (< 200 caracteres)
-            $detalleCompacto = sprintf(
-                "REV-BAJA #%d | %s | Por: %s | Motivo: %s",
-                $ultimoMovimiento->id_movimiento,
-                \Carbon\Carbon::parse($ultimoMovimiento->fecha_mvto)->format('d/m/Y'),
-                $usuario->name,
-                $motivoUsuario
-            );
-
-            // ⭐ TRUNCAR A 200 CARACTERES POR SEGURIDAD
-            $detalleCompacto = substr($detalleCompacto, 0, 200);
-
-            $movimientoReversion = Movimiento::create([
-                'idbien' => $ultimoMovimiento->idbien,
-                'tipo_mvto' => $tipoReversion->id_tipo_mvto,
-                'fecha_mvto' => $fechaReversion,
-                'idubicacion' => $movimientoAnterior ? $movimientoAnterior->idubicacion : null,
-                'id_estado_conservacion_bien' => $movimientoAnterior ? $movimientoAnterior->id_estado_conservacion_bien : $ultimoMovimiento->id_estado_conservacion_bien,
-                'detalle_tecnico' => $detalleCompacto,
-                'NumDocto' => $request->input('NumDocto') ?? "REV-BAJA-" . $ultimoMovimiento->id_movimiento,
-                'idusuario' => Auth::id(),
-                'documento_sustentatorio' => $request->input('documentosustentatorio') ?? $ultimoMovimiento->documento_sustentatorio
-            ]);
-
-            // 8️⃣ MARCAR EL MOVIMIENTO ORIGINAL COMO REVERTIDO
-            $ultimoMovimiento->update([
-                'revertido' => true,
-                'revertido_por' => Auth::id(),
-                'fecha_reversion' => $fechaReversion,
-                'movimiento_reversion_id' => $movimientoReversion->id_movimiento
-            ]);
-
-            DB::commit();
-
-            // 9️⃣ REGISTRAR EN LOG
-            Log::info("✅ REVERSIÓN DE BAJA EJECUTADA", [
-                'movimiento_original' => $ultimoMovimiento->id_movimiento,
-                'movimiento_reversion' => $movimientoReversion->id_movimiento,
-                'admin' => $usuario->email,
-                'admin_name' => $usuario->name,
-                'bien_codigo' => $ultimoMovimiento->bien->codigo_patrimonial,
-                'bien_id' => $ultimoMovimiento->idbien,
-                'fecha_baja_original' => $ultimoMovimiento->fecha_mvto,
-                'fecha_reversion' => $fechaReversion,
-                'motivo' => $motivoUsuario  // ✅ CORRECCIÓN: $detalleMotivo → $motivoUsuario
-            ]);
-
-            // Cargar relaciones para la respuesta
-            $movimientoReversion->load([
-                'tipoMovimiento',
-                'usuario',
-                'ubicacion.area',
-                'estadoConservacion',
-                'bien.tipoBien',
-                'documentoSustento'
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => '✅ Baja revertida exitosamente',
-                'data' => [
-                    'movimiento_original' => [
-                        'id' => $ultimoMovimiento->id_movimiento,
-                        'fecha_baja' => \Carbon\Carbon::parse($ultimoMovimiento->fecha_mvto)->format('d/m/Y H:i'),
-                        'revertido_por' => $usuario->name,
-                        'fecha_reversion' => \Carbon\Carbon::parse($fechaReversion)->format('d/m/Y H:i')
-                    ],
-                    'movimiento_reversion' => $movimientoReversion,
-                    'bien' => [
-                        'id' => $ultimoMovimiento->bien->id_bien,
-                        'codigo' => $ultimoMovimiento->bien->codigo_patrimonial,
-                        'denominacion' => $ultimoMovimiento->bien->denominacion_bien
-                    ],
-                    'estado_restaurado' => $movimientoAnterior ? 'Restaurado a estado previo' : 'Sin estado previo encontrado'
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("❌ ERROR AL REVERTIR BAJA: " . $e->getMessage(), [
-                'bien_id' => $bienId ?? 'N/A',
-                'user_id' => Auth::id(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
+        if (!$ultimoMovimiento) {
             return response()->json([
                 'success' => false,
-                'message' => '❌ Error al revertir: ' . $e->getMessage()
-            ], 500);
+                'message' => '❌ Este bien no tiene movimientos registrados'
+            ], 404);
         }
+
+        // 4️⃣ VALIDAR QUE SEA UN MOVIMIENTO DE BAJA
+        $tipoBaja = strtoupper($ultimoMovimiento->tipoMovimiento->tipo_mvto);
+        if (!str_contains($tipoBaja, 'BAJA')) {
+            return response()->json([
+                'success' => false,
+                'message' => '❌ Este movimiento no es de tipo BAJA (tipo actual: ' . $ultimoMovimiento->tipoMovimiento->tipo_mvto . ')'
+            ], 400);
+        }
+
+        // 5️⃣ VALIDAR QUE NO ESTÉ YA REVERTIDO
+        if ($ultimoMovimiento->revertido) {
+            return response()->json([
+                'success' => false,
+                'message' => '⚠️ Este movimiento ya fue revertido anteriormente el ' .
+                            \Carbon\Carbon::parse($ultimoMovimiento->fecha_reversion)->format('d/m/Y H:i')
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        // 6️⃣ ⭐⭐⭐ BUSCAR EL MOVIMIENTO ANTERIOR A LA BAJA (PARA CLONARLO) ⭐⭐⭐
+        $movimientoAnterior = Movimiento::with(['tipoMovimiento'])
+            ->where('idbien', $ultimoMovimiento->idbien)
+            ->where('fecha_mvto', '<', $ultimoMovimiento->fecha_mvto)
+            ->where('id_movimiento', '!=', $ultimoMovimiento->id_movimiento)
+            ->orderBy('fecha_mvto', 'DESC')
+            ->orderBy('id_movimiento', 'DESC')  // ✅ Agregado para desempate
+            ->first();
+
+        if (!$movimientoAnterior) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => '❌ No existe un movimiento anterior a la baja para restaurar'
+            ], 400);
+        }
+
+        // 7️⃣ ⭐⭐⭐ USAR HORA ACTUAL DEL SERVIDOR ⭐⭐⭐
+        $fechaReversion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+        $motivoUsuario = $validated['detalle_tecnico'];
+
+        // ✅ DETALLE TÉCNICO PERSONALIZADO
+        $detalleNuevo = sprintf(
+            "Reversión de BAJA #%d | Motivo: %s",
+            $ultimoMovimiento->id_movimiento,
+            substr($motivoUsuario, 0, 150)
+        );
+        $detalleNuevo = substr($detalleNuevo, 0, 200);
+
+        // ✅✅✅ CREAR NUEVO MOVIMIENTO (COPIA DEL ANTERIOR) ✅✅✅
+        $nuevoMovimiento = Movimiento::create([
+            'idbien' => $movimientoAnterior->idbien,
+            'tipo_mvto' => $movimientoAnterior->tipo_mvto,
+            'fecha_mvto' => $fechaReversion,  // ✅ Usa hora actual del servidor
+            'idubicacion' => $movimientoAnterior->idubicacion,
+            'id_estado_conservacion_bien' => $movimientoAnterior->id_estado_conservacion_bien,
+            'detalle_tecnico' => $detalleNuevo,
+            'NumDocto' => $validated['NumDocto'] ?? $movimientoAnterior->NumDocto,
+            'idusuario' => Auth::id(),
+            'documento_sustentatorio' => $validated['documento_sustentatorio'] ?? $movimientoAnterior->documento_sustentatorio
+        ]);
+
+        // 8️⃣ MARCAR EL MOVIMIENTO DE BAJA COMO REVERTIDO
+        $ultimoMovimiento->update([
+            'revertido' => true,
+            'revertido_por' => Auth::id(),
+            'fecha_reversion' => $fechaReversion,
+            'movimiento_reversion_id' => $nuevoMovimiento->id_movimiento
+        ]);
+
+        DB::commit();
+
+        // 9️⃣ LOG DE AUDITORÍA
+        Log::info("✅ REVERSIÓN DE BAJA EJECUTADA (CLONÓ MOVIMIENTO ANTERIOR)", [
+            'movimiento_baja' => $ultimoMovimiento->id_movimiento,
+            'movimiento_anterior_clonado' => $movimientoAnterior->id_movimiento,
+            'nuevo_movimiento' => $nuevoMovimiento->id_movimiento,
+            'tipo_restaurado' => $movimientoAnterior->tipoMovimiento->tipo_mvto,
+            'admin' => $usuario->name,
+            'bien_codigo' => $ultimoMovimiento->bien->codigo_patrimonial,
+            'fecha_reversion' => $fechaReversion
+        ]);
+
+        // Cargar relaciones para la respuesta
+        $nuevoMovimiento->load([
+            'tipoMovimiento',
+            'usuario',
+            'ubicacion.area',
+            'estadoConservacion',
+            'bien.tipoBien',
+            'documentoSustento'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => '✅ Baja revertida exitosamente',
+            'data' => [
+                'movimientooriginal' => [
+                    'id' => $ultimoMovimiento->id_movimiento,
+                    'fechabaja' => \Carbon\Carbon::parse($ultimoMovimiento->fecha_mvto)->format('d/m/Y H:i'),
+                    'revertidopor' => $usuario->name,
+                    'fechareversion' => \Carbon\Carbon::parse($fechaReversion)->format('d/m/Y H:i')
+                ],
+                'movimientoreversion' => $nuevoMovimiento,
+                'bien' => [
+                    'id' => $ultimoMovimiento->bien->id_bien,
+                    'codigo' => $ultimoMovimiento->bien->codigo_patrimonial,
+                    'denominacion' => $ultimoMovimiento->bien->denominacion_bien
+                ],
+                'estadorestaurado' => "Restaurado al estado: " . $movimientoAnterior->tipoMovimiento->tipo_mvto
+            ]
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error de validación',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error("❌ ERROR AL REVERTIR BAJA: " . $e->getMessage(), [
+            'bien_id' => $bienId ?? 'N/A',
+            'user_id' => Auth::id(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => '❌ Error al revertir: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+
+
 
 
 /**
@@ -1312,7 +1407,8 @@ class MovimientoController extends Controller
  */
 public function getEstadisticas()
 {
-    $totalBienes = Bien::count();
+    $totalBienes = Bien::where('activo', true)->count(); // ✅ Solo activos
+
 
     // Obtener el último movimiento de cada bien y contar por tipo
     $estadisticas = DB::table('movimiento as m1')
@@ -1353,6 +1449,8 @@ public function getEstadisticas()
         ]
     ]);
 }
+
+
 
 
 }

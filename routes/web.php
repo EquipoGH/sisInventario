@@ -21,10 +21,9 @@ use App\Http\Controllers\UserPerfilController;
 use App\Http\Controllers\PerfilModuloController;
 use App\Http\Controllers\PerfilModuloPermisoController;
 use App\Http\Controllers\ReporteKardexController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\ReporteBienController;
-
+use App\Http\Controllers\SystemSettingController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,10 +51,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Apariencia
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
     Route::post('/configuracion', [ConfiguracionController::class, 'actualizar'])->name('configuracion.actualizar');
-    // Institución
+
+    // Institución (System Settings)
     Route::get('/configuracion/institucion', [SystemSettingController::class, 'edit'])->name('configuracion.institucion');
     Route::put('/configuracion/institucion', [SystemSettingController::class, 'update'])->name('configuracion.institucion.update');
-
 
     // ==================== DOCUMENTO SUSTENTO ====================
     Route::post('/documento-sustento/verificar-numero', [DocumentoSustentoController::class, 'verificarNumero'])
@@ -79,6 +78,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bien/obtener-documentos', [BienController::class, 'obtenerDocumentos'])
         ->name('bien.obtener-documentos');
 
+    // ✅ ELIMINACIÓN LÓGICA
+    Route::get('/bien/eliminados', [BienController::class, 'eliminados'])
+        ->name('bien.eliminados');
+
+    Route::post('/bien/restaurar/{id}', [BienController::class, 'restaurar'])
+        ->name('bien.restaurar');
+
     Route::resource('bien', BienController::class);
 
     // ==================== GESTIÓN DE INVENTARIO ====================
@@ -101,6 +107,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('movimiento/trazabilidad/{bien}', [MovimientoController::class, 'trazabilidad'])
         ->name('movimiento.trazabilidad');
 
+    // ⭐ PDF DE TRAZABILIDAD
+    Route::get('movimiento/pdf-trazabilidad/{bien}', [MovimientoController::class, 'generarPDFTrazabilidad'])
+        ->name('movimiento.pdf.trazabilidad');
+
     // ⭐ FILTROS
     Route::get('movimiento/por-tipo', [MovimientoController::class, 'porTipo'])
         ->name('movimiento.por-tipo');
@@ -111,31 +121,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('movimiento/por-fecha', [MovimientoController::class, 'porFecha'])
         ->name('movimiento.por-fecha');
 
-    // ⭐ ASIGNACIÓN MASIVA (tipo forzado a ASIGNACIÓN)
+    // ⭐ OPERACIONES MASIVAS
     Route::post('movimiento/asignar-masivo', [MovimientoController::class, 'asignarMasivo'])
         ->name('movimiento.asignar-masivo');
 
-    // ⭐ BAJA MASIVA (tipo forzado a BAJA)
     Route::post('movimiento/baja-masivo', [MovimientoController::class, 'bajarMasivo'])
         ->name('movimiento.baja-masivo');
+
+    Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
+        ->name('movimiento.crear-masivo');
+
+    Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
+        ->name('movimiento.eliminar-masivo');
 
     // ⭐ REVERTIR BAJA INDIVIDUAL (SOLO ADMIN)
     Route::post('movimiento/revertir-baja/{bien}', [MovimientoController::class, 'revertirBaja'])
         ->name('movimiento.revertir-baja');
 
-    // ⭐ CREAR MOVIMIENTOS MASIVOS
-    Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
-        ->name('movimiento.crear-masivo');
+    // ⭐ BIENES ELIMINADOS (Compatibilidad - redirige a BienController)
+    Route::get('movimiento/bienes-eliminados', [BienController::class, 'eliminados'])
+        ->name('movimiento.bienes-eliminados');
 
-    // ⭐ ELIMINAR MOVIMIENTOS MASIVOS
-    Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
-        ->name('movimiento.eliminar-masivo');
-
-    // ⭐ Generar PDF de trazabilidad
-    Route::get('/movimiento/pdf-trazabilidad/{bien}', [MovimientoController::class, 'generarPDFTrazabilidad'])
-    ->name('movimiento.pdf.trazabilidad');
-
-
+    Route::post('movimiento/restaurar-bien/{bien}', [BienController::class, 'restaurar'])
+        ->name('movimiento.restaurar-bien');
 
     // ⭐ RESOURCE AL FINAL (para que no sobreescriba las rutas personalizadas)
     Route::resource('movimiento', MovimientoController::class);
@@ -168,17 +176,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==================== REPORTES ====================
     Route::prefix('reportes')->name('reportes.')->group(function () {
+        // Reporte Kardex
         Route::get('/kardex', [ReporteKardexController::class, 'index'])->name('kardex.index');
         Route::get('/kardex/data', [ReporteKardexController::class, 'data'])->name('kardex.data');
         Route::get('/kardex/pdf', [ReporteKardexController::class, 'pdf'])->name('kardex.pdf');
         Route::get('/kardex/excel', [ReporteKardexController::class, 'excel'])->name('kardex.excel');
 
-    });
-    Route::prefix('reportes/bienes')->name('reportes.bienes.')->group(function () {
-    Route::get('/', [ReporteBienController::class, 'index'])->name('index');
-    Route::get('/data', [ReporteBienController::class, 'data'])->name('data');
-    Route::get('/pdf', [ReporteBienController::class, 'pdf'])->name('pdf');
-    Route::get('/excel', [ReporteBienController::class, 'excel'])->name('excel');
+        // Reporte de Bienes
+        Route::get('/bienes', [ReporteBienController::class, 'index'])->name('bienes.index');
+        Route::get('/bienes/data', [ReporteBienController::class, 'data'])->name('bienes.data');
+        Route::get('/bienes/pdf', [ReporteBienController::class, 'pdf'])->name('bienes.pdf');
+        Route::get('/bienes/excel', [ReporteBienController::class, 'excel'])->name('bienes.excel');
     });
 });
 
