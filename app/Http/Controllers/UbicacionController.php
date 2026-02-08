@@ -6,6 +6,8 @@ use App\Models\Ubicacion;
 use App\Models\Area;
 use App\Http\Requests\UbicacionRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class UbicacionController extends Controller
 {
@@ -101,8 +103,22 @@ class UbicacionController extends Controller
     public function store(UbicacionRequest $request)
     {
         try {
-            $ubicacion = Ubicacion::create($request->validated());
+            DB::beginTransaction();
+
+            $data = $request->validated();
+
+            // ⭐ Si se marca como recepción, desmarcar las demás
+            if (isset($data['es_recepcion_inicial']) && $data['es_recepcion_inicial']) {
+                Ubicacion::where('es_recepcion_inicial', true)
+                    ->update(['es_recepcion_inicial' => false]);
+
+                Log::info("✅ Nueva ubicación de recepción establecida");
+            }
+
+            $ubicacion = Ubicacion::create($data);
             $ubicacion->load('area');
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -110,6 +126,7 @@ class UbicacionController extends Controller
                 'data' => $ubicacion
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Error al crear: ' . $e->getMessage()
@@ -132,8 +149,23 @@ class UbicacionController extends Controller
     public function update(UbicacionRequest $request, Ubicacion $ubicacion)
     {
         try {
-            $ubicacion->update($request->validated());
+            DB::beginTransaction();
+
+            $data = $request->validated();
+
+            // ⭐ Si se marca como recepción, desmarcar las demás
+            if (isset($data['es_recepcion_inicial']) && $data['es_recepcion_inicial']) {
+                Ubicacion::where('es_recepcion_inicial', true)
+                    ->where('id_ubicacion', '!=', $ubicacion->id_ubicacion)
+                    ->update(['es_recepcion_inicial' => false]);
+
+                Log::info("✅ Ubicación de recepción actualizada a: {$ubicacion->nombre_sede}");
+            }
+
+            $ubicacion->update($data);
             $ubicacion->load('area');
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -141,6 +173,7 @@ class UbicacionController extends Controller
                 'data' => $ubicacion
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar: ' . $e->getMessage()
@@ -191,5 +224,65 @@ class UbicacionController extends Controller
             'success' => true,
             'data' => $ubicaciones
         ]);
+    }
+
+    /**
+     * ⭐⭐⭐ MARCAR UBICACIÓN COMO RECEPCIÓN INICIAL ⭐⭐⭐
+     */
+    public function marcarRecepcion(Ubicacion $ubicacion)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Desmarcar todas las demás
+            Ubicacion::where('es_recepcion_inicial', true)
+                ->update(['es_recepcion_inicial' => false]);
+
+            // Marcar esta
+            $ubicacion->es_recepcion_inicial = true;
+            $ubicacion->save();
+
+            DB::commit();
+
+            Log::info("✅ Ubicación de recepción establecida: {$ubicacion->nombre_sede} (ID: {$ubicacion->id_ubicacion})");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Ubicación '{$ubicacion->nombre_sede}' marcada como recepción inicial"
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("❌ Error al marcar recepción: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al marcar ubicación: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ⭐⭐⭐ DESMARCAR UBICACIÓN COMO RECEPCIÓN ⭐⭐⭐
+     */
+    public function desmarcarRecepcion(Ubicacion $ubicacion)
+    {
+        try {
+            $ubicacion->es_recepcion_inicial = false;
+            $ubicacion->save();
+
+            Log::info("⚠️ Ubicación de recepción desmarcada: {$ubicacion->nombre_sede}");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Ubicación desmarcada como recepción"
+            ]);
+        } catch (\Exception $e) {
+            Log::error("❌ Error al desmarcar recepción: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al desmarcar: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

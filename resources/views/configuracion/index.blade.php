@@ -224,10 +224,6 @@ $(document).ready(function() {
             }
         }
 
-        // Actualizar color de hover en tabla
-        if (clave === 'color_tabla_hover') {
-            $('<style>.preview-hover:hover { background-color: ' + color + ' !important; }</style>').appendTo('head');
-        }
     });
 });
 </script>

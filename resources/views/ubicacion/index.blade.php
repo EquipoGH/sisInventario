@@ -78,26 +78,33 @@
             <table class="table table-bordered table-striped table-hover" id="tablaUbicaciones">
                 <thead class="thead-dark">
                     <tr>
-                        <th width="5%" class="text-center">
+                        <th width="4%" class="text-center">
                             <input type="checkbox" id="checkAll">
                         </th>
-                        <th width="8%" class="text-center sortable" data-column="id">
+                        <th width="6%" class="text-center sortable" data-column="id">
                             ID <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="22%" class="sortable" data-column="sede">
+                        <th width="19%" class="sortable" data-column="sede">
                             Nombre Sede <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="22%" class="sortable" data-column="ambiente">
+                        <th width="17%" class="sortable" data-column="ambiente">
                             Ambiente <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="13%" class="sortable" data-column="piso">
+                        <th width="10%" class="sortable" data-column="piso">
                             Piso <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="15%" class="sortable" data-column="area">
+                        <th width="13%" class="sortable" data-column="area">
                             Área <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="15%" class="sortable" data-column="fecha">
-                            Fecha Registro <i class="fas fa-sort sort-icon"></i>
+                        {{-- ⭐⭐⭐ NUEVA COLUMNA ⭐⭐⭐ --}}
+                        <th width="12%" class="text-center">
+                            <i class="fas fa-star text-warning"></i> Recepción
+                            <i class="fas fa-info-circle text-info"
+                               title="Ubicación de recepción inicial"
+                               data-toggle="tooltip"></i>
+                        </th>
+                        <th width="13%" class="sortable" data-column="fecha">
+                            Fecha <i class="fas fa-sort sort-icon"></i>
                         </th>
                     </tr>
                 </thead>
@@ -116,11 +123,32 @@
                                 {{ strtoupper($ubicacion->area->nombre_area ?? 'N/A') }}
                             </span>
                         </td>
-                        <td>{{ $ubicacion->created_at->format('d/m/Y H:i') }}</td>
+                        {{-- ⭐⭐⭐ NUEVA CELDA CON BOTONES ⭐⭐⭐ --}}
+                        <td class="text-center">
+                            @if($ubicacion->es_recepcion_inicial)
+                                <span class="badge badge-success mb-1 d-block">
+                                    <i class="fas fa-check-circle"></i> ACTIVA
+                                </span>
+                                <button class="btn btn-xs btn-warning btn-desmarcar"
+                                        data-id="{{ $ubicacion->id_ubicacion }}"
+                                        data-nombre="{{ $ubicacion->nombre_sede }}"
+                                        title="Desmarcar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            @else
+                                <button class="btn btn-xs btn-success btn-marcar"
+                                        data-id="{{ $ubicacion->id_ubicacion }}"
+                                        data-nombre="{{ $ubicacion->nombre_sede }}"
+                                        title="Marcar como recepción">
+                                    <i class="fas fa-check"></i> Marcar
+                                </button>
+                            @endif
+                        </td>
+                        <td class="text-center">{{ $ubicacion->created_at->format('d/m/Y') }}</td>
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay ubicaciones registradas
                         </td>
@@ -129,7 +157,6 @@
                 </tbody>
             </table>
         </div>
-
         {{-- PAGINACIÓN --}}
         <div id="paginacionContainer" class="d-flex justify-content-between align-items-center mt-3">
             <div>
@@ -226,6 +253,27 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- ⭐⭐⭐ NUEVO CHECKBOX ⭐⭐⭐ --}}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox"
+                                       class="custom-control-input"
+                                       id="es_recepcion_inicial"
+                                       name="es_recepcion_inicial"
+                                       value="1">
+                                <label class="custom-control-label" for="es_recepcion_inicial">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <strong>Marcar como ubicación de recepción inicial</strong>
+                                </label>
+                            </div>
+                            <small class="form-text text-muted ml-4">
+                                <i class="fas fa-info-circle"></i>
+                                Los bienes registrados sin ubicación irán aquí automáticamente
+                            </small>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
@@ -239,7 +287,6 @@
         </div>
     </div>
 </div>
-
 {{-- ========================= MODAL EDITAR ========================= --}}
 <div class="modal fade" id="modalEdit" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -312,6 +359,27 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- ⭐⭐⭐ CHECKBOX EN EDITAR ⭐⭐⭐ --}}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox"
+                                       class="custom-control-input"
+                                       id="edit_es_recepcion_inicial"
+                                       name="es_recepcion_inicial"
+                                       value="1">
+                                <label class="custom-control-label" for="edit_es_recepcion_inicial">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <strong>Marcar como ubicación de recepción inicial</strong>
+                                </label>
+                            </div>
+                            <small class="form-text text-muted ml-4">
+                                <i class="fas fa-info-circle"></i>
+                                Los bienes registrados sin ubicación irán aquí automáticamente
+                            </small>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
@@ -326,7 +394,6 @@
     </div>
 </div>
 @stop
-
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -334,6 +401,9 @@ $(document).ready(function() {
     $.ajaxSetup({
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
     });
+
+    // ⭐ Activar tooltips
+    $('[data-toggle="tooltip"]').tooltip();
 
     // ==================== ESTADO GLOBAL ====================
     let paginaActual = 1;
@@ -409,7 +479,7 @@ $(document).ready(function() {
         if (ubicaciones.length === 0) {
             tbody.append(`
                 <tr id="filaVacia">
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                         <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                         No hay ubicaciones registradas
                     </td>
@@ -425,12 +495,35 @@ $(document).ready(function() {
             const fecha = new Date(u.created_at).toLocaleDateString('es-PE', {
                 day: '2-digit',
                 month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+                year: 'numeric'
             });
 
             const areaNombre = u.area ? u.area.nombre_area.toUpperCase() : 'N/A';
+
+            // ⭐ Generar HTML para columna de recepción
+            let recepcionHTML = '';
+            if (u.es_recepcion_inicial) {
+                recepcionHTML = `
+                    <span class="badge badge-success mb-1 d-block">
+                        <i class="fas fa-check-circle"></i> ACTIVA
+                    </span>
+                    <button class="btn btn-xs btn-warning btn-desmarcar"
+                            data-id="${u.id_ubicacion}"
+                            data-nombre="${u.nombre_sede}"
+                            title="Desmarcar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+            } else {
+                recepcionHTML = `
+                    <button class="btn btn-xs btn-success btn-marcar"
+                            data-id="${u.id_ubicacion}"
+                            data-nombre="${u.nombre_sede}"
+                            title="Marcar como recepción">
+                        <i class="fas fa-check"></i> Marcar
+                    </button>
+                `;
+            }
 
             tbody.append(`
                 <tr id="row-${u.id_ubicacion}" class="fade-in editable-row" data-id="${u.id_ubicacion}">
@@ -444,12 +537,117 @@ $(document).ready(function() {
                     <td>
                         <span class="badge badge-info">${areaNombre}</span>
                     </td>
-                    <td>${fecha}</td>
+                    <td class="text-center">${recepcionHTML}</td>
+                    <td class="text-center">${fecha}</td>
                 </tr>
             `);
         });
 
         $('.checkbox-item').on('change', actualizarBotonEliminar);
+        bindBotonesRecepcion();
+    }
+
+    // ⭐⭐⭐ EVENTOS PARA MARCAR/DESMARCAR RECEPCIÓN ⭐⭐⭐
+    function bindBotonesRecepcion() {
+        // MARCAR COMO RECEPCIÓN
+        $('.btn-marcar').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const id = $(this).data('id');
+            const nombre = $(this).data('nombre');
+
+            Swal.fire({
+                title: '¿Marcar como recepción inicial?',
+                html: `
+                    <p>La ubicación <strong>${nombre}</strong> será la recepción inicial.</p>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Los bienes registrados sin ubicación irán aquí automáticamente.
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-check"></i> Sí, marcar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    marcarRecepcion(id);
+                }
+            });
+        });
+
+        // DESMARCAR RECEPCIÓN
+        $('.btn-desmarcar').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const id = $(this).data('id');
+            const nombre = $(this).data('nombre');
+
+            Swal.fire({
+                title: '¿Desmarcar ubicación?',
+                html: `
+                    <p><strong>${nombre}</strong> dejará de ser recepción inicial.</p>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Los nuevos bienes no tendrán ubicación automática.
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-times"></i> Sí, desmarcar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    desmarcarRecepcion(id);
+                }
+            });
+        });
+    }
+
+    bindBotonesRecepcion();
+
+    // ⭐ MARCAR UBICACIÓN
+    function marcarRecepcion(id) {
+        $.ajax({
+            url: `/ubicacion/${id}/marcar-recepcion`,
+            method: 'POST',
+            success: function(res) {
+                if (res.success) {
+                    Toast.fire({ icon: 'success', title: res.message });
+                    buscar(terminoBusqueda, paginaActual);
+                }
+            },
+            error: function(xhr) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error al marcar',
+                    text: xhr.responseJSON?.message || 'Error del servidor'
+                });
+            }
+        });
+    }
+
+    // ⭐ DESMARCAR UBICACIÓN
+    function desmarcarRecepcion(id) {
+        $.ajax({
+            url: `/ubicacion/${id}/desmarcar-recepcion`,
+            method: 'POST',
+            success: function(res) {
+                if (res.success) {
+                    Toast.fire({ icon: 'info', title: res.message });
+                    buscar(terminoBusqueda, paginaActual);
+                }
+            },
+            error: function(xhr) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: xhr.responseJSON?.message || 'Error del servidor'
+                });
+            }
+        });
     }
 
     // ==================== CONTADORES ====================
@@ -689,6 +887,10 @@ $(document).ready(function() {
             $('#edit_ambiente').val(data.ambiente);
             $('#edit_piso_ubicacion').val(data.piso_ubicacion);
             $('#edit_idarea').val(data.idarea);
+
+            // ⭐ Marcar checkbox
+            $('#edit_es_recepcion_inicial').prop('checked', data.es_recepcion_inicial === true || data.es_recepcion_inicial === 1);
+
             $('#modalEdit').modal('show');
         }).fail(function(xhr) {
             Toast.fire({

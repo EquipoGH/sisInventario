@@ -25,7 +25,6 @@ class ConfiguracionServiceProvider extends ServiceProvider
                 'color_header_editar' => '#17a2b8',
                 'color_header_eliminar' => '#dc3545',
                 'color_tabla_header' => '#343a40',
-                'color_tabla_hover' => '#e3f2fd',
                 'color_btn_primario' => '#007bff',
                 'color_btn_success' => '#28a745',
                 'color_btn_danger' => '#dc3545',

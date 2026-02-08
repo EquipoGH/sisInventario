@@ -23,11 +23,7 @@
         color: white !important;
     }
 
-    .table tbody tr:hover,
-    .editable-row:hover,
-    .editable-cell:hover {
-        background-color: {{ $colores['color_tabla_hover'] ?? '#e3f2fd' }} !important;
-    }
+
 
     /* 🔘 BOTONES */
     .btn-primary {
@@ -92,11 +88,7 @@
         cursor: pointer;
     }
 
-    /* 🎨 VISTA PREVIA CONFIGURACIÓN */
-    .preview-hover:hover {
-        background-color: {{ $colores['color_tabla_hover'] ?? '#e3f2fd' }} !important;
-        cursor: pointer;
-    }
+    
 
     .form-control-color {
         width: 100%;

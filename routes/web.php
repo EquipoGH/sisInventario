@@ -42,6 +42,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ==================== DASHBOARD ====================
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // ⭐ NUEVA: API para actualización en tiempo real (AJAX)
+    Route::get('/dashboard/stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
+
     // ==================== PROFILE (Breeze) ====================
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -93,7 +96,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('estado-bien', EstadoBienController::class);
     Route::resource('tipo-mvto', TipoMvtoController::class);
     Route::resource('responsable', ResponsableController::class);
+
+    // ✅ UBICACIÓN CON RUTAS DE RECEPCIÓN
+    Route::post('ubicacion/{ubicacion}/marcar-recepcion', [UbicacionController::class, 'marcarRecepcion'])
+        ->name('ubicacion.marcar-recepcion');
+    Route::post('ubicacion/{ubicacion}/desmarcar-recepcion', [UbicacionController::class, 'desmarcarRecepcion'])
+        ->name('ubicacion.desmarcar-recepcion');
     Route::resource('ubicacion', UbicacionController::class);
+
     Route::resource('responsable-area', ResponsableAreaController::class);
 
     // ==================== MOVIMIENTO ====================

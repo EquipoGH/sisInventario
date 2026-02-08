@@ -106,7 +106,7 @@
         }
 
         /* ========================================
-           📋 TABLA DE MOVIMIENTOS (CON MOTIVO/DETALLE)
+           📋 TABLA DE MOVIMIENTOS (CON ÁREA Y DETALLE)
         ======================================== */
         .movements-table {
             width: 100%;
@@ -141,7 +141,7 @@
             background-color: #ffffff;
         }
 
-        /* ⭐⭐⭐ ANCHOS DE COLUMNA AJUSTADOS (CON NUEVA COLUMNA) ⭐⭐⭐ */
+        /* ⭐⭐⭐ ANCHOS DE COLUMNA AJUSTADOS (CON ÁREA) ⭐⭐⭐ */
         .col-id {
             width: 4%;
             text-align: center;
@@ -153,14 +153,20 @@
             text-align: center;
         }
         .col-tipo {
-            width: 11%;
+            width: 10%;
             text-align: center;
         }
         .col-usuario {
             width: 10%;
         }
+        .col-area {
+            width: 11%; /* ⭐ NUEVA COLUMNA */
+            text-align: center;
+            font-weight: 700;
+            color: #f57c00;
+        }
         .col-ubicacion {
-            width: 18%;
+            width: 14%;
         }
         .col-estado {
             width: 8%;
@@ -168,11 +174,11 @@
             font-size: 6px;
         }
         .col-doc {
-            width: 16%;
+            width: 14%;
             font-size: 6px;
         }
         .col-motivo {
-            width: 24%; /* ⭐ NUEVA COLUMNA PARA MOTIVO/DETALLE */
+            width: 20%;
             font-size: 7px;
             color: #37474f;
             line-height: 1.3;
@@ -209,6 +215,18 @@
             color: #9e9e9e;
             font-style: italic;
             text-align: center;
+        }
+
+        /* ⭐ ESTILO PARA ÁREA */
+        .area-text {
+            color: #f57c00;
+            font-weight: 700;
+            font-size: 7px;
+        }
+
+        .area-none {
+            color: #9e9e9e;
+            font-style: italic;
         }
 
         /* ⭐ ESTILO PARA DOCUMENTO */
@@ -370,7 +388,7 @@
     </div>
 
     {{-- ========================================
-         📋 HISTORIAL DE MOVIMIENTOS (CON MOTIVO/DETALLE)
+         📋 HISTORIAL DE MOVIMIENTOS (CON ÁREA Y DETALLE)
     ======================================== --}}
     <div class="section">
         <div class="section-title">📋 Historial de Movimientos</div>
@@ -383,10 +401,11 @@
                         <th class="col-fecha">FECHA</th>
                         <th class="col-tipo">TIPO</th>
                         <th class="col-usuario">USUARIO</th>
+                        <th class="col-area">ÁREA</th> {{-- ⭐ NUEVA COLUMNA --}}
                         <th class="col-ubicacion">UBICACIÓN</th>
                         <th class="col-estado">ESTADO</th>
                         <th class="col-doc">DOCUMENTO</th>
-                        <th class="col-motivo">MOTIVO/DETALLE</th> {{-- ⭐ NUEVA COLUMNA --}}
+                        <th class="col-motivo">DETALLE</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -416,6 +435,15 @@
 
                             {{-- USUARIO --}}
                             <td class="col-usuario">{{ $mov->usuario->name ?? '-' }}</td>
+
+                            {{-- ⭐⭐⭐ ÁREA (NUEVA COLUMNA) ⭐⭐⭐ --}}
+                            <td class="col-area">
+                                @if($mov->ubicacion && $mov->ubicacion->area)
+                                    <span class="area-text">{{ $mov->ubicacion->area->nombre_area }}</span>
+                                @else
+                                    <span class="area-none">-</span>
+                                @endif
+                            </td>
 
                             {{-- UBICACIÓN --}}
                             <td class="col-ubicacion">{{ $mov->ubicacion ? $mov->ubicacion->nombre_sede : '-' }}</td>
@@ -454,11 +482,11 @@
                                 @endif
                             </td>
 
-                            {{-- ⭐⭐⭐ MOTIVO/DETALLE (NUEVA COLUMNA) ⭐⭐⭐ --}}
+                            {{-- MOTIVO/DETALLE --}}
                             <td class="col-motivo">
                                 @if($mov->detalle_tecnico)
                                     <span class="motivo-text">
-                                        {{ Str::limit($mov->detalle_tecnico, 120, '...') }}
+                                        {{ Str::limit($mov->detalle_tecnico, 100, '...') }}
                                     </span>
                                 @else
                                     <span class="motivo-none">Sin detalle</span>

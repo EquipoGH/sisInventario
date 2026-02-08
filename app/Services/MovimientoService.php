@@ -22,11 +22,40 @@ class MovimientoService
                 throw new \Exception('Tipo de movimiento "REGISTRO" no encontrado en la BD');
             }
 
-            // ⭐ Obtener estado "BUENO"
-            $estadoBueno = EstadoBien::where('nombre_estado', 'ILIKE', 'BUENO')->first();
+            // ⭐⭐⭐ OBTENER UBICACIÓN DE RECEPCIÓN AUTOMÁTICAMENTE ⭐⭐⭐
+            $ubicacionRecepcion = \App\Models\Ubicacion::where('es_recepcion_inicial', true)->first();
+
+            if (!$ubicacionRecepcion) {
+                // FALLBACK: Buscar por nombre
+                $ubicacionRecepcion = \App\Models\Ubicacion::where(function($q) {
+                    $q->where('nombre_sede', 'ILIKE', '%abastecimiento%')
+                    ->orWhere('nombre_sede', 'ILIKE', '%almacen%')
+                    ->orWhere('nombre_sede', 'ILIKE', '%almacén%');
+                })
+                ->orWhereHas('area', function($q) {
+                    $q->where('nombre_area', 'ILIKE', '%abastecimiento%')
+                    ->orWhere('nombre_area', 'ILIKE', '%almacen%')
+                    ->orWhere('nombre_area', 'ILIKE', '%logistica%');
+                })
+                ->first();
+            }
+
+            // ⭐ Obtener estado "BUENO" o "NUEVO"
+            $estadoBueno = EstadoBien::where('nombre_estado', 'ILIKE', '%bueno%')
+                ->orWhere('nombre_estado', 'ILIKE', '%nuevo%')
+                ->first();
 
             if (!$estadoBueno) {
-                Log::warning('Estado "BUENO" no encontrado, el movimiento se creará sin estado');
+                Log::warning('Estado "BUENO/NUEVO" no encontrado, el movimiento se creará sin estado');
+            }
+
+            // ⭐ Priorizar ubicación de recepción sobre la del bien
+            $ubicacionFinal = $ubicacionRecepcion ? $ubicacionRecepcion->id_ubicacion : ($bien->idubicacion ?? null);
+
+            if ($ubicacionRecepcion) {
+                Log::info("✅ REGISTRO - Ubicación asignada desde MovimientoService: {$ubicacionRecepcion->nombre_sede} (ID: {$ubicacionRecepcion->id_ubicacion})");
+            } else {
+                Log::warning("⚠️ REGISTRO - No se encontró ubicación de recepción, usando ubicación del bien o NULL");
             }
 
             return Movimiento::create([
@@ -35,9 +64,9 @@ class MovimientoService
                 'fecha_mvto' => now(),
                 'detalle_tecnico' => 'Registro inicial del bien: ' . strtoupper($bien->denominacion_bien),
                 'documento_sustentatorio' => $bien->id_documento ?? null,
-                'NumDocto' => $bien->NumDoc ?? null,  // ⭐ NUEVO
-                'idubicacion' => $bien->idubicacion ?? null,
-                'id_estado_conservacion_bien' => $estadoBueno ? $estadoBueno->id_estado : null,  // ⭐ NUEVO
+                'NumDocto' => $bien->NumDoc ?? null,
+                'idubicacion' => $ubicacionFinal, // ⭐ UBICACIÓN AUTOMÁTICA
+                'id_estado_conservacion_bien' => $estadoBueno ? $estadoBueno->id_estado : null,
                 'idusuario' => Auth::id()
             ]);
 
@@ -46,6 +75,7 @@ class MovimientoService
             throw $e;
         }
     }
+
 
     /**
      * Registrar movimiento automático al actualizar un bien

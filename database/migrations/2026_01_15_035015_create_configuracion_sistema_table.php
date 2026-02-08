@@ -60,15 +60,7 @@ return new class extends Migration
                 'created_at' => now(),
                 'updated_at' => now()
             ],
-            [
-                'clave' => 'color_tabla_hover',
-                'valor' => '#e3f2fd',
-                'tipo' => 'color',
-                'grupo' => 'colores',
-                'descripcion' => 'Color hover en filas de tabla',
-                'created_at' => now(),
-                'updated_at' => now()
-            ],
+            
 
             // BOTONES
             [

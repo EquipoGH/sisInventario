@@ -18,7 +18,13 @@ class Ubicacion extends Model
         'nombre_sede',
         'ambiente',
         'piso_ubicacion',
-        'idarea'
+        'idarea',
+        'es_recepcion_inicial'  // ⭐ NUEVO CAMPO
+    ];
+
+    // ⭐ CAST DEL NUEVO CAMPO BOOLEANO
+    protected $casts = [
+        'es_recepcion_inicial' => 'boolean'
     ];
 
     // Para route model binding
@@ -107,5 +113,62 @@ class Ubicacion extends Model
         });
     }
 
-}
+    // ⭐⭐⭐ MÉTODOS NUEVOS PARA RECEPCIÓN ⭐⭐⭐
 
+    /**
+     * Obtener la ubicación de recepción inicial configurada
+     *
+     * @return Ubicacion|null
+     */
+    public static function getUbicacionRecepcion()
+    {
+        return self::where('es_recepcion_inicial', true)->first();
+    }
+
+    /**
+     * Marcar esta ubicación como recepción inicial
+     * (desmarca las demás automáticamente)
+     *
+     * @return bool
+     */
+    public function marcarComoRecepcion()
+    {
+        // Primero desmarcar todas las demás
+        self::where('es_recepcion_inicial', true)
+            ->where('id_ubicacion', '!=', $this->id_ubicacion)
+            ->update(['es_recepcion_inicial' => false]);
+
+        // Marcar esta como recepción
+        $this->es_recepcion_inicial = true;
+        return $this->save();
+    }
+
+    /**
+     * Desmarcar esta ubicación como recepción inicial
+     *
+     * @return bool
+     */
+    public function desmarcarComoRecepcion()
+    {
+        $this->es_recepcion_inicial = false;
+        return $this->save();
+    }
+
+    /**
+     * Scope para obtener ubicaciones de recepción
+     */
+    public function scopeRecepcion($query)
+    {
+        return $query->where('es_recepcion_inicial', true);
+    }
+
+    /**
+     * Verificar si esta ubicación es de recepción
+     *
+     * @return bool
+     */
+    public function esRecepcion()
+    {
+        return $this->es_recepcion_inicial === true;
+    }
+}

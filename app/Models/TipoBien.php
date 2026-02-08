@@ -23,7 +23,11 @@ class TipoBien extends Model
         return 'id_tipo_bien';
     }
 
-    // Accessor para mostrar en mayúsculas (Laravel 9+)
+    // ==================== ACCESSORS ====================
+
+    /**
+     * Accessor para nombre_tipo en mayúsculas
+     */
     protected function nombreTipo(): Attribute
     {
         return Attribute::make(
@@ -31,14 +35,42 @@ class TipoBien extends Model
         );
     }
 
-    // Si usas Laravel 8 o anterior, usa este formato:
-    // public function getNombreTipoAttribute($value)
-    // {
-    //     return strtoupper($value);
-    // }
+    /**
+     * ⭐ NUEVO: Alias para tipo_bien (compatibilidad con código existente)
+     * Permite usar $tipoBien->tipo_bien en lugar de $tipoBien->nombre_tipo
+     */
+    protected function tipoBien(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => strtoupper($this->attributes['nombre_tipo'] ?? ''),
+        );
+    }
 
+    // ==================== RELACIONES ====================
+
+    /**
+     * Un tipo de bien tiene muchos bienes
+     */
     public function bienes()
     {
         return $this->hasMany(Bien::class, 'id_tipobien', 'id_tipo_bien');
+    }
+
+    // ==================== MÉTODOS AUXILIARES ====================
+
+    /**
+     * Cantidad de bienes de este tipo
+     */
+    public function cantidadBienes()
+    {
+        return $this->bienes()->where('activo', true)->count();
+    }
+
+    /**
+     * Verificar si tiene bienes activos
+     */
+    public function tieneBienes()
+    {
+        return $this->bienes()->where('activo', true)->exists();
     }
 }

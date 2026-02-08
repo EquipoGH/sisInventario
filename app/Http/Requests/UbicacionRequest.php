@@ -38,6 +38,11 @@ class UbicacionRequest extends FormRequest
                 'required',
                 'integer',
                 'exists:area,id_area'
+            ],
+            // ⭐⭐⭐ NUEVO CAMPO ⭐⭐⭐
+            'es_recepcion_inicial' => [
+                'nullable',
+                'boolean'
             ]
         ];
     }
@@ -56,7 +61,10 @@ class UbicacionRequest extends FormRequest
 
             'idarea.required' => 'Debe seleccionar un área',
             'idarea.integer' => 'El área seleccionada no es válida',
-            'idarea.exists' => 'El área seleccionada no existe'
+            'idarea.exists' => 'El área seleccionada no existe',
+
+            // ⭐ NUEVO MENSAJE
+            'es_recepcion_inicial.boolean' => 'El valor de recepción inicial no es válido'
         ];
     }
 
@@ -69,7 +77,11 @@ class UbicacionRequest extends FormRequest
         $this->merge([
             'nombre_sede' => strtoupper($this->nombre_sede ?? ''),
             'ambiente' => strtoupper($this->ambiente ?? ''),
-            'piso_ubicacion' => strtoupper($this->piso_ubicacion ?? '')
+            'piso_ubicacion' => strtoupper($this->piso_ubicacion ?? ''),
+            // ⭐ Convertir checkbox a booleano
+            'es_recepcion_inicial' => $this->has('es_recepcion_inicial')
+                ? filter_var($this->es_recepcion_inicial, FILTER_VALIDATE_BOOLEAN)
+                : false
         ]);
     }
 }

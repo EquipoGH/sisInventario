@@ -16,27 +16,30 @@
     background-color: #e3f2fd !important;
 }
 
+/* ❌ HOVER ELIMINADO - NO CAMBIA COLOR
 .tipo-registro:hover {
     background-color: #bbdefb !important;
-}
+} */
 
 /* 🟢 ASIGNACIÓN - Verde claro */
 .tipo-asignacion {
     background-color: #e8f5e9 !important;
 }
 
+/* ❌ HOVER ELIMINADO - NO CAMBIA COLOR
 .tipo-asignacion:hover {
     background-color: #c8e6c9 !important;
-}
+} */
 
 /* 🔴 BAJA - Rojo claro */
 .tipo-baja {
     background-color: #ffebee !important;
 }
 
+/* ❌ HOVER ELIMINADO - NO CAMBIA COLOR
 .tipo-baja:hover {
     background-color: #ffcdd2 !important;
-}
+} */
 
 /* ⭐ BADGES DE TIPO CON COLOR */
 .badge-tipo-registro {
@@ -187,18 +190,6 @@
     line-height: 1;
 }
 
-/* ==========================================
-   ESTILOS GENERALES
-   ========================================== */
-.fila-movimiento {
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.fila-movimiento:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    transform: translateY(-1px);
-}
 
 .responsable-text {
     font-size: 0.85rem;
@@ -334,7 +325,8 @@
    ========================================== */
 
 /* LABELS DE FILTROS */
-.filter-label {
+.filter-label,
+.filter-label-inline {
     display: block;
     font-size: 0.8rem;
     font-weight: 600;
@@ -344,7 +336,8 @@
     letter-spacing: 0.5px;
 }
 
-.filter-label i {
+.filter-label i,
+.filter-label-inline i {
     margin-right: 5px;
     font-size: 0.85rem;
 }
@@ -490,7 +483,8 @@
         padding: 0.5rem 0.75rem;
     }
 
-    .filter-label {
+    .filter-label,
+    .filter-label-inline {
         font-size: 0.75rem;
     }
 
@@ -508,7 +502,6 @@
         grid-template-columns: 1fr;
     }
 }
-
 
 /* ==========================================
    DISEÑO COMPACTO DE FILTROS EN UNA FILA
@@ -564,7 +557,142 @@
     vertical-align: middle;
 }
 
+/* Animación para actualización de cards */
+.card-updating {
+    animation: cardPulse 0.3s ease-in-out;
+}
+
+@keyframes cardPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+        color: #007bff;
+        font-weight: bold;
+    }
+}
+
+
+
+
+/* ==========================================
+   ⭐ LEYENDA HORIZONTAL + INFO (NUEVA)
+   ========================================== */
+
+.leyenda-horizontal-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+    border: 1px solid #e3e6f0;
+    border-radius: 8px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.leyenda-inline {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.leyenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    color: #5a5c69;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.leyenda-item:hover {
+    transform: translateY(-2px);
+}
+
+.dot-inline {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid;
+    flex-shrink: 0;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.leyenda-item:hover .dot-inline {
+    transform: scale(1.2);
+}
+
+.dot-inline.registro {
+    background-color: #e3f2fd;
+    border-color: #2196F3;
+}
+
+.dot-inline.asignacion {
+    background-color: #e8f5e9;
+    border-color: #4CAF50;
+}
+
+.dot-inline.baja {
+    background-color: #ffebee;
+    border-color: #F44336;
+}
+
+.text-leyenda {
+    font-size: 0.85rem;
+    text-transform: lowercase;
+    letter-spacing: 0.3px;
+}
+
+.info-edicion {
+    color: #858796;
+    font-size: 0.82rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-edicion i {
+    color: #4e73df;
+    font-size: 0.9rem;
+}
+
+/* ⭐ Responsive: en móviles se apilan verticalmente */
+@media (max-width: 768px) {
+    .leyenda-horizontal-container {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        padding: 15px;
+    }
+
+    .leyenda-inline {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .info-edicion {
+        justify-content: center;
+    }
+}
+
+/* ⭐ En tablets: reducir espaciado */
+@media (max-width: 992px) {
+    .leyenda-inline {
+        gap: 18px;
+    }
+}
+
+
 </style>
+@endsection
+
 @stop
 
 
@@ -579,48 +707,30 @@
     {{-- ═══════════════════════════════════════════════════════════════ --}}
     <div class="header-ultra-compacto">
         <div class="row-compacto">
-            {{-- BLOQUE IZQUIERDO: Leyenda de colores --}}
-            <div class="leyenda-box">
-                <div class="leyenda-box-title">código colores</div>
-                <div class="leyenda-box-items">
-                    <div class="leyenda-box-item">
-                        <div class="leyenda-dot-small registro"></div>
-                        <span>registro</span>
-                    </div>
-                    <div class="leyenda-box-item">
-                        <div class="leyenda-dot-small asignacion"></div>
-                        <span>asignación</span>
-                    </div>
-                    <div class="leyenda-box-item">
-                        <div class="leyenda-dot-small baja"></div>
-                        <span>baja</span>
-                    </div>
-                </div>
-            </div>
 
             {{-- BLOQUES DERECHOS: Mini Cards de estadísticas --}}
             <div class="mini-cards-container">
                 {{-- Card 1: Total --}}
                 <div class="mini-card-simple primary">
-                    <div class="mini-card-simple-label">total</div>
+                    <div class="mini-card-simple-label">Total</div>
                     <div class="mini-card-simple-value" id="cardTotalBienes">{{ $totalBienes ?? 0 }}</div>
                 </div>
 
                 {{-- Card 2: Asignación --}}
                 <div class="mini-card-simple success">
-                    <div class="mini-card-simple-label">asignación</div>
+                    <div class="mini-card-simple-label">Asignación</div>
                     <div class="mini-card-simple-value" id="cardBienesAsignados">{{ $bienesAsignados ?? 0 }}</div>
                 </div>
 
                 {{-- Card 3: Registro --}}
                 <div class="mini-card-simple info">
-                    <div class="mini-card-simple-label">registro</div>
+                    <div class="mini-card-simple-label">Registro</div>
                     <div class="mini-card-simple-value" id="cardBienesRegistro">{{ $bienesRegistro ?? 0 }}</div>
                 </div>
 
                 {{-- Card 4: Baja --}}
                 <div class="mini-card-simple danger">
-                    <div class="mini-card-simple-label">baja</div>
+                    <div class="mini-card-simple-label">Baja</div>
                     <div class="mini-card-simple-value" id="cardBienesBaja">{{ $bienesBaja ?? 0 }}</div>
                 </div>
             </div>
@@ -663,89 +773,114 @@
     </div>
 </div>
 
-{{-- FILA 2: Búsqueda + Filtros con LABELS --}}
-<div class="row mb-3 align-items-end">
-    {{-- Búsqueda (35%) --}}
-    <div class="col-xl-4 col-lg-4 col-md-12 mb-2">
-        <label class="filter-label-inline">
-            <i class="fas fa-search text-primary"></i> BÚSQUEDA
-        </label>
-        <div class="input-group input-group-search">
-            <input type="text" id="searchInput" class="form-control form-control-search"
-                   placeholder="Código, denominación, tipo..." autocomplete="off">
-            <div class="input-group-append">
-                <button class="btn btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar búsqueda">
-                    <i class="fas fa-times"></i>
-                </button>
+    {{-- FILA 2: Búsqueda + Filtros con LABELS --}}
+    <div class="row mb-3 align-items-end">
+        {{-- Búsqueda (25% - REDUCIDO) --}}
+        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-search text-primary"></i> BÚSQUEDA
+            </label>
+            <div class="input-group input-group-search">
+                <input type="text" id="searchInput" class="form-control form-control-search"
+                    placeholder="Código, denominación..." autocomplete="off">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar búsqueda">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
+        </div>
+
+        {{-- Filtro: Tipo de Movimiento (12%) --}}
+        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-filter text-primary"></i> TIPO MOVIMIENTO
+            </label>
+            <select id="filtroTipo" class="form-control form-control-sm custom-select-filter">
+                <option value="activos" selected>Movimientos activos</option>
+                @foreach($tiposMovimiento as $tipo)
+                    <option value="{{ $tipo->id_tipo_mvto }}">
+                        @if(stripos($tipo->tipo_mvto, 'ASIGNACION') !== false || stripos($tipo->tipo_mvto, 'ASIGNACIÓN') !== false)
+                            {{ $tipo->tipo_mvto }}
+                        @elseif(stripos($tipo->tipo_mvto, 'REGISTRO') !== false)
+                            {{ $tipo->tipo_mvto }}
+                        @elseif(stripos($tipo->tipo_mvto, 'BAJA') !== false)
+                            {{ $tipo->tipo_mvto }}
+                        @else
+                            {{ $tipo->tipo_mvto }}
+                        @endif
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Filtro: Estado del Bien (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-toggle-on text-info"></i> ESTADO
+            </label>
+            <select id="filtroEstadoBien" class="form-control form-control-sm custom-select-filter">
+                <option value="todos">Todos</option>
+                <option value="1" selected>Activos</option>
+                <option value="0">Inactivos</option>
+            </select>
+        </div>
+
+        {{-- ⭐⭐⭐ NUEVO: Filtro por ÁREA (12%) ⭐⭐⭐ --}}
+        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-building text-warning"></i> ÁREA
+            </label>
+            <select id="filtroArea" class="form-control form-control-sm custom-select-filter">
+                <option value="">Todas las áreas</option>
+                @foreach($areas as $area)
+                    <option value="{{ $area->id_area }}">
+                        {{ Str::limit($area->nombre_area, 20) }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Filtro: Ubicación (12%) --}}
+        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-map-marker-alt text-danger"></i> UBICACIÓN
+            </label>
+            <select id="filtroUbicacion" class="form-control form-control-sm custom-select-filter">
+                <option value="">Todas</option>
+                @foreach($ubicaciones as $ubicacion)
+                    <option value="{{ $ubicacion->id_ubicacion }}">
+                        {{ Str::limit($ubicacion->nombre_sede, 20) }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Filtro: Fecha Desde (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-calendar-alt text-success"></i> DESDE
+            </label>
+            <input type="date" id="filtroFechaDesde" class="form-control form-control-sm custom-date-filter">
+        </div>
+
+        {{-- Filtro: Fecha Hasta (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-calendar-alt text-success"></i> HASTA
+            </label>
+            <input type="date" id="filtroFechaHasta" class="form-control form-control-sm custom-date-filter">
+        </div>
+
+        {{-- Botón Aplicar Filtros (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline d-none d-xl-block">&nbsp;</label>
+            <button type="button" id="btnAplicarFiltros" class="btn btn-apply-filters btn-sm btn-block">
+                <i class="fas fa-search"></i>
+            </button>
         </div>
     </div>
 
-    {{-- Filtro: Tipo de Movimiento (12%) --}}
-    <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
-        <label class="filter-label-inline">
-            <i class="fas fa-filter text-primary"></i> TIPO MOVIMIENTO
-        </label>
-        <select id="filtroTipo" class="form-control form-control-sm custom-select-filter">
-            <option value="">Todos</option>
-            @foreach($tiposMovimiento as $tipo)
-                <option value="{{ $tipo->id_tipo_mvto }}">{{ $tipo->tipo_mvto }}</option>
-            @endforeach
-        </select>
-    </div>
-
-    {{-- Filtro: Estado del Bien (10%) --}}
-    <div class="col-xl-1 col-lg-2 col-md-4 col-6 mb-2">
-        <label class="filter-label-inline">
-            <i class="fas fa-toggle-on text-info"></i> ESTADO
-        </label>
-        <select id="filtroEstadoBien" class="form-control form-control-sm custom-select-filter">
-            <option value="todos">Todos</option>
-            <option value="1" selected>Activos</option>
-            <option value="0">Inactivos</option>
-        </select>
-    </div>
-
-    {{-- Filtro: Ubicación (15%) --}}
-    <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
-        <label class="filter-label-inline">
-            <i class="fas fa-map-marker-alt text-danger"></i> UBICACIÓN
-        </label>
-        <select id="filtroUbicacion" class="form-control form-control-sm custom-select-filter">
-            <option value="">Todas</option>
-            @foreach($ubicaciones as $ubicacion)
-                <option value="{{ $ubicacion->id_ubicacion }}">
-                    {{ Str::limit($ubicacion->ubicacion_completa, 25) }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-
-    {{-- Filtro: Fecha Desde (8%) --}}
-    <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
-        <label class="filter-label-inline">
-            <i class="fas fa-calendar-alt text-success"></i> DESDE
-        </label>
-        <input type="date" id="filtroFechaDesde" class="form-control form-control-sm custom-date-filter">
-    </div>
-
-    {{-- Filtro: Fecha Hasta (8%) --}}
-    <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
-        <label class="filter-label-inline">
-            <i class="fas fa-calendar-alt text-success"></i> HASTA
-        </label>
-        <input type="date" id="filtroFechaHasta" class="form-control form-control-sm custom-date-filter">
-    </div>
-
-    {{-- Botón Aplicar Filtros (10%) --}}
-    <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
-        <label class="filter-label-inline d-none d-xl-block">&nbsp;</label>
-        <button type="button" id="btnAplicarFiltros" class="btn btn-apply-filters btn-sm btn-block">
-            <i class="fas fa-search"></i>
-            <span class="d-none d-xl-inline"> FILTRAR</span>
-        </button>
-    </div>
-</div>
 
 {{-- Información de resultados --}}
 <div class="row mb-2">
@@ -756,7 +891,7 @@
                 Mostrando <strong id="from">{{ $movimientos->firstItem() ?? 0 }}</strong>
                 a <strong id="to">{{ $movimientos->lastItem() ?? 0 }}</strong>
                 de <strong id="resultadosCount">{{ $movimientos->total() }}</strong>
-                (<strong id="totalCount">{{ $total }}</strong> total)
+                (<strong id="totalCount">{{ $total }}</strong> Total)
             </span>
             <span id="loadingSearch" style="display:none;">
                 <i class="fas fa-spinner fa-spin text-primary mr-1"></i>
@@ -784,12 +919,31 @@
     {{-- Separador --}}
     <hr class="mb-3 mt-2" style="border-top: 2px solid #e3e6f0;">
 
-    {{-- Tip texto --}}
-    <div class="text-right mb-2">
-        <small class="text-muted">
-            <i class="fas fa-info-circle"></i> Doble clic en la fila para editar
-        </small>
+    {{-- ⭐⭐⭐ LEYENDA HORIZONTAL + INFO (DEBAJO DE LA TABLA) ⭐⭐⭐ --}}
+    <div class="leyenda-horizontal-container">
+        {{-- Leyenda de colores inline --}}
+        <div class="leyenda-inline">
+            <span class="leyenda-item">
+                <span class="dot-inline registro"></span>
+                <span class="text-leyenda">registro</span>
+            </span>
+            <span class="leyenda-item">
+                <span class="dot-inline asignacion"></span>
+                <span class="text-leyenda">asignación</span>
+            </span>
+            <span class="leyenda-item">
+                <span class="dot-inline baja"></span>
+                <span class="text-leyenda">baja</span>
+            </span>
+        </div>
+
+        {{-- Texto de información --}}
+        <div class="info-edicion">
+            <i class="fas fa-info-circle"></i>
+            Doble clic en la fila para editar
+        </div>
     </div>
+
 
 
 
@@ -798,31 +952,30 @@
             <table class="table table-bordered table-striped table-hover">
                 <thead class="thead-dark">
                     <tr>
-                        <th width="4%">
+                        <th width="3%">
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input" id="checkAll">
                                 <label class="custom-control-label" for="checkAll"></label>
                             </div>
                         </th>
-                        <th width="6%" class="sortable" data-column="id" style="cursor:pointer;">
+                        <th width="5%" class="sortable" data-column="id" style="cursor:pointer;">
                             ID <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="12%" class="sortable" data-column="fecha" style="cursor:pointer;">
+                        <th width="10%" class="sortable" data-column="fecha" style="cursor:pointer;">
                             FECHA <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="10%" class="sortable" data-column="responsable" style="cursor:pointer;">
-                            RESPONSABLE <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th width="12%">CÓDIGO BIEN</th>
+                        <th width="10%">CÓDIGO</th>
                         <th width="20%">DENOMINACIÓN</th>
-                        <th width="11%" class="sortable" data-column="tipo" style="cursor:pointer;">
+                        <th width="10%" class="sortable" data-column="tipo" style="cursor:pointer;">
                             TIPO MVTO <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="13%">UBICACIÓN</th>
-                        <th width="8%">ESTADO</th>
-                        <th width="4%">ACCION</th>
+                        <th width="12%">ÁREA</th>
+                        <th width="12%">UBICACIÓN</th>
+                        <th width="10%">ESTADO</th>
+                        <th width="8%">ACCIÓN</th>
                     </tr>
                 </thead>
+
                 <tbody id="tablaMovimientos">
                     @forelse($movimientos as $movimiento)
                     {{-- ⭐ CLASE DINÁMICA PARA COLOR DE FILA --}}
@@ -1049,9 +1202,6 @@
                                         <dt class="col-sm-5">Estado:</dt>
                                         <dd class="col-sm-7" id="ver-estado">-</dd>
 
-                                        <dt class="col-sm-5">Responsable:</dt>
-                                        <dd class="col-sm-7" id="ver-usuario">-</dd>
-
                                         <dt class="col-sm-5">Doc. Sustento:</dt>
                                         <dd class="col-sm-7" id="ver-documento">-</dd>
 
@@ -1082,7 +1232,6 @@
                                 <div class="col-md-6 text-right">
                                     <label for="filtroTrazabilidad">Filtrar por:</label>
                                     <select id="filtroTrazabilidad" class="form-control form-control-sm d-inline-block" style="width: auto;">
-                                        <option value="todos">Todos los movimientos</option>
                                         <option value="mes">Último mes</option>
                                         <option value="trimestre">Último trimestre</option>
                                         <option value="año">Último año</option>
@@ -1109,16 +1258,18 @@
                                     <table class="table table-sm table-bordered table-hover">
                                         <thead class="thead-light">
                                             <tr>
-                                                <th width="10%">ID</th>
-                                                <th width="15%">Fecha</th>
-                                                <th width="15%">Tipo</th>
-                                                <th width="20%">Usuario</th>
-                                                <th width="20%">Ubicación</th>
-                                                <th width="10%">Estado</th>
+                                                <th width="8%">ID</th>
+                                                <th width="12%">Fecha</th>
+                                                <th width="12%">Tipo</th>
+                                                <th width="15%">Usuario</th>
+                                                <th width="12%">Área</th>
+                                                <th width="15%">Ubicación</th>
+                                                <th width="8%">Estado</th>
                                                 <th width="10%">Documento</th>
-                                                <th width="10%">Motivo/Detalle</th>
+                                                <th width="8%">Detalle</th>
                                             </tr>
                                         </thead>
+
                                         <tbody id="tablaTrazabilidad">
                                             <tr>
                                                 <td colspan="7" class="text-center text-muted">
@@ -1434,10 +1585,15 @@
                 <input type="hidden" id="baja_bienes_ids" name="bienes_ids">
                 <div class="modal-body">
                     <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Se darán de <strong>BAJA</strong> <strong id="cantidadBaja">0</strong> bienes seleccionados.
-                        <br><small>Los bienes quedarán sin ubicación ni estado de conservación.</small>
-                    </div>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Se darán de <strong>BAJA</strong> <strong id="cantidadBaja">0</strong> bienes seleccionados.
+                    <br>
+                    <small class="text-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Los bienes heredarán la ubicación de su última asignación y se marcarán como estado "MALO".</strong>
+                    </small>
+                </div>
+
 
                     <div class="row">
                         <div class="col-md-12">
@@ -2725,9 +2881,9 @@ $(document).ready(function() {
                     $('#tablaTrazabilidad').empty();
 
                     if (movimientos.length === 0) {
-                        $('#tablaTrazabilidad').html(`
-                            <tr>
-                                <td colspan="8" class="text-center text-muted">
+                    $('#tablaTrazabilidad').html(`
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">
                                     <i class="fas fa-inbox fa-2x mb-2"></i>
                                     <p>No hay movimientos en este rango de tiempo</p>
                                 </td>
@@ -2754,17 +2910,23 @@ $(document).ready(function() {
                                 mov.fecha_mvto;
                             const tipo = mov.tipo_movimiento ? mov.tipo_movimiento.tipo_mvto : '-';
                             const usuario = mov.usuario ? mov.usuario.name : '-';
+
+                            // ⭐⭐⭐ NUEVO: EXTRAER ÁREA ⭐⭐⭐
+                            const area = (mov.ubicacion && mov.ubicacion.area) ?
+                                mov.ubicacion.area.nombre_area : '-';
+
                             const ubicacion = mov.ubicacion ? mov.ubicacion.nombre_sede : '-';
                             const estado = mov.estado_conservacion ? mov.estado_conservacion.nombre_estado : '-';
                             const documento = mov.documento_sustento ?
                                 `${mov.documento_sustento.tipo_documento} ${mov.documento_sustento.numero_documento}` : '-';
 
-                            // ⭐⭐⭐ NUEVO: EXTRAER MOTIVO/DETALLE ⭐⭐⭐
+                            // ⭐ EXTRAER MOTIVO/DETALLE
                             const detalle = mov.detalle_tecnico ?
-                                (mov.detalle_tecnico.length > 50 ?
-                                    mov.detalle_tecnico.substring(0, 50) + '...' :
+                                (mov.detalle_tecnico.length > 30 ?
+                                    mov.detalle_tecnico.substring(0, 30) + '...' :
                                     mov.detalle_tecnico) :
                                 '-';
+
 
                             let badgeClass = 'badge-secondary';
                             if (tipo.toLowerCase().includes('registro')) badgeClass = 'badge-primary';
@@ -2778,8 +2940,12 @@ $(document).ready(function() {
                                     <td><strong>${fecha}</strong></td>
                                     <td><span class="badge ${badgeClass}">${tipo}</span></td>
                                     <td><i class="fas fa-user"></i> ${usuario}</td>
-                                    <td><i class="fas fa-map-marker-alt"></i> ${ubicacion}</td>
-                                    <td>${estado}</td>
+                                    <td>
+                                        <i class="fas fa-building text-warning"></i>
+                                        <strong>${area}</strong>
+                                    </td>
+                                    <td><i class="fas fa-map-marker-alt text-danger"></i> ${ubicacion}</td>
+                                    <td><small>${estado}</small></td>
                                     <td><small>${documento}</small></td>
                                     <td>
                                         <small class="text-muted" title="${mov.detalle_tecnico || 'Sin detalle'}">
@@ -2788,6 +2954,7 @@ $(document).ready(function() {
                                     </td>
                                 </tr>
                             `);
+
                         });
 
                         $('#stat-total').text(stats.total_movimientos);
@@ -2969,18 +3136,60 @@ $(document).ready(function() {
         cargarMovimientos();
     });
 
+
     // ==========================================
-    // ⭐ CARGAR MOVIMIENTOS
+    // ⭐ ACTUALIZAR CARDS DE ESTADÍSTICAS (NUEVA)
+    // ==========================================
+    function actualizarCards(estadisticas) {
+        if (!estadisticas) return;
+
+        // Animación al cambiar números
+        const animarCambio = (selector, valorNuevo) => {
+            const $elemento = $(selector);
+            const valorActual = parseInt($elemento.text()) || 0;
+
+            if (valorActual !== valorNuevo) {
+                $elemento.addClass('card-updating');
+
+                setTimeout(() => {
+                    $elemento.text(valorNuevo);
+                    $elemento.removeClass('card-updating');
+                }, 150);
+            }
+        };
+
+        // Actualizar cada card con animación
+        animarCambio('#cardTotalBienes', estadisticas.totalBienes);
+        animarCambio('#cardBienesAsignados', estadisticas.bienesAsignados);
+        animarCambio('#cardBienesRegistro', estadisticas.bienesRegistro);
+        animarCambio('#cardBienesBaja', estadisticas.bienesBaja);
+
+        console.log('✅ Cards actualizados:', estadisticas);
+    }
+
+
+
+
+
+
+
+    // ==========================================
+    // ⭐ CARGAR MOVIMIENTOS (CORREGIDO CON CARDS DINÁMICOS + ÁREA)
     // ==========================================
     function cargarMovimientos() {
+        // ✅ OBTENER VALOR DEL FILTRO DE TIPO (sin conversión especial)
+        let filtroTipoValor = $('#filtroTipo').val();
+
+        // ✅ PARÁMETROS PARA ENVIAR AL BACKEND
         const params = {
             search: busquedaActual,
             orden: ordenActual,
             direccion: direccionActual,
             page: paginaActual,
-            tipo_mvto: $('#filtroTipo').val(),
-            estado_bien: $('#filtroEstadoBien').val(), // ⭐ NUEVO
-            ubicacion: $('#filtroUbicacion').val(),    // ⭐ NUEVO
+            tipo_mvto: filtroTipoValor,  // ← Envía directamente: 'activos', '', o ID
+            estado_bien: $('#filtroEstadoBien').val(),
+            area: $('#filtroArea').val(),  // ⭐ NUEVO
+            ubicacion: $('#filtroUbicacion').val(),
             fecha_desde: $('#filtroFechaDesde').val(),
             fecha_hasta: $('#filtroFechaHasta').val()
         };
@@ -2991,9 +3200,16 @@ $(document).ready(function() {
             data: params,
             success: function(response) {
                 if (response.success) {
+                    // 1️⃣ RENDERIZAR TABLA
                     renderizarMovimientos(response.data);
                     actualizarPaginacion(response);
 
+                    // 2️⃣ ⭐⭐⭐ ACTUALIZAR CARDS DINÁMICAMENTE ⭐⭐⭐
+                    if (response.estadisticas) {
+                        actualizarCards(response.estadisticas);
+                    }
+
+                    // 3️⃣ MANEJO DE UI
                     $('#loadingSearch').hide();
                     $('#infoResultados').show();
 
@@ -3006,7 +3222,7 @@ $(document).ready(function() {
                         $('#paginacionContainer').show();
                     }
 
-                    // ⭐⭐⭐ PROTEGER TÍTULOS DESPUÉS DE CARGAR ⭐⭐⭐
+                    // 4️⃣ PROTEGER TÍTULOS DESPUÉS DE CARGAR
                     setTimeout(function() {
                         protegerTitulosCards();
                         console.log('✅ Títulos protegidos después de cargar movimientos');
@@ -3023,6 +3239,9 @@ $(document).ready(function() {
             }
         });
     }
+
+
+
 
 
     function renderizarMovimientos(movimientos) {
@@ -3066,6 +3285,19 @@ $(document).ready(function() {
             const tipoNombre = mov.bien.tipo_bien ? mov.bien.tipo_bien.nombre_tipo : '';
             const ubicacionNombre = mov.ubicacion ? mov.ubicacion.nombre_sede : '';
 
+            // ✅ OBTENER ÁREA DE LA UBICACIÓN
+            const areaNombre = (mov.ubicacion && mov.ubicacion.area) ? mov.ubicacion.area.nombre_area : '-';
+
+            // ✅ MOSTRAR BOTÓN REVERTIR SOLO SI ES TIPO "BAJA"
+            const esBaja = mov.tipo_movimiento.tipo_mvto.toUpperCase().includes('BAJA');
+            const btnRevertir = esBaja ? `
+                <button type="button" class="btn btn-warning btn-revertir" title="Revertir Baja"
+                    data-id="${mov.id_movimiento}"
+                    data-bien-id="${mov.idbien}">
+                    <i class="fas fa-undo"></i>
+                </button>
+            ` : '';
+
             const row = `
                 <tr id="row-${mov.id_movimiento}" class="fila-movimiento tipo-${tipoNormalizado}" data-id="${mov.id_movimiento}">
                     <td class="text-center">
@@ -3078,24 +3310,14 @@ $(document).ready(function() {
                         </div>
                     </td>
                     <td class="text-center"><strong>${mov.id_movimiento}</strong></td>
-                    <td>
-                        <strong>${fecha}</strong>
-                    </td>
-                    <td>
-                        <span class="responsable-text">
-                            <i class="fas fa-user-circle"></i> ${mov.usuario.name}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge badge-info">${mov.bien.codigo_patrimonial}</span>
-                    </td>
+                    <td><strong>${fecha}</strong></td>
+                    <td><span class="badge badge-info">${mov.bien.codigo_patrimonial}</span></td>
                     <td>
                         <strong>${denominacionCorta}</strong><br>
                         <small class="text-muted">${tipoNombre}</small>
                     </td>
-                    <td>
-                        <span class="badge ${badgeClass}">${mov.tipo_movimiento.tipo_mvto}</span>
-                    </td>
+                    <td><span class="badge ${badgeClass}">${mov.tipo_movimiento.tipo_mvto}</span></td>
+                    <td><small class="text-muted"><i class="fas fa-building"></i> ${areaNombre}</small></td>
                     <td>
                         ${ubicacionNombre ? `<small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${ubicacionNombre}</small>` : '<span class="text-muted">-</span>'}
                     </td>
@@ -3107,6 +3329,7 @@ $(document).ready(function() {
                             <button type="button" class="btn btn-info btn-ver" title="Ver Detalles" data-id="${mov.id_movimiento}">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            ${btnRevertir}
                         </div>
                     </td>
                 </tr>
@@ -3115,6 +3338,7 @@ $(document).ready(function() {
             tbody.append(row);
         });
     }
+
 
         function actualizarPaginacion(response) {
         $('#from').text(response.from || 0);
@@ -3183,39 +3407,46 @@ $(document).ready(function() {
     }
 
     // ==========================================
-    // ⭐ FUNCIONALIDAD PARA FILTROS
+    // ⭐ VERIFICAR FILTROS ACTIVOS (CON ÁREA)
     // ==========================================
-
     function verificarFiltrosActivos() {
         const tipoSeleccionado = $('#filtroTipo').val();
         const estadoBien = $('#filtroEstadoBien').val();
+        const areaSeleccionada = $('#filtroArea').val();  // ⭐ NUEVO
         const ubicacionSeleccionada = $('#filtroUbicacion').val();
         const fechaDesde = $('#filtroFechaDesde').val();
         const fechaHasta = $('#filtroFechaHasta').val();
 
         let filtrosTexto = [];
 
-        // ✅ CONSTRUIR DESCRIPCIÓN DE FILTROS ACTIVOS (MEJORADO)
-
-        // Filtro de tipo de movimiento
-        if (tipoSeleccionado && tipoSeleccionado !== '' && tipoSeleccionado !== 'todos') {
-            const textoTipo = $('#filtroTipo option:selected').text();
+        // ✅ FILTRO DE TIPO DE MOVIMIENTO
+        if (tipoSeleccionado && tipoSeleccionado !== '' && tipoSeleccionado !== 'activos') {
+            // Solo mostrar si NO es el filtro por defecto
+            const textoTipo = $('#filtroTipo option:selected').text()
+                .replace(/📋|📂|✅|📝|❌/g, '') // Quitar emojis
+                .trim();
             filtrosTexto.push(`Tipo: ${textoTipo}`);
         }
 
-        // Filtro de estado del bien (solo mostrar si NO es "Activos" que es el default)
-        if (estadoBien && estadoBien !== '1' && estadoBien !== '' && estadoBien !== 'todos') {
+        // ✅ FILTRO DE ESTADO DEL BIEN
+        if (estadoBien && estadoBien !== '1' && estadoBien !== '') {
             const textoEstado = $('#filtroEstadoBien option:selected').text();
             filtrosTexto.push(`Estado: ${textoEstado}`);
         }
 
-        // Filtro de ubicación
+        // ⭐⭐⭐ FILTRO DE ÁREA (NUEVO) ⭐⭐⭐
+        if (areaSeleccionada && areaSeleccionada !== '') {
+            const textoArea = $('#filtroArea option:selected').text();
+            filtrosTexto.push(`Área: ${textoArea}`);
+        }
+
+        // ✅ FILTRO DE UBICACIÓN
         if (ubicacionSeleccionada && ubicacionSeleccionada !== '' && ubicacionSeleccionada !== 'todas') {
             const textoUbicacion = $('#filtroUbicacion option:selected').text();
             filtrosTexto.push(`Ubicación: ${textoUbicacion}`);
         }
 
-        // Filtro de rango de fechas
+        // ✅ FILTRO DE RANGO DE FECHAS
         if (fechaDesde && fechaHasta) {
             filtrosTexto.push(`Período: ${fechaDesde} al ${fechaHasta}`);
         } else if (fechaDesde) {
@@ -3224,35 +3455,29 @@ $(document).ready(function() {
             filtrosTexto.push(`Hasta: ${fechaHasta}`);
         }
 
-        // ✅ MOSTRAR/OCULTAR EL INDICADOR DE FILTROS (CORREGIDO)
+        // ✅ MOSTRAR/OCULTAR INDICADOR DE FILTROS
         if (filtrosTexto.length > 0) {
-            // Hay filtros activos → Mostrar badge
             $('#filtrosActivosTexto').html(filtrosTexto.join(' <span class="text-muted">|</span> '));
             $('#filtrosActivos').fadeIn(200);
         } else {
-            // No hay filtros activos → Ocultar badge Y limpiar contenido
             $('#filtrosActivos').fadeOut(200, function() {
-                // ⭐ CALLBACK: Limpiar el contenido DESPUÉS de ocultar
                 $('#filtrosActivosTexto').empty();
             });
         }
     }
 
-
-
-    // Detectar cambios en TODOS los filtros (incluyendo los nuevos)
-    $('#filtroTipo, #filtroEstadoBien, #filtroUbicacion, #filtroFechaDesde, #filtroFechaHasta').on('change', function() {
+    // ✅ DETECTAR CAMBIOS EN FILTROS
+        $('#filtroTipo, #filtroEstadoBien, #filtroArea, #filtroUbicacion, #filtroFechaDesde, #filtroFechaHasta').on('change', function() {
         verificarFiltrosActivos();
     });
 
 
-    // Aplicar filtros con validación de fechas
-    // ✅ APLICAR FILTROS CON VALIDACIÓN (MEJORADO)
+    // ✅ APLICAR FILTROS CON VALIDACIÓN
     $('#btnAplicarFiltros').click(function() {
         const fechaDesde = $('#filtroFechaDesde').val();
         const fechaHasta = $('#filtroFechaHasta').val();
 
-        // 1. ⭐ VALIDAR RANGO DE FECHAS
+        // 1. VALIDAR RANGO DE FECHAS
         if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
             Swal.fire({
                 icon: 'warning',
@@ -3261,58 +3486,56 @@ $(document).ready(function() {
                 confirmButtonText: 'Entendido',
                 confirmButtonColor: '#f39c12'
             });
-            return; // Detener ejecución si hay error
+            return;
         }
 
-        // 2. ⭐ ACTUALIZAR INDICADOR DE FILTROS ACTIVOS
+        // 2. ACTUALIZAR INDICADOR
         verificarFiltrosActivos();
 
-        // 3. ⭐ RESETEAR PAGINACIÓN Y RECARGAR TABLA
+        // 3. RESETEAR Y RECARGAR
         paginaActual = 1;
         cargarMovimientos();
 
-        // 4. ⭐ FEEDBACK VISUAL: Botón con loading temporal
+        // 4. FEEDBACK VISUAL
         const btnTexto = $(this).html();
-        $(this).prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin"></i>');
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> ');
 
-        // 5. ⭐ RESTAURAR BOTÓN DESPUÉS DE 500ms
         setTimeout(() => {
-            $(this).prop('disabled', false)
-                .html(btnTexto);
+            $(this).prop('disabled', false).html(btnTexto);
         }, 500);
     });
 
-
-    // ✅ LIMPIAR TODOS LOS FILTROS (CORREGIDO)
+    // ✅ LIMPIAR FILTROS (CORREGIDO)
     $('#btnLimpiarFiltros').click(function() {
-        // 1. Limpiar valores de los filtros
-        $('#filtroTipo').val('');
-        $('#filtroEstadoBien').val('1'); // Volver a "Solo Activos" (default)
+        // 1. RESTAURAR VALORES POR DEFECTO
+        $('#filtroTipo').val('activos'); // ← Volver a "Movimientos activos"
+        $('#filtroEstadoBien').val('1');
+        $('#filtroArea').val('');  // ⭐ NUEVO
         $('#filtroUbicacion').val('');
         $('#filtroFechaDesde').val('');
         $('#filtroFechaHasta').val('');
 
-        // 2. ⭐ FORZAR OCULTACIÓN INMEDIATA DEL BADGE (sin animación)
+        // 2. OCULTAR BADGE INMEDIATAMENTE
         $('#filtrosActivos').hide();
         $('#filtrosActivosTexto').empty();
 
-        // 3. Verificar estado de filtros (para consistencia)
+        // 3. VERIFICAR ESTADO
         verificarFiltrosActivos();
 
-        // 4. Recargar tabla desde página 1
+        // 4. RECARGAR TABLA
         paginaActual = 1;
         cargarMovimientos();
 
-        // 5. Notificación al usuario
+        // 5. NOTIFICACIÓN
         Swal.fire({
             icon: 'info',
-            title: 'Filtros limpiados',
-            text: 'Mostrando solo bienes activos',
+            title: 'Filtros restaurados',
+            text: 'Mostrando movimientos activos (Registro y Asignación)',
             timer: 1500,
             showConfirmButton: false
         });
     });
+
 
     // ==========================================
     // 🚀 INICIALIZACIÓN FINAL
@@ -3321,18 +3544,23 @@ $(document).ready(function() {
     // 1. ⭐ OCULTAR BADGE DE FILTROS AL CARGAR LA PÁGINA
     $('#filtrosActivos').hide();
     $('#filtrosActivosTexto').empty();
+    // ✅ CORRECTO: No muestra badge al inicio (filtro default no necesita badge)
 
     // 2. ⭐ VERIFICAR ESTADO INICIAL DE FILTROS
     verificarFiltrosActivos();
+    // ✅ CORRECTO: Verifica si hay filtros activos (no debería haber ninguno al inicio)
 
     // 3. ⭐ CARGAR MOVIMIENTOS CON FILTROS DEFAULT (solo activos)
     cargarMovimientos();
+    // ✅ CORRECTO: Carga movimientos con el filtro por defecto (activos)
 
     // 4. ⭐ PROTEGER TÍTULOS DE LAS CARDS (failsafe inicial)
     setTimeout(function() {
         protegerTitulosCards();
         console.log('✅ Sistema de movimientos inicializado correctamente');
     }, 150);
+    // ✅ CORRECTO: Protección contra modificaciones accidentales
+
 
 
 

@@ -76,8 +76,9 @@ class Movimiento extends Model
 
     public function estadoConservacion()
     {
-        return $this->belongsTo(EstadoBien::class, 'id_estado_conservacion_bien', 'id_estado');
+        return $this->belongsTo(EstadoBien::class, 'id_estado_conservacion_bien', 'id_estado_bien');
     }
+
 
     public function usuario()
     {
