@@ -4,9 +4,7 @@
   <meta charset="utf-8">
   <title>Reporte de Bienes</title>
   <style>
-    @page {
-      margin: 12mm 8mm 22mm 8mm;
-    }
+    @page { margin: 12mm 8mm 22mm 8mm; }
 
     body {
       font-family: DejaVu Sans, sans-serif;
@@ -23,35 +21,20 @@
       margin-bottom: 6px;
     }
 
-    .header-grid {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    .header-grid { width: 100%; border-collapse: collapse; }
+    .header-grid td { vertical-align: middle; padding: 2px 4px; }
 
-    .header-grid td {
-      vertical-align: middle;
-      padding: 2px 4px;
-    }
+    .logo-cell { width: 62px; text-align: center; }
+    .logo { max-width: 52px; max-height: 52px; }
 
-    .logo-cell {
-      width: 65px;
-      text-align: center;
-    }
-
-    .logo {
-      max-width: 55px;
-      max-height: 55px;
-    }
-
-    .center-cell {
-      text-align: center;
-    }
+    .center-cell { text-align: center; }
 
     .info-cell {
-      width: 110px;
+      width: 105px;
       text-align: right;
       font-size: 7px;
-      line-height: 1.3;
+      line-height: 1.25;
+      white-space: nowrap;
     }
 
     .nombre-inst {
@@ -64,7 +47,7 @@
     .datos-inst {
       font-size: 7px;
       color: #333;
-      line-height: 1.3;
+      line-height: 1.25;
     }
 
     /* Barra meta */
@@ -75,19 +58,9 @@
       width: 100%;
       font-size: 7px;
     }
-
-    .meta-box table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .meta-box td {
-      padding: 1px 3px;
-    }
-
-    .meta-label {
-      font-weight: bold;
-    }
+    .meta-box table { width: 100%; border-collapse: collapse; }
+    .meta-box td { padding: 1px 3px; }
+    .meta-label { font-weight: bold; }
 
     /* Tabla principal */
     .table-datos {
@@ -95,28 +68,53 @@
       border-collapse: collapse;
       margin-top: 5px;
       font-size: 7px;
+      table-layout: fixed;
     }
 
     .table-datos th {
-      background-color: #ddd;
+      background-color: #e3e3e3;
       border: 1px solid #000;
       padding: 3px 2px;
       font-weight: bold;
       text-align: center;
       font-size: 7px;
       text-transform: uppercase;
+      line-height: 1.1;
     }
 
     .table-datos td {
       border: 1px solid #000;
       padding: 2px 3px;
-      vertical-align: top;
-      word-wrap: break-word;
-      line-height: 1.2;
+      vertical-align: middle;
+      line-height: 1.1;
+      overflow: hidden;
+      word-break: break-word;
     }
 
     .c { text-align: center; }
     .r { text-align: right; }
+
+    /* QR más pequeño => baja la altura de la fila */
+    .qr-img {
+      width: 34px;
+      height: 34px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Evitar que el # se vea “gigante” en filas altas */
+    .num {
+      font-size: 7px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    /* Para textos largos: máximo 2 líneas */
+    .clip-2 {
+      display: block;
+      max-height: 2.2em;
+      overflow: hidden;
+    }
 
     /* Pie */
     .footer {
@@ -129,7 +127,7 @@
     }
 
     .firmas {
-      margin-top: 25px;
+      margin-top: 18px;
       width: 100%;
       border-collapse: collapse;
     }
@@ -166,7 +164,7 @@
         </td>
         <td class="info-cell">
           <strong>FECHA:</strong> {{ now()->format('d/m/Y') }}<br>
-          <strong>PÁGINA:</strong> <span class="pagenum"></span>
+          <strong>HORA:</strong> {{ now()->format('H:i') }}<br>
         </td>
       </tr>
     </table>
@@ -195,33 +193,70 @@
   <table class="table-datos">
     <thead>
       <tr>
-        <th style="width:20px;">#</th>
-        <th style="width:70px;">CÓDIGO</th>
-        <th style="width:140px;">DENOMINACIÓN</th>
-        <th style="width:65px;">TIPO</th>
+        {{-- # más angosto --}}
+        <th style="width:12px;">#</th>
+
+        {{-- QR un poco más angosto --}}
+        <th style="width:42px;">QR</th>
+
+        {{-- Ajuste de anchos para aprovechar espacio --}}
+        <th style="width:74px;">CÓDIGO</th>
+        <th style="width:170px;">DENOMINACIÓN</th>
+        <th style="width:70px;">TIPO</th>
         <th style="width:48px;">MARCA</th>
         <th style="width:48px;">MODELO</th>
-        <th style="width:75px;">SERIE</th>
-        <th style="width:58px;">N° DOC</th>
-        <th style="width:48px;">FECHA</th>
+        <th style="width:88px;">SERIE</th>
+        <th style="width:70px;">N° DOC</th>
+        <th style="width:46px;">FECHA</th>
       </tr>
     </thead>
+
     <tbody>
       @forelse($bienes as $i => $b)
         <tr>
-          <td class="c">{{ $i + 1 }}</td>
-          <td>{{ $b->codigo_patrimonial }}</td>
-          <td>{{ mb_strtoupper($b->denominacion_bien) }}</td>
-          <td>{{ optional($b->tipoBien)->nombre_tipo }}</td>
-          <td>{{ $b->marca_bien }}</td>
-          <td>{{ $b->modelo_bien }}</td>
-          <td>{{ $b->nserie_bien }}</td>
-          <td>{{ $b->NumDoc }}</td>
+          <td class="c"><span class="num">{{ $i + 1 }}</span></td>
+
+          <td class="c">
+            @if(!empty($b->qr_code))
+              <img class="qr-img" src="data:image/png;base64,{{ $b->qr_code }}" alt="QR">
+            @else
+              -
+            @endif
+          </td>
+
+          <td class="c">
+            <span class="clip-2">{{ $b->codigo_patrimonial }}</span>
+          </td>
+
+          <td>
+            <span class="clip-2">{{ mb_strtoupper($b->denominacion_bien ?? '') }}</span>
+          </td>
+
+          <td>
+            <span class="clip-2">{{ optional($b->tipoBien)->nombre_tipo }}</span>
+          </td>
+
+          <td>
+            <span class="clip-2">{{ $b->marca_bien }}</span>
+          </td>
+
+          <td>
+            <span class="clip-2">{{ $b->modelo_bien }}</span>
+          </td>
+
+          <td>
+            <span class="clip-2">{{ $b->nserie_bien }}</span>
+          </td>
+
+          <td class="c">
+            <span class="clip-2">{{ $b->NumDoc }}</span>
+          </td>
+
           <td class="c">{{ optional($b->fecha_registro)->format('d/m/Y') }}</td>
         </tr>
       @empty
         <tr>
-          <td colspan="9" class="c">No hay registros</td>
+          <td colspan="10" class="c">No hay registros</td>
         </tr>
       @endforelse
     </tbody>
@@ -245,15 +280,14 @@
     </table>
   </div>
 
-  {{-- Paginación --}}
+  {{-- Paginación (DomPDF) --}}
   <script type="text/php">
     if (isset($pdf)) {
       $text = "Página {PAGE_NUM} / {PAGE_COUNT}";
-      $font = $fontMetrics->getFont("DejaVu Sans");
+      $font = $fontMetrics->get_font("DejaVu Sans", "normal");
       $size = 7;
-      $width = $fontMetrics->get_text_width($text, $font, $size);
-      $x = ($pdf->get_width() - $width) - 22;
-      $y = 30;
+      $x = 470;
+      $y = 18;
       $pdf->page_text($x, $y, $text, $font, $size, array(0,0,0));
     }
   </script>
