@@ -36,15 +36,15 @@ class Movimiento extends Model
     // ⭐⭐⭐ CAMBIO CRÍTICO: Usar $casts en vez de $dates ⭐⭐⭐
     protected $casts = [
         'fecha_mvto' => 'datetime',
-        'fecha_reversion' => 'datetime', // ⭐ NUEVO
+        'fecha_reversion' => 'datetime',
         'idbien' => 'integer',
         'tipo_mvto' => 'integer',
         'idubicacion' => 'integer',
         'id_estado_conservacion_bien' => 'integer',
         'idusuario' => 'integer',
-        'revertido' => 'boolean', // ⭐ NUEVO
-        'revertido_por' => 'integer', // ⭐ NUEVO
-        'movimiento_reversion_id' => 'integer' // ⭐ NUEVO
+        'revertido' => 'boolean',
+        'revertido_por' => 'integer',
+        'movimiento_reversion_id' => 'integer'
     ];
 
     public function getRouteKeyName()
@@ -74,11 +74,13 @@ class Movimiento extends Model
         return $this->belongsTo(Ubicacion::class, 'idubicacion', 'id_ubicacion');
     }
 
+    /**
+     * ✅ CORREGIDO: Foreign key correcta
+     */
     public function estadoConservacion()
     {
-        return $this->belongsTo(EstadoBien::class, 'id_estado_conservacion_bien', 'id_estado_bien');
+        return $this->belongsTo(EstadoBien::class, 'id_estado_conservacion_bien', 'id_estado');
     }
-
 
     public function usuario()
     {
