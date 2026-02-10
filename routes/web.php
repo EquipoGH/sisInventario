@@ -35,7 +35,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
-
 // Rutas protegidas con autenticación
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -197,6 +196,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bienes/data', [ReporteBienController::class, 'data'])->name('bienes.data');
         Route::get('/bienes/pdf', [ReporteBienController::class, 'pdf'])->name('bienes.pdf');
         Route::get('/bienes/excel', [ReporteBienController::class, 'excel'])->name('bienes.excel');
+
     });
 });
 

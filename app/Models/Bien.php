@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Bien extends Model
 {
@@ -242,5 +243,11 @@ class Bien extends Model
                 'NumDoc' => $this->documentoSustento->NumDoc ?? $this->documentoSustento->numero_documento,
             ] : null,
         ];
+    }
+    public function latestMovimiento(): HasOne
+    {
+    // Último por fecha_mvto y desempate por id_movimiento
+    return $this->hasOne(Movimiento::class, 'idbien', 'id_bien')
+        ->latestOfMany(['fecha_mvto', 'id_movimiento']);
     }
 }

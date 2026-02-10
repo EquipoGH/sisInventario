@@ -2,64 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\BienesExport;
+use App\Models\Area;
 use App\Models\Bien;
 use App\Models\TipoBien;
-use App\Models\DocumentoSustento;
-use App\Exports\BienesExport;
+use App\Models\Ubicacion;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
-use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Writer\PngWriter;
-use Endroid\QrCode\ErrorCorrectionLevel;
-
 class ReporteBienController extends Controller
 {
-    private function buildQuery(Request $request)
+    public function index(Request $request)
     {
-        $q = Bien::query()->with(['tipoBien', 'documentoSustento']);
+        $tiposBien = TipoBien::orderBy('nombre_tipo')->get();
+        $areas = Area::orderBy('nombre_area')->get();
+        $ubicaciones = Ubicacion::with('area')->orderBy('nombre_sede')->orderBy('ambiente')->get();
+        $settings = $this->reportSettings();
 
-        if ($request->filled('desde')) {
-            $q->whereDate('fecha_registro', '>=', $request->desde);
-        }
-        if ($request->filled('hasta')) {
-            $q->whereDate('fecha_registro', '<=', $request->hasta);
-        }
-        if ($request->filled('tipo_bien')) {
-            $q->where('id_tipobien', $request->tipo_bien);
-        }
-        if ($request->filled('documento')) {
-            $q->where('id_documento', $request->documento);
-        }
-
-        if ($request->filled('con_documento')) {
-            if ($request->con_documento === '1' || $request->con_documento == 1) {
-                $q->whereNotNull('id_documento');
-            }
-            if ($request->con_documento === '0' || $request->con_documento == 0) {
-                $q->whereNull('id_documento');
-            }
-        }
-
-        $term = trim((string) $request->input('search.value', ''));
-        if ($term === '') {
-            $term = trim((string) $request->input('q', ''));
-        }
-
-        if ($term !== '') {
-            $q->where(function ($w) use ($term) {
-                $w->where('codigo_patrimonial', 'ILIKE', "%{$term}%")
-                  ->orWhere('denominacion_bien', 'ILIKE', "%{$term}%")
-                  ->orWhere('marca_bien', 'ILIKE', "%{$term}%")
-                  ->orWhere('modelo_bien', 'ILIKE', "%{$term}%")
-                  ->orWhere('nserie_bien', 'ILIKE', "%{$term}%")
-                  ->orWhere('NumDoc', 'ILIKE', "%{$term}%");
-            });
-        }
-
-        return $q;
+        return view('reportes.bienes.index', compact('tiposBien', 'areas', 'ubicaciones', 'settings'));
     }
 
     private function reportSettings(): array
@@ -82,74 +44,131 @@ class ReporteBienController extends Controller
         return $s;
     }
 
-    private function qrBase64(?string $codigoPatrimonial): string
+    private function estadoFromRequest(Request $request): string
     {
-        $texto = trim((string) $codigoPatrimonial);
-        if ($texto === '') {
-            $texto = 'SIN-CODIGO';
+        $estado = $request->input('estado', $request->query('estado', 'activos'));
+        $estado = strtolower(trim((string)$estado));
+
+        return in_array($estado, ['activos', 'inactivos', 'todos'], true) ? $estado : 'activos';
+    }
+
+    private function reporteFromRequest(Request $request): string
+    {
+        $reporte = $request->input('reporte', $request->query('reporte', 'general'));
+        $reporte = strtolower(trim((string)$reporte));
+
+        return in_array($reporte, ['general', 'registrados', 'asignados', 'bajas'], true) ? $reporte : 'general';
+    }
+
+    private function baseQuery(Request $request)
+    {
+        $estado = $this->estadoFromRequest($request);
+
+        $q = Bien::query()
+            ->with([
+                'tipoBien',
+                'documentoSustento',
+                'latestMovimiento.tipoMovimiento',
+                'latestMovimiento.ubicacion.area',
+            ]);
+
+        // ✅ eliminación lógica
+        if ($estado === 'activos') $q->activos();
+        if ($estado === 'inactivos') $q->eliminados();
+        // 'todos' => sin filtro
+
+        // ⚙️ filtros (puedes mantenerlos aunque no muestres la fecha)
+        if ($request->filled('desde')) $q->whereDate('fecha_registro', '>=', $request->desde);
+        if ($request->filled('hasta')) $q->whereDate('fecha_registro', '<=', $request->hasta);
+
+        if ($request->filled('tipo_bien')) $q->where('id_tipobien', $request->tipo_bien);
+
+        if ($request->filled('ubicacion_id')) {
+            $q->whereHas('latestMovimiento', fn ($m) => $m->where('idubicacion', $request->ubicacion_id));
         }
 
-        $writer = new PngWriter();
-        $qr = QrCode::create($texto)
-            ->setSize(180)
-            ->setMargin(1)
-            ->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
+        if ($request->filled('area_id')) {
+            $q->whereHas('latestMovimiento.ubicacion', fn ($u) => $u->where('idarea', $request->area_id));
+        }
 
-        $result = $writer->write($qr);
+        // 🔍 DataTables + tu input q
+        $term = trim((string)$request->input('search.value', ''));
+        if ($term === '') $term = trim((string)$request->input('q', ''));
 
-        return base64_encode($result->getString());
+        if ($term !== '') {
+            $q->buscar($term); // tu scopeBuscar()
+        }
+
+        return [$q, $estado];
     }
 
-    private function attachQrToBienes($bienes)
+    private function applyReporteFilter($q, string $reporte)
     {
-        $bienes->each(function ($bien) {
-            $bien->qr_code = $this->qrBase64($bien->codigo_patrimonial);
-        });
+        if ($reporte === 'bajas') {
+            $q->whereHas('latestMovimiento', function ($m) {
+                $m->where('revertido', false)
+                    ->whereHas('tipoMovimiento', fn ($tm) => $tm->where('tipo_mvto', 'ILIKE', '%baja%'));
+            });
+        }
 
-        return $bienes;
+        if ($reporte === 'registrados') {
+            $q->whereHas('latestMovimiento.tipoMovimiento', fn ($tm) => $tm->where('tipo_mvto', 'ILIKE', '%registr%'));
+        }
+
+        if ($reporte === 'asignados') {
+            $q->whereHas('latestMovimiento.tipoMovimiento', fn ($tm) => $tm->where('tipo_mvto', 'ILIKE', '%asign%'));
+        }
+
+        return $q;
     }
 
-    public function index()
+    private function recordsTotalByEstado(string $estado): int
     {
-        $tiposBien = TipoBien::orderBy('nombre_tipo')->get();
-        $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
-        $settings = $this->reportSettings();
-
-        return view('reportes.bienes.index', compact('tiposBien', 'documentos', 'settings'));
+        if ($estado === 'activos') return Bien::query()->activos()->count();
+        if ($estado === 'inactivos') return Bien::query()->eliminados()->count();
+        return Bien::query()->count(); // todos
     }
 
     public function data(Request $request)
     {
-        $draw   = (int) $request->input('draw', 1);
-        $start  = (int) $request->input('start', 0);
-        $length = (int) $request->input('length', 10);
+        $reporte = $this->reporteFromRequest($request);
 
-        $base = $this->buildQuery($request);
+        $draw = (int)$request->input('draw', 1);
+        $start = (int)$request->input('start', 0);
+        $length = (int)$request->input('length', 10);
 
-        $recordsTotal = Bien::query()->count();
+        [$q, $estado] = $this->baseQuery($request);
+        $base = $this->applyReporteFilter($q, $reporte);
+
+        $recordsTotal = $this->recordsTotalByEstado($estado);
         $recordsFiltered = (clone $base)->count();
 
-        $data = $base
-            ->orderBy('fecha_registro', 'desc')
+        // ✅ Ya NO ordenamos por fecha_registro para no depender de “fecha del bien”
+        $rows = $base
             ->orderBy('id_bien', 'desc')
             ->skip($start)
             ->take($length)
-            ->get()
-            ->map(function ($b) {
-                return [
-                    'id_bien' => $b->id_bien,
-                    'fecha_registro' => optional($b->fecha_registro)->format('Y-m-d'),
-                    'codigo_patrimonial' => $b->codigo_patrimonial,
-                    'denominacion_bien' => $b->denominacion_bien,
-                    'tipo_bien' => optional($b->tipoBien)->nombre_tipo,
-                    'marca_bien' => $b->marca_bien,
-                    'modelo_bien' => $b->modelo_bien,
-                    'nserie_bien' => $b->nserie_bien,
-                    'numdoc' => $b->NumDoc,
-                    'documento' => optional($b->documentoSustento)->tipo_documento,
-                    'numero_documento' => optional($b->documentoSustento)->numero_documento,
-                ];
-            });
+            ->get();
+
+        $data = $rows->map(function ($b) {
+            $lm = $b->latestMovimiento;
+            $ubic = $lm?->ubicacion;
+            $area = $ubic?->area;
+            $tipoMvto = $lm?->tipoMovimiento?->tipo_mvto;
+
+            return [
+                'id_bien' => $b->id_bien,
+                'codigo_patrimonial' => $b->codigo_patrimonial,
+                'denominacion_bien' => $b->denominacion_bien,
+                'tipo_bien' => optional($b->tipoBien)->nombre_tipo,
+                'marca_bien' => $b->marca_bien,
+                'modelo_bien' => $b->modelo_bien,
+                'nserie_bien' => $b->nserie_bien,
+                'area' => $area?->nombre_area,
+                'ubicacion' => $ubic ? trim(($ubic->nombre_sede ?? '') . ' - ' . ($ubic->ambiente ?? '')) : null,
+                'tipo_mvto' => $tipoMvto, // para colorear filas
+            ];
+        });
 
         return response()->json([
             'draw' => $draw,
@@ -161,30 +180,42 @@ class ReporteBienController extends Controller
 
     public function pdf(Request $request)
     {
-        $bienes = $this->buildQuery($request)->get();
-        $bienes = $this->attachQrToBienes($bienes);
+        $reporte = $this->reporteFromRequest($request);
+
+        [$q, $estado] = $this->baseQuery($request);
+        $bienes = $this->applyReporteFilter($q, $reporte)->get();
 
         $settings = $this->reportSettings();
 
-        $pdf = Pdf::loadView('reportes.bienes.pdf', [
+        // para header del PDF
+        $filtros = $request->all();
+        $filtros['estado'] = $estado;
+
+        return Pdf::loadView('reportes.bienes.pdf', [
             'bienes' => $bienes,
             'settings' => $settings,
-            'filtros' => $request->all(),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->stream('reporte_bienes.pdf');
+            'filtros' => $filtros,
+            'reporte' => $reporte,
+            'estado' => $estado,
+        ])->setPaper('a4', 'portrait')
+          ->stream("reporte_bienes_{$reporte}_{$estado}.pdf");
     }
 
     public function excel(Request $request)
     {
-        $bienes = $this->buildQuery($request)->get();
-        $bienes = $this->attachQrToBienes($bienes);
+        $reporte = $this->reporteFromRequest($request);
+
+        [$q, $estado] = $this->baseQuery($request);
+        $bienes = $this->applyReporteFilter($q, $reporte)->get();
 
         $settings = $this->reportSettings();
 
+        $filtros = $request->all();
+        $filtros['estado'] = $estado;
+
         return Excel::download(
-            new BienesExport($bienes, $settings, $request->all()),
-            'reporte_bienes.xlsx'
+            new BienesExport($bienes, $settings, $filtros, $reporte),
+            "reporte_bienes_{$reporte}_{$estado}.xlsx"
         );
     }
 }

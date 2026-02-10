@@ -14,26 +14,32 @@
     <td style="text-align:center; font-size:7px; padding-top:2px; padding-bottom:6px;">
       @if(!empty($settings['ruc']))RUC: {{ $settings['ruc'] }} | @endif
       Fecha: {{ now()->format('d/m/Y') }}
-      @if(!empty($filtros['desde']) && !empty($filtros['hasta']))
-        | Rango: {{ $filtros['desde'] }} a {{ $filtros['hasta'] }}
+      @if(!empty($filtros['desde']) || !empty($filtros['hasta']))
+        | Período:
+        @if(!empty($filtros['desde']) && !empty($filtros['hasta']))
+          {{ $filtros['desde'] }} a {{ $filtros['hasta'] }}
+        @elseif(!empty($filtros['desde']))
+          Desde {{ $filtros['desde'] }}
+        @else
+          Hasta {{ $filtros['hasta'] }}
+        @endif
+      @else
+        | Período: Todas las fechas
       @endif
       | Total: {{ $bienes->count() }}
     </td>
   </tr>
 
-  {{-- Espacio --}}
   <tr><td style="height:6px;"></td></tr>
 
-  {{-- Tabla interna (encabezados + datos) --}}
   <tr>
     <td>
       <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:7px;">
         <thead>
           <tr>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:18px; text-align:center;">#</th>
-            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:62px; text-align:center;">QR</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:78px; text-align:center;">CÓDIGO</th>
-            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:150px; text-align:center;">DENOMINACIÓN</th>
+            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:170px; text-align:center;">DENOMINACIÓN</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:72px; text-align:center;">TIPO</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:52px; text-align:center;">MARCA</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:52px; text-align:center;">MODELO</th>
@@ -48,18 +54,6 @@
             <tr>
               <td style="border:1px solid #000; padding:2px 3px; text-align:center;">
                 {{ $i + 1 }}
-              </td>
-
-              <td style="border:1px solid #000; padding:2px 3px; text-align:center; vertical-align:middle;">
-                @if(!empty($b->qr_code))
-                  <img
-                    src="data:image/png;base64,{{ $b->qr_code }}"
-                    alt="QR"
-                    style="width:54px; height:54px; display:block; margin:0 auto;"
-                  >
-                @else
-                  -
-                @endif
               </td>
 
               <td style="border:1px solid #000; padding:2px 3px;">
@@ -96,7 +90,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="10" style="border:1px solid #000; padding:6px; text-align:center;">
+              <td colspan="9" style="border:1px solid #000; padding:6px; text-align:center;">
                 No hay registros
               </td>
             </tr>

@@ -2,47 +2,54 @@
 
 namespace App\Exports;
 
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use Maatwebsite\Excel\Concerns\WithDrawings;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class BienesExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithDrawings, WithEvents
+class BienesExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithEvents
 {
     protected $bienes;
     protected $settings;
     protected $filtros;
+    protected $reporte;
 
-    public function __construct($bienes, $settings, $filtros)
+    public function __construct($bienes, $settings, $filtros, $reporte = 'general')
     {
         $this->bienes = $bienes;
         $this->settings = $settings;
         $this->filtros = $filtros;
+        $this->reporte = $reporte ?: 'general';
     }
 
     public function collection()
     {
         return $this->bienes->map(function ($b, $i) {
+            $lm = $b->latestMovimiento;
+            $ubic = $lm?->ubicacion;
+            $area = $ubic?->area;
+
+            $ubicTxt = $ubic
+                ? trim(($ubic->nombre_sede ?? '') . ' - ' . ($ubic->ambiente ?? ''))
+                : null;
+
             return [
                 'num' => $i + 1,
-                'qr' => '',
                 'codigo_patrimonial' => $b->codigo_patrimonial,
                 'denominacion_bien' => mb_strtoupper($b->denominacion_bien ?? ''),
                 'tipo_bien' => optional($b->tipoBien)->nombre_tipo,
                 'marca_bien' => $b->marca_bien,
                 'modelo_bien' => $b->modelo_bien,
                 'nserie_bien' => $b->nserie_bien,
-                'numdoc' => $b->NumDoc,
+                'area' => $area?->nombre_area,
+                'ubicacion' => $ubicTxt,
                 'fecha_registro' => optional($b->fecha_registro)->format('d/m/Y'),
             ];
         });
@@ -50,104 +57,30 @@ class BienesExport implements FromCollection, WithHeadings, WithStyles, WithColu
 
     public function headings(): array
     {
-        return [
-            '#',
-            'QR',
-            'CÓDIGO',
-            'DENOMINACIÓN',
-            'TIPO',
-            'MARCA',
-            'MODELO',
-            'SERIE',
-            'N° DOC',
-            'FECHA',
-        ];
+        return ['#', 'CÓDIGO', 'DENOMINACIÓN', 'TIPO', 'MARCA', 'MODELO', 'SERIE', 'ÁREA', 'UBICACIÓN', 'FECHA'];
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 6,
-            'B' => 10,
-            'C' => 16,
-            'D' => 35,
-            'E' => 22,
-            'F' => 14,
-            'G' => 14,
-            'H' => 18,
-            'I' => 15,
-            'J' => 12,
+            'A' => 6,   // #
+            'B' => 18,  // Código
+            'C' => 40,  // Denominación
+            'D' => 20,  // Tipo
+            'E' => 16,  // Marca
+            'F' => 16,  // Modelo
+            'G' => 20,  // Serie
+            'H' => 22,  // Área
+            'I' => 34,  // Ubicación
+            'J' => 14,  // Fecha
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:J1')->applyFromArray([
-            'font' => ['bold' => true, 'size' => 10, 'color' => ['argb' => 'FFFFFFFF']],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FF0070C0'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'borders' => [
-                'allBorders' => ['borderStyle' => Border::BORDER_THIN],
-            ],
-        ]);
-
-        $sheet->getRowDimension(1)->setRowHeight(20);
-
-        $lastRow = $this->bienes->count() + 1;
-        if ($lastRow > 1) {
-            $sheet->getStyle("A2:J{$lastRow}")->applyFromArray([
-                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-                'borders' => [
-                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
-                ],
-            ]);
-
-            for ($i = 2; $i <= $lastRow; $i++) {
-                $sheet->getRowDimension($i)->setRowHeight(50);
-            }
-
-            $sheet->getStyle("A2:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("B2:B{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("J2:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        }
-
+        // Ojo: el header real se inserta con insertHeader() (metemos 4 filas arriba)
+        // Aquí solo devolvemos array vacío y estilamos con AfterSheet para no pelear con filas insertadas.
         return [];
-    }
-
-    public function drawings()
-    {
-        $drawings = [];
-
-        foreach ($this->bienes as $index => $bien) {
-            if (empty($bien->qr_code)) continue;
-
-            $pngBinary = base64_decode($bien->qr_code);
-            
-            // Guardar en storage/app/public/temp (accesible y limpiable)
-            $filename = "temp_qr_{$index}_" . uniqid() . ".png";
-            Storage::disk('local')->put("temp/{$filename}", $pngBinary);
-            $tempPath = storage_path("app/temp/{$filename}");
-
-            $drawing = new Drawing();
-            $drawing->setName("QR {$bien->codigo_patrimonial}");
-            $drawing->setDescription("QR Code");
-            $drawing->setPath($tempPath);
-            $drawing->setWidth(45);
-            $drawing->setHeight(45);
-            $drawing->setCoordinates('B' . ($index + 2));
-            $drawing->setOffsetX(10);
-            $drawing->setOffsetY(3);
-
-            $drawings[] = $drawing;
-        }
-
-        return $drawings;
     }
 
     public function registerEvents(): array
@@ -155,60 +88,116 @@ class BienesExport implements FromCollection, WithHeadings, WithStyles, WithColu
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
+
                 $this->insertHeader($sheet);
+
+                $lastCol = 'J';
+
+                // Fila de headings queda en la fila 5 (porque insertamos 4 filas)
+                $headingRow = 5;
+
+                // Estilos headings
+                $sheet->getStyle("A{$headingRow}:{$lastCol}{$headingRow}")->applyFromArray([
+                    'font' => ['bold' => true, 'size' => 10, 'color' => ['argb' => 'FFFFFFFF']],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['argb' => 'FF0070C0'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                    ],
+                ]);
+                $sheet->getRowDimension($headingRow)->setRowHeight(20);
+
+                // Data range
+                $dataStart = $headingRow + 1;
+                $dataEnd = $headingRow + $this->bienes->count();
+
+                if ($dataEnd >= $dataStart) {
+                    $sheet->getStyle("A{$dataStart}:{$lastCol}{$dataEnd}")->applyFromArray([
+                        'alignment' => ['vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+                        'borders' => [
+                            'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                        ],
+                    ]);
+
+                    // Centrar columnas # y fecha
+                    $sheet->getStyle("A{$dataStart}:A{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle("J{$dataStart}:J{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
+
+                // Congelar encabezado
+                $sheet->freezePane("A" . ($dataStart));
             },
         ];
     }
 
     protected function insertHeader(Worksheet $sheet)
     {
+        $lastCol = 'J';
+
+        // Insertar 4 filas arriba
         $sheet->insertNewRowBefore(1, 4);
 
-        $sheet->mergeCells('A1:J1');
-        $sheet->setCellValue('A1', mb_strtoupper($this->settings['nombre_institucion'] ?? 'INSTITUCIÓN'));
+        $nombreInst = mb_strtoupper($this->settings['nombre_institucion'] ?? 'INSTITUCIÓN');
+        $direccion = $this->settings['direccion'] ?? '';
+        $ruc = $this->settings['ruc'] ?? '';
+        $telefono = $this->settings['telefono'] ?? '';
+
+        $titulo = match($this->reporte) {
+            'registrados' => 'REPORTE DE BIENES - REGISTRADOS',
+            'asignados' => 'REPORTE DE BIENES - ASIGNADOS',
+            'bajas' => 'REPORTE DE BIENES - BAJAS',
+            default => 'REPORTE DE BIENES',
+        };
+
+        $desde = $this->filtros['desde'] ?? null;
+        $hasta = $this->filtros['hasta'] ?? null;
+
+        if (!empty($desde) && !empty($hasta)) $periodo = "{$desde} a {$hasta}";
+        elseif (!empty($desde)) $periodo = "Desde {$desde}";
+        elseif (!empty($hasta)) $periodo = "Hasta {$hasta}";
+        else $periodo = "Todas las fechas";
+
+        // A1: nombre institución
+        $sheet->mergeCells("A1:{$lastCol}1");
+        $sheet->setCellValue('A1', $nombreInst);
         $sheet->getStyle('A1')->applyFromArray([
             'font' => ['bold' => true, 'size' => 14],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
-        $sheet->mergeCells('A2:J2');
-        $direccion = $this->settings['direccion'] ?? '';
-        $ruc = $this->settings['ruc'] ?? '';
-        $telefono = $this->settings['telefono'] ?? '';
-        $sheet->setCellValue('A2', "{$direccion} | RUC: {$ruc} | Tel: {$telefono}");
+        // A2: datos
+        $sheet->mergeCells("A2:{$lastCol}2");
+        $linea = trim($direccion);
+        $extras = [];
+        if ($ruc !== '') $extras[] = "RUC: {$ruc}";
+        if ($telefono !== '') $extras[] = "Tel: {$telefono}";
+        if (!empty($extras)) $linea = trim($linea . ' | ' . implode(' | ', $extras), ' |');
+        $sheet->setCellValue('A2', $linea);
         $sheet->getStyle('A2')->applyFromArray([
             'font' => ['size' => 9],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
-        $sheet->mergeCells('A3:J3');
-        $sheet->setCellValue('A3', 'REPORTE DE BIENES');
+        // A3: título
+        $sheet->mergeCells("A3:{$lastCol}3");
+        $sheet->setCellValue('A3', $titulo);
         $sheet->getStyle('A3')->applyFromArray([
             'font' => ['bold' => true, 'size' => 12],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
-        $desde = $this->filtros['desde'] ?? '';
-        $hasta = $this->filtros['hasta'] ?? '';
-        $rango = (!empty($desde) && !empty($hasta)) ? "Desde: {$desde} hasta {$hasta}" : 'Todos';
-
-        $sheet->mergeCells('A4:J4');
-        $sheet->setCellValue('A4', "Rango: {$rango} | Total: " . $this->bienes->count());
+        // A4: período + total
+        $sheet->mergeCells("A4:{$lastCol}4");
+        $sheet->setCellValue('A4', "Período: {$periodo} | Total: " . $this->bienes->count());
         $sheet->getStyle('A4')->applyFromArray([
             'font' => ['size' => 9, 'italic' => true],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
-
-        if (!empty($this->settings['logo_reportes_abs']) && file_exists($this->settings['logo_reportes_abs'])) {
-            $logo = new Drawing();
-            $logo->setName('Logo');
-            $logo->setPath($this->settings['logo_reportes_abs']);
-            $logo->setWidth(50);
-            $logo->setHeight(50);
-            $logo->setCoordinates('A1');
-            $logo->setOffsetX(10);
-            $logo->setOffsetY(5);
-            $logo->setWorksheet($sheet);
-        }
     }
 }
