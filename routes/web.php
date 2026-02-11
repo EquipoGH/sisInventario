@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
 // Rutas protegidas con autenticación
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -80,6 +81,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bien/obtener-documentos', [BienController::class, 'obtenerDocumentos'])
         ->name('bien.obtener-documentos');
 
+    // ⭐⭐⭐ NUEVA: Obtener último movimiento antes de eliminar ⭐⭐⭐
+    Route::get('/bien/{bien}/ultimo-movimiento', [BienController::class, 'obtenerUltimoMovimiento'])
+        ->name('bien.ultimo-movimiento');
+
     // ✅ ELIMINACIÓN LÓGICA
     Route::get('/bien/eliminados', [BienController::class, 'eliminados'])
         ->name('bien.eliminados');
@@ -87,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bien/restaurar/{id}', [BienController::class, 'restaurar'])
         ->name('bien.restaurar');
 
+    // ⭐ RESOURCE AL FINAL (para no sobrescribir rutas personalizadas)
     Route::resource('bien', BienController::class);
 
     // ==================== GESTIÓN DE INVENTARIO ====================
@@ -140,12 +146,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('movimiento/crear-masivo', [MovimientoController::class, 'crearMasivo'])
         ->name('movimiento.crear-masivo');
 
-    Route::post('movimiento/eliminar-masivo', [MovimientoController::class, 'eliminarMasivo'])
-        ->name('movimiento.eliminar-masivo');
+    // ⭐⭐⭐ CAMBIO: ELIMINAR FÍSICO → ANULAR (SOFT DELETE) ⭐⭐⭐
+    Route::post('movimiento/anular-masivo', [MovimientoController::class, 'anularMasivo'])
+        ->name('movimiento.anular-masivo');
 
     // ⭐ REVERTIR BAJA INDIVIDUAL (SOLO ADMIN)
     Route::post('movimiento/revertir-baja/{bien}', [MovimientoController::class, 'revertirBaja'])
         ->name('movimiento.revertir-baja');
+
+    // ⭐⭐⭐ NUEVAS RUTAS: ANULAR Y RESTAURAR MOVIMIENTOS ⭐⭐⭐
+    Route::post('movimiento/{movimiento}/anular', [MovimientoController::class, 'anular'])
+        ->name('movimiento.anular');
+
+    Route::post('movimiento/{movimiento}/restaurar', [MovimientoController::class, 'restaurar'])
+        ->name('movimiento.restaurar');
 
     // ⭐ BIENES ELIMINADOS (Compatibilidad - redirige a BienController)
     Route::get('movimiento/bienes-eliminados', [BienController::class, 'eliminados'])
@@ -196,7 +210,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bienes/data', [ReporteBienController::class, 'data'])->name('bienes.data');
         Route::get('/bienes/pdf', [ReporteBienController::class, 'pdf'])->name('bienes.pdf');
         Route::get('/bienes/excel', [ReporteBienController::class, 'excel'])->name('bienes.excel');
-
     });
 });
 

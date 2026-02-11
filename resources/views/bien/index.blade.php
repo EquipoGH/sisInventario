@@ -552,6 +552,154 @@
     </div>
 </div>
 
+
+{{-- ==========================================
+     ⭐⭐⭐ MODAL CONFIRMACIÓN ELIMINAR CON DETALLES ⭐⭐⭐
+     ========================================== --}}
+<div class="modal fade" id="modalConfirmarEliminar" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación de Bien
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {{-- INFO DEL BIEN --}}
+                <div class="alert alert-light border">
+                    <h6 class="mb-2">
+                        <i class="fas fa-box"></i> <strong>Bien a eliminar:</strong>
+                    </h6>
+                    <p class="mb-1">
+                        <strong>Código:</strong> <span id="eliminar_codigo" class="text-primary"></span>
+                    </p>
+                    <p class="mb-0">
+                        <strong>Denominación:</strong> <span id="eliminar_denominacion"></span>
+                    </p>
+                </div>
+
+                {{-- ADVERTENCIA SI TIENE MOVIMIENTOS --}}
+                <div id="alertaMovimientos" style="display:none;">
+                    <div class="alert alert-warning">
+                        <h6 class="mb-3">
+                            <i class="fas fa-exclamation-circle"></i> 
+                            <strong>¡ATENCIÓN!</strong> Este bien tiene movimientos activos
+                        </h6>
+
+                        {{-- ÚLTIMO MOVIMIENTO --}}
+                        <div class="card border-warning mb-0">
+                            <div class="card-header bg-warning text-white py-2">
+                                <strong><i class="fas fa-history"></i> Último Movimiento</strong>
+                            </div>
+                            <div class="card-body" style="background-color: #fffbf0;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Tipo:</strong>
+                                            <span id="mov_tipo" class="badge"></span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Área:</strong>
+                                            <span id="mov_area" class="text-dark"></span>
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong>Ubicación:</strong>
+                                            <span id="mov_ubicacion" class="text-dark"></span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Estado:</strong>
+                                            <span id="mov_estado" class="badge"></span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Fecha:</strong>
+                                            <span id="mov_fecha" class="text-dark"></span>
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong>Usuario:</strong>
+                                            <span id="mov_usuario" class="text-dark"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ESTADÍSTICAS --}}
+                        <div class="mt-3 p-2 bg-light border rounded">
+                            <small>
+                                <i class="fas fa-chart-bar text-primary"></i>
+                                <strong>Historial:</strong>
+                                <span id="total_movimientos">0</span> movimiento(s) registrado(s)
+                                (<span id="movimientos_vigentes">0</span> vigente(s),
+                                <span id="movimientos_anulados">0</span> anulado(s))
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- SIN MOVIMIENTOS O SOLO REGISTRO --}}
+                <div id="sinMovimientos" style="display:none;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="mensajeSinMovimientos">Este bien no tiene movimientos registrados.</span>
+                        <p class="mb-0 mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-check"></i> 
+                                Puede eliminarse sin afectar operaciones activas
+                            </small>
+                        </p>
+                    </div>
+                    
+                    {{-- INFO DEL REGISTRO INICIAL (si existe) --}}
+                    <div id="infoRegistroInicial" style="display:none;" class="mt-2">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white py-2">
+                                <small><i class="fas fa-clipboard-list"></i> Registro Inicial</small>
+                            </div>
+                            <div class="card-body bg-light py-2">
+                                <small>
+                                    <strong>Tipo:</strong> <span id="reg_tipo"></span><br>
+                                    <strong>Fecha:</strong> <span id="reg_fecha"></span><br>
+                                    <strong>Usuario:</strong> <span id="reg_usuario"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                {{-- ADVERTENCIA FINAL --}}
+                <div class="alert alert-danger mb-0">
+                    <p class="mb-2">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Tipo de eliminación:</strong> Lógica (Soft Delete)
+                    </p>
+                    <small class="text-muted">
+                        • El bien se marcará como inactivo<br>
+                        • Se conservará su historial completo para auditoría<br>
+                        • Podrá ser restaurado desde "Bienes Eliminados"
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">
+                    <i class="fas fa-trash-alt"></i> Sí, eliminar de todas formas
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
 @stop
 
 @section('js')
@@ -934,67 +1082,239 @@ $(document).ready(function() {
     }
 
     // ===============================
-    // ELIMINAR SELECCIONADOS
-    // ===============================
-    $('#btnEliminarSeleccionados').on('click', function() {
-        let ids = [];
-        $('.checkbox-item:checked').each(function() {
-            ids.push($(this).val());
-        });
+// ⭐⭐⭐ ELIMINAR SELECCIONADOS (CON MODAL DETALLADO) ⭐⭐⭐
+// ===============================
+$('#btnEliminarSeleccionados').on('click', function() {
+    let ids = [];
+    $('.checkbox-item:checked').each(function() {
+        ids.push($(this).val());
+    });
 
+    if (ids.length === 0) {
+        return;
+    }
+
+    // ⭐ SI ES SOLO 1 BIEN → Mostrar modal detallado
+    if (ids.length === 1) {
+        const bienId = ids[0];
+        mostrarModalEliminarDetallado(bienId);
+    } else {
+        // ⭐ SI SON MÚLTIPLES → Confirmación simple
         Swal.fire({
-            title: '¿Eliminar ' + ids.length + ' bien(es)?',
-            text: "Esta acción no se puede revertir",
+            title: '¿Eliminar ' + ids.length + ' bienes?',
+            html: `
+                <p>Se eliminarán <strong>${ids.length}</strong> bienes de forma lógica</p>
+                <p class="text-muted small">
+                    <i class="fas fa-info-circle"></i>
+                    Los bienes se marcarán como inactivos pero conservarán su historial
+                </p>
+            `,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check"></i> Sí, eliminar',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
                 eliminarMultiples(ids);
             }
         });
+    }
+});
+
+/**
+ * ⭐⭐⭐ MOSTRAR MODAL DETALLADO PARA ELIMINAR BIEN INDIVIDUAL ⭐⭐⭐
+ */
+/**
+ * ⭐⭐⭐ MOSTRAR MODAL DETALLADO PARA ELIMINAR BIEN INDIVIDUAL ⭐⭐⭐
+ */
+function mostrarModalEliminarDetallado(bienId) {
+    // Mostrar loading
+    Swal.fire({
+        title: 'Cargando información...',
+        html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
+        showConfirmButton: false,
+        allowOutsideClick: false
     });
 
-    function eliminarMultiples(ids) {
-        Swal.fire({
-            title: 'Eliminando...',
-            html: 'Eliminando <b>0</b> de <b>' + ids.length + '</b> bienes',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
+    // Obtener último movimiento
+    $.ajax({
+        url: `/bien/${bienId}/ultimo-movimiento`,
+        method: 'GET',
+        success: function(response) {
+            Swal.close();
 
-        let eliminados = 0;
-        let promesas = ids.map(id => {
-            return $.ajax({
-                url: '/bien/' + id,
-                method: 'POST',
-                data: { _method: 'DELETE', _token: '{{ csrf_token() }}' }
-            }).then(() => {
-                eliminados++;
-                Swal.update({
-                    html: 'Eliminando <b>' + eliminados + '</b> de <b>' + ids.length + '</b> bienes'
+            if (response.success) {
+                // Llenar datos del bien
+                $('#eliminar_codigo').text(response.bien.codigo);
+                $('#eliminar_denominacion').text(response.bien.denominacion);
+
+                if (response.tiene_movimientos) {
+                    // ⭐ CASO 1: Tiene movimientos REALES (asignaciones, bajas, etc.)
+                    const mov = response.ultimo_movimiento;
+                    const stats = response.estadisticas;
+
+                    $('#mov_tipo').text(mov.tipo).attr('class', 'badge ' + mov.tipo_badge);
+                    $('#mov_area').text(mov.area);
+                    $('#mov_ubicacion').text(mov.ubicacion);
+                    $('#mov_estado').text(mov.estado_conservacion).attr('class', 'badge ' + mov.estado_badge);
+                    $('#mov_fecha').text(mov.fecha);
+                    $('#mov_usuario').text(mov.usuario);
+
+                    $('#total_movimientos').text(stats.total_movimientos);
+                    $('#movimientos_vigentes').text(stats.movimientos_vigentes);
+                    $('#movimientos_anulados').text(stats.movimientos_anulados);
+
+                    $('#alertaMovimientos').show();
+                    $('#sinMovimientos').hide();
+                } else {
+                    // ⭐ CASO 2: Sin movimientos o solo registro inicial
+                    
+                    if (response.solo_registro) {
+                        // ⭐ Sub-caso: Tiene movimiento de REGISTRO/SIN ASIGNAR
+                        $('#mensajeSinMovimientos').html(
+                            'Este bien está <strong>registrado pero sin asignar</strong>. ' +
+                            'No tiene movimientos operativos activos.'
+                        );
+                        
+                        // Mostrar info del registro inicial
+                        $('#reg_tipo').text(response.movimiento_inicial.tipo);
+                        $('#reg_fecha').text(response.movimiento_inicial.fecha);
+                        $('#reg_usuario').text(response.movimiento_inicial.usuario);
+                        $('#infoRegistroInicial').show();
+                    } else {
+                        // ⭐ Sub-caso: NO tiene ningún movimiento
+                        $('#mensajeSinMovimientos').text(
+                            'Este bien no tiene movimientos registrados.'
+                        );
+                        $('#infoRegistroInicial').hide();
+                    }
+
+                    $('#alertaMovimientos').hide();
+                    $('#sinMovimientos').show();
+                }
+
+                // Guardar ID en el botón
+                $('#btnConfirmarEliminar').data('bien-id', bienId);
+
+                // Abrir modal
+                $('#modalConfirmarEliminar').modal('show');
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo cargar la información del bien'
+            });
+        }
+    });
+}
+
+
+/**
+ * ⭐ CONFIRMAR ELIMINACIÓN DESDE EL MODAL
+ */
+$(document).on('click', '#btnConfirmarEliminar', function() {
+    const bienId = $(this).data('bien-id');
+
+    $('#modalConfirmarEliminar').modal('hide');
+
+    // Mostrar loading
+    Swal.fire({
+        title: 'Eliminando...',
+        html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
+        showConfirmButton: false,
+        allowOutsideClick: false
+    });
+
+    // Eliminar bien
+    $.ajax({
+        url: '/bien/' + bienId,
+        method: 'POST',
+        data: {
+            _method: 'DELETE',
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Eliminado!',
+                    text: response.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Limpiar selección
+                    $('.checkbox-item').prop('checked', false);
+                    $('#checkAll').prop('checked', false);
+                    $('#btnEliminarSeleccionados').fadeOut();
+                    $('#contadorSeleccionados').text('0');
+
+                    // Recargar tabla
+                    buscar($('#searchInput').val(), paginaActual);
+
+                    // Actualizar contador de eliminados
+                    cargarContadorEliminados();
                 });
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: xhr.responseJSON?.message || 'No se pudo eliminar el bien'
+            });
+        }
+    });
+});
+
+/**
+ * ⭐ ELIMINACIÓN MÚLTIPLE (SIN MODAL DETALLADO)
+ */
+function eliminarMultiples(ids) {
+    Swal.fire({
+        title: 'Eliminando...',
+        html: 'Eliminando <b>0</b> de <b>' + ids.length + '</b> bienes',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    let eliminados = 0;
+    let promesas = ids.map(id => {
+        return $.ajax({
+            url: '/bien/' + id,
+            method: 'POST',
+            data: { _method: 'DELETE', _token: '{{ csrf_token() }}' }
+        }).then(() => {
+            eliminados++;
+            Swal.update({
+                html: 'Eliminando <b>' + eliminados + '</b> de <b>' + ids.length + '</b> bienes'
             });
         });
+    });
 
-        Promise.allSettled(promesas).then(() => {
-            $('.checkbox-item').prop('checked', false);
-            $('#checkAll').prop('checked', false);
-            $('#btnEliminarSeleccionados').fadeOut();
-            $('#contadorSeleccionados').text('0');
+    Promise.allSettled(promesas).then(() => {
+        $('.checkbox-item').prop('checked', false);
+        $('#checkAll').prop('checked', false);
+        $('#btnEliminarSeleccionados').fadeOut();
+        $('#contadorSeleccionados').text('0');
 
-            Swal.fire({
-                icon: 'success',
-                title: '¡Eliminados!',
-                text: eliminados + ' bien(es) eliminado(s)',
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => buscar($('#searchInput').val(), paginaActual));
+        Swal.fire({
+            icon: 'success',
+            title: '¡Eliminados!',
+            text: eliminados + ' bien(es) eliminado(s)',
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => {
+            buscar($('#searchInput').val(), paginaActual);
+            cargarContadorEliminados();
         });
-    }
+    });
+}
+
 
     // ===============================
     // DOBLE CLICK PARA EDITAR

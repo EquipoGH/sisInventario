@@ -11,15 +11,16 @@
    COLORES DE FONDO POR TIPO DE MOVIMIENTO
    ========================================== */
 
-/* 🔵 REGISTRO - Celeste claro */
+/* 🟦 SIN ASIGNAR - Celeste claro (IGUAL QUE REGISTRO) */
+.tipo-sin-asignar {
+    background-color: #e3f2fd !important;
+}
+
+/* 🟦 REGISTRO - Celeste claro (MANTENER POR COMPATIBILIDAD) */
 .tipo-registro {
     background-color: #e3f2fd !important;
 }
 
-/* ❌ HOVER ELIMINADO - NO CAMBIA COLOR
-.tipo-registro:hover {
-    background-color: #bbdefb !important;
-} */
 
 /* 🟢 ASIGNACIÓN - Verde claro */
 .tipo-asignacion {
@@ -41,11 +42,18 @@
     background-color: #ffcdd2 !important;
 } */
 
-/* ⭐ BADGES DE TIPO CON COLOR */
+/* Badge SIN ASIGNAR - Celeste azul */
+.badge-tipo-sin-asignar {
+    background-color: #2196F3 !important;
+    color: white !important;
+}
+
+/* Badge REGISTRO - Mantener (fallback) */
 .badge-tipo-registro {
     background-color: #2196F3 !important;
     color: white !important;
 }
+
 
 .badge-tipo-asignacion {
     background-color: #4CAF50 !important;
@@ -627,10 +635,18 @@
     transform: scale(1.2);
 }
 
+/* Dot leyenda SIN ASIGNAR - Celeste */
+.dot-inline.sin-asignar {
+    background-color: #e3f2fd;
+    border-color: #2196F3;
+}
+
+/* Dot leyenda REGISTRO - Mantener (fallback) */
 .dot-inline.registro {
     background-color: #e3f2fd;
     border-color: #2196F3;
 }
+
 
 .dot-inline.asignacion {
     background-color: #e8f5e9;
@@ -763,11 +779,15 @@
                     <span class="d-none d-sm-inline">Revertir Baja</span>
                     <span class="badge badge-light ml-1" id="contadorRevertir">0</span>
                 </button>
-                <button type="button" class="btn btn-danger btn-action" id="btnEliminarSeleccionados">
-                    <i class="fas fa-trash-alt"></i>
-                    <span class="d-none d-sm-inline">Eliminar</span>
-                    <span class="badge badge-light ml-1" id="contadorSeleccionados">0</span>
+                {{-- ⭐⭐⭐ CAMBIO: Eliminar → Anular (Solo Admin) ⭐⭐⭐ --}}
+                @if(Auth::user()->esAdmin())
+                <button type="button" class="btn btn-danger btn-action" id="btnAnularSeleccionados">
+                    <i class="fas fa-ban"></i>
+                    <span class="d-none d-sm-inline">Anular</span>
+                    <span class="badge badge-light ml-1" id="contadorAnular">0</span>
                 </button>
+                @endif
+
             </div>
         </div>
     </div>
@@ -827,7 +847,7 @@
         </div>
 
         {{-- ⭐⭐⭐ NUEVO: Filtro por ÁREA (12%) ⭐⭐⭐ --}}
-        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
+        <div class="col-xl-2 col-lg-2 col-md-4 col-5 mb-2">
             <label class="filter-label-inline">
                 <i class="fas fa-building text-warning"></i> ÁREA
             </label>
@@ -842,7 +862,7 @@
         </div>
 
         {{-- Filtro: Ubicación (12%) --}}
-        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
             <label class="filter-label-inline">
                 <i class="fas fa-map-marker-alt text-danger"></i> UBICACIÓN
             </label>
@@ -871,6 +891,20 @@
             </label>
             <input type="date" id="filtroFechaHasta" class="form-control form-control-sm custom-date-filter">
         </div>
+
+        {{-- ⭐⭐⭐ NUEVO: Filtro Ver Anulados (SOLO ADMIN) ⭐⭐⭐ --}}
+        @if(Auth::user()->esAdmin())
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-eye-slash text-secondary"></i> ANULADOS
+            </label>
+            <select id="filtroAnulados" class="form-control form-control-sm custom-select-filter">
+                <option value="0" selected>Activos</option>
+                <option value="1">Anulados</option>
+            </select>
+        </div>
+        @endif
+
 
         {{-- Botón Aplicar Filtros (8%) --}}
         <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
@@ -924,9 +958,10 @@
         {{-- Leyenda de colores inline --}}
         <div class="leyenda-inline">
             <span class="leyenda-item">
-                <span class="dot-inline registro"></span>
-                <span class="text-leyenda">registro</span>
+                <span class="dot-inline sin-asignar"></span>
+                <span class="text-leyenda">sin asignar</span>
             </span>
+
             <span class="leyenda-item">
                 <span class="dot-inline asignacion"></span>
                 <span class="text-leyenda">asignación</span>
@@ -971,8 +1006,10 @@
                         </th>
                         <th width="12%">ÁREA</th>
                         <th width="12%">UBICACIÓN</th>
-                        <th width="10%">ESTADO</th>
-                        <th width="8%">ACCIÓN</th>
+                        <th width="8%">ESTADO CONSERV.</th>
+                        <th width="7%">ESTADO MVTO</th>  {{-- ⭐ NUEVA COLUMNA --}}
+                        <th width="10%">ACCIÓN</th>
+
                     </tr>
                 </thead>
 
@@ -1039,6 +1076,7 @@
                             @endif
                         </td>
 
+                        {{-- ⭐ COLUMNA: ESTADO DE CONSERVACIÓN --}}
                         <td>
                             @if($movimiento->estadoConservacion)
                                 @php
@@ -1062,6 +1100,31 @@
                                 <span class="text-muted">-</span>
                             @endif
                         </td>
+
+                        {{-- ⭐⭐⭐ NUEVA COLUMNA: ESTADO DEL MOVIMIENTO (VIGENTE/ANULADO) ⭐⭐⭐ --}}
+                        <td class="text-center">
+                            @if($movimiento->anulado)
+                                <span class="badge badge-anulado"
+                                    title="Anulado el {{ \Carbon\Carbon::parse($movimiento->fecha_anulacion)->format('d/m/Y H:i') }} por {{ $movimiento->usuarioAnulo->name ?? 'N/A' }}">
+                                    <i class="fas fa-ban"></i> ANULADO
+                                </span>
+                            @else
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check-circle"></i> VIGENTE
+                                </span>
+                            @endif
+                        </td>
+
+                        {{-- ⭐⭐⭐ COLUMNA: ACCIÓN (SOLO BOTÓN VER) ⭐⭐⭐ --}}
+                        <td class="text-center">
+                            <button type="button" class="btn btn-info btn-sm btn-ver"
+                                    title="Ver Detalles"
+                                    data-id="{{ $movimiento->id_movimiento }}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+
+
 
                         <td class="text-center">
                             <div class="btn-group btn-group-sm" role="group">
@@ -1147,8 +1210,8 @@
 
 
     {{-- ==========================================
-        ⭐⭐⭐ MODAL VER DETALLES (CON TRAZABILIDAD) ⭐⭐⭐
-        ========================================== --}}
+     ⭐⭐⭐ MODAL VER DETALLES (CON TRAZABILIDAD) ⭐⭐⭐
+     ========================================== --}}
     <div class="modal fade" id="modalVer" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
             <div class="modal-content">
@@ -1160,6 +1223,7 @@
                         <span>&times;</span>
                     </button>
                 </div>
+                
                 <div class="modal-body">
                     {{-- ⭐ PESTAÑAS --}}
                     <ul class="nav nav-tabs" id="tabsModalVer" role="tablist">
@@ -1242,10 +1306,6 @@
                                         <i class="fas fa-file-pdf"></i> Imprimir PDF
                                     </button>
                                 </div>
-
-                                </div>
-
-
                             </div>
 
                             <div id="trazabilidad-loading" class="text-center py-4" style="display:none;">
@@ -1272,7 +1332,7 @@
 
                                         <tbody id="tablaTrazabilidad">
                                             <tr>
-                                                <td colspan="7" class="text-center text-muted">
+                                                <td colspan="9" class="text-center text-muted">
                                                     <i class="fas fa-inbox fa-2x mb-2"></i>
                                                     <p>No hay historial disponible</p>
                                                 </td>
@@ -1309,9 +1369,26 @@
                     </div>
                 </div>
 
+                {{-- ⭐⭐⭐ FOOTER CON BOTONES ANULAR/RESTAURAR ⭐⭐⭐ --}}
+                <div class="modal-footer">
+                    {{-- ⭐ BOTÓN ANULAR (Solo si es VIGENTE y es ADMIN) --}}
+                    @if(Auth::user()->esAdmin())
+                
+                    {{-- ⭐ BOTÓN RESTAURAR (Solo si está ANULADO y es ADMIN) --}}
+                    <button type="button" class="btn btn-success" id="btnRestaurarDesdeModal" style="display:none;">
+                        <i class="fas fa-undo"></i> Restaurar Movimiento
+                    </button>
+                    @endif
+                    
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cerrar
+                    </button>
+                </div>
+
             </div>
         </div>
     </div>
+
 
 {{-- ==========================================
      MODAL EDITAR MOVIMIENTO
@@ -1783,6 +1860,64 @@
 
 
 
+    {{-- ==========================================
+     ⭐⭐⭐ MODAL ANULAR MOVIMIENTO (NUEVO) ⭐⭐⭐
+     ========================================== --}}
+    <div class="modal fade" id="modalAnular" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-ban"></i> Anular Movimiento #<span id="anular-id">-</span>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="formAnular">
+                    @csrf
+                    <input type="hidden" id="anular_movimiento_id">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Advertencia:</strong> El movimiento se marcará como anulado pero se mantendrá en el historial para auditoría.
+                        </div>
+
+                        <div class="form-group">
+                            <label for="motivo_anulacion">
+                                <i class="fas fa-comment-alt text-danger"></i>
+                                Motivo de Anulación <span class="text-danger">*</span>
+                            </label>
+                            <textarea
+                                class="form-control"
+                                id="motivo_anulacion"
+                                name="motivo_anulacion"
+                                rows="3"
+                                minlength="10"
+                                maxlength="200"
+                                placeholder="Describa el motivo de la anulación (mínimo 10 caracteres)"
+                                required></textarea>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Máximo 200 caracteres. Este campo es obligatorio.
+                            </small>
+                            <span class="text-danger error-anular-motivo_anulacion d-block mt-1"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-danger" id="btnConfirmarAnular">
+                            <i class="fas fa-check"></i> Confirmar Anulación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
 
 
 
@@ -2048,12 +2183,13 @@ $(document).ready(function() {
             $('#btnRevertirBajaSeleccionados').fadeOut(200).addClass('d-none');
         }
 
-        // 4. BOTÓN ELIMINAR: Siempre visible cuando hay selección
+        // 4. BOTÓN ANULAR: Solo visible si hay selección (SOLO ADMIN)
         if (cantidad > 0) {
-            $('#btnEliminarSeleccionados').fadeIn(200).removeClass('d-none');
+            $('#btnAnularSeleccionados').fadeIn(200).removeClass('d-none');
         } else {
-            $('#btnEliminarSeleccionados').fadeOut(200).addClass('d-none');
+            $('#btnAnularSeleccionados').fadeOut(200).addClass('d-none');
         }
+
     }
 
 
@@ -2739,16 +2875,210 @@ $(document).ready(function() {
         });
     });
 
+    // ==========================================
+    // ⭐⭐⭐ ANULAR MOVIMIENTO INDIVIDUAL ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '.btn-anular-individual', function() {
+        const movimientoId = $(this).data('id');
+        const fila = $(this).closest('tr');
+        const codigoBien = fila.find('.badge-info').first().text().trim();
+        
+        $('#anular-id').text(movimientoId);
+        $('#anular_movimiento_id').val(movimientoId);
+        $('#motivo_anulacion').val('');
+        $('.error-anular-motivo_anulacion').text('');
+        
+        $('#modalAnular').modal('show');
+    });
+
+    // ==========================================
+    // ⭐⭐⭐ SUBMIT FORMULARIO ANULAR ⭐⭐⭐
+    // ==========================================
+    // ==========================================
+    // ⭐⭐⭐ SUBMIT FORMULARIO ANULAR (INDIVIDUAL O MASIVO) ⭐⭐⭐
+    // ==========================================
+    $('#formAnular').submit(function(e) {
+        e.preventDefault();
+        
+        const movimientoIdRaw = $('#anular_movimiento_id').val();
+        const motivo = $('#motivo_anulacion').val().trim();
+        
+        // Validación básica
+        if (motivo.length < 10) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Motivo insuficiente',
+                text: 'El motivo debe tener al menos 10 caracteres'
+            });
+            return;
+        }
+        
+        // ⭐⭐⭐ DETECTAR SI ES INDIVIDUAL O MASIVO ⭐⭐⭐
+        let esIndividual = true;
+        let movimientoId;
+        let movimientosIds = [];
+        
+        try {
+            // Intentar parsear como JSON (si es masivo)
+            movimientosIds = JSON.parse(movimientoIdRaw);
+            esIndividual = false;
+        } catch (e) {
+            // Si falla, es individual
+            movimientoId = parseInt(movimientoIdRaw);
+            esIndividual = true;
+        }
+        
+        $('#btnConfirmarAnular').prop('disabled', true)
+            .html('<i class="fas fa-spinner fa-spin"></i> Anulando...');
+        
+        if (esIndividual) {
+            // ⭐ ANULAR INDIVIDUAL
+            $.ajax({
+                url: `/movimiento/${movimientoId}/anular`,
+                method: 'POST',
+                data: { motivo_anulacion: motivo },
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(response) {
+                    if (response.success) {
+                        $('#modalAnular').modal('hide');
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Movimiento anulado',
+                            html: `
+                                <p>${response.message}</p>
+                                <hr>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    El movimiento se mantiene en el historial para auditoría
+                                </small>
+                            `,
+                            timer: 3500,
+                            timerProgressBar: true
+                        });
+                        
+                        cargarMovimientos();
+                        actualizarEstadisticas();
+                        protegerTitulosCards();
+                    }
+                },
+                error: function(xhr) {
+                    manejarErrorAnular(xhr);
+                },
+                complete: function() {
+                    $('#btnConfirmarAnular').prop('disabled', false)
+                        .html('<i class="fas fa-check"></i> Confirmar Anulación');
+                }
+            });
+        } else {
+            // ⭐ ANULAR MASIVO
+            $.ajax({
+                url: '{{ route("movimiento.anular-masivo") }}',
+                method: 'POST',
+                data: {
+                    movimientos_ids: movimientosIds,
+                    motivo_anulacion: motivo
+                },
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(response) {
+                    if (response.success) {
+                        $('#modalAnular').modal('hide');
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Movimientos anulados',
+                            html: `
+                                <p>${response.message}</p>
+                                <hr>
+                                <small class="text-muted">
+                                    <i class="fas fa-check-circle"></i>
+                                    ${response.cantidad} movimiento(s) anulado(s)
+                                </small>
+                            `,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        
+                        cargarMovimientos();
+                        actualizarEstadisticas();
+                        protegerTitulosCards();
+                        
+                        // Limpiar selección
+                        $('.checkbox-item').prop('checked', false);
+                        $('#checkAll').prop('checked', false);
+                        bienesSeleccionados = [];
+                        actualizarBienesSeleccionados();
+                    }
+                },
+                error: function(xhr) {
+                    manejarErrorAnular(xhr);
+                },
+                complete: function() {
+                    $('#btnConfirmarAnular').prop('disabled', false)
+                        .html('<i class="fas fa-check"></i> Confirmar Anulación');
+                }
+            });
+        }
+    });
+
+    // ⭐ FUNCIÓN AUXILIAR PARA MANEJAR ERRORES
+    function manejarErrorAnular(xhr) {
+        if (xhr.status === 422) {
+            const errors = xhr.responseJSON.errors;
+            $('.error-anular-motivo_anulacion').text(errors.motivo_anulacion ? errors.motivo_anulacion[0] : '');
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de validación',
+                text: 'Revise el motivo ingresado'
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: xhr.responseJSON?.message || 'Error al anular',
+                text: xhr.status === 403 ? 'Solo el administrador puede anular movimientos' : ''
+            });
+        }
+    }
+
+
+    // ==========================================
+    // ⭐⭐⭐ RESTAURAR MOVIMIENTO ANULADO ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '.btn-restaurar', function() {
+        const movimientoId = $(this).data('id');
+        const fila = $(this).closest('tr');
+        const codigoBien = fila.find('.badge-info').first().text().trim();
+        
+        Swal.fire({
+            title: '¿Restaurar movimiento?',
+            html: `
+                <p>Se restaurará el movimiento <strong>#${movimientoId}</strong></p>
+                <p class="text-muted small">
+                    <i class="fas fa-info-circle"></i> Bien: ${codigoBien}
+                </p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check"></i> Sí, restaurar',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                restaurarMovimiento(movimientoId);
+            }
+        });
+    });
+
     /**
-     * ✅ FUNCIÓN PARA ELIMINAR MOVIMIENTOS (NO BIENES)
+     * ⭐ FUNCIÓN RESTAURAR MOVIMIENTO
      */
-    function eliminarMovimientosMasivo(movimientosIds) {
+    function restaurarMovimiento(movimientoId) {
         $.ajax({
-            url: '{{ route("movimiento.eliminar-masivo") }}',
+            url: `/movimiento/${movimientoId}/restaurar`,
             method: 'POST',
-            data: {
-                movimientos_ids: movimientosIds  // ✅ CORRECTO - Envía IDs de MOVIMIENTOS
-            },
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
@@ -2756,52 +3086,74 @@ $(document).ready(function() {
                 if (response.success) {
                     Swal.fire({
                         icon: 'success',
-                        title: '¡Eliminado!',
+                        title: '✅ Movimiento restaurado',
                         text: response.message,
-                        timer: 2000,
-                        showConfirmButton: false
+                        timer: 2500,
+                        timerProgressBar: true
                     });
-
-                    // Recargar tabla y estadísticas
+                    
+                    // Recargar tabla
                     cargarMovimientos();
                     actualizarEstadisticas();
                     protegerTitulosCards();
-
-                    // Limpiar selección
-                    $('.checkbox-item').prop('checked', false);
-                    $('#checkAll').prop('checked', false);
-                    bienesSeleccionados = [];
-                    actualizarBienesSeleccionados();
                 }
             },
             error: function(xhr) {
-                let mensajeError = 'Error al eliminar movimientos';
-
-                if (xhr.status === 422) {
-                    // Error de validación
-                    const errors = xhr.responseJSON?.errors;
-                    if (errors) {
-                        mensajeError = Object.values(errors).flat().join('<br>');
-                    }
-                } else if (xhr.responseJSON?.message) {
-                    mensajeError = xhr.responseJSON.message;
-                }
-
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    html: mensajeError
+                    title: 'Error al restaurar',
+                    text: xhr.responseJSON?.message || 'Error desconocido',
+                    footer: xhr.status === 403 ? '<small>Solo el administrador puede restaurar movimientos</small>' : ''
                 });
             }
         });
     }
+
+    // ==========================================
+    // ⭐⭐⭐ ANULAR MOVIMIENTOS MASIVAMENTE (CON MODAL DETALLADO) ⭐⭐⭐
+    // ==========================================
+    $('#btnAnularSeleccionados').click(function() {
+        if (bienesSeleccionados.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin selección',
+                text: 'Debe seleccionar al menos un movimiento'
+            });
+            return;
+        }
+        
+        // ⭐⭐⭐ OBTENER IDs DE MOVIMIENTOS SELECCIONADOS ⭐⭐⭐
+        let movimientosIds = [];
+        $('.checkbox-item:checked').each(function() {
+            const fila = $(this).closest('tr');
+            const movimientoId = fila.attr('id').replace('row-', '');
+            movimientosIds.push(parseInt(movimientoId));
+        });
+        
+        // ⭐⭐⭐ ABRIR MODAL DE ANULACIÓN (IGUAL QUE INDIVIDUAL) ⭐⭐⭐
+        $('#anular-id').text(movimientosIds.length + ' movimiento(s)');
+        $('#anular_movimiento_id').val(JSON.stringify(movimientosIds)); // Array en JSON
+        $('#motivo_anulacion').val('');
+        $('.error-anular-motivo_anulacion').text('');
+        
+        // ⭐ Cambiar título del modal para indicar que es masivo
+        $('#modalAnular .modal-title').html(`
+            <i class="fas fa-ban"></i> Anular ${movimientosIds.length} Movimiento(s)
+        `);
+        
+        $('#modalAnular').modal('show');
+    });
+
+
+
+
 
 
 
 
 
     // ==========================================
-    // ⭐ VER MOVIMIENTO (CON TRAZABILIDAD)
+    // ⭐ VER MOVIMIENTO (CON TRAZABILIDAD Y BOTONES)
     // ==========================================
     $(document).on('click', '.btn-ver', function() {
         const id = $(this).data('id');
@@ -2829,8 +3181,18 @@ $(document).ready(function() {
 
                     currentBienIdForTrazabilidad = data.bien.id_bien;
 
-                    $('#tab-detalles-tab').tab('show');
+                    // ⭐⭐⭐ MOSTRAR/OCULTAR BOTONES SEGÚN ESTADO DEL MOVIMIENTO ⭐⭐⭐
+                    if (data.anulado) {
+                        // Si está ANULADO → mostrar botón RESTAURAR
+                        $('#btnRestaurarDesdeModal').show().data('id', id);
+                        $('#btnAnularDesdeModal').hide();
+                    } else {
+                        // Si está VIGENTE → mostrar botón ANULAR
+                        $('#btnAnularDesdeModal').show().data('id', id);
+                        $('#btnRestaurarDesdeModal').hide();
+                    }
 
+                    $('#tab-detalles-tab').tab('show');
                     $('#modalVer').modal('show');
                 }
             },
@@ -2843,6 +3205,71 @@ $(document).ready(function() {
             }
         });
     });
+
+
+
+    // ==========================================
+    // ⭐⭐⭐ ANULAR DESDE MODAL DE DETALLES ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '#btnAnularDesdeModal', function() {
+        const movimientoId = $(this).data('id');
+        
+        // Cerrar modal de detalles
+        $('#modalVer').modal('hide');
+        
+        // Esperar a que el modal se cierre completamente antes de abrir el siguiente
+        setTimeout(function() {
+            // Abrir modal de anulación
+            $('#anular-id').text(movimientoId);
+            $('#anular_movimiento_id').val(movimientoId);
+            $('#motivo_anulacion').val('');
+            $('.error-anular-motivo_anulacion').text('');
+            
+            // Restaurar título del modal (por si venía de masivo)
+            $('#modalAnular .modal-title').html(`
+                <i class="fas fa-ban"></i> Anular Movimiento #${movimientoId}
+            `);
+            
+            $('#modalAnular').modal('show');
+        }, 300); // 300ms para que termine la animación de cierre
+    });
+
+    // ==========================================
+    // ⭐⭐⭐ RESTAURAR DESDE MODAL DE DETALLES ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '#btnRestaurarDesdeModal', function() {
+        const movimientoId = $(this).data('id');
+        
+        // Cerrar modal de detalles
+        $('#modalVer').modal('hide');
+        
+        // Esperar a que el modal se cierre antes de mostrar el SweetAlert
+        setTimeout(function() {
+            Swal.fire({
+                title: '¿Restaurar movimiento?',
+                html: `
+                    <p>Se restaurará el movimiento <strong>#${movimientoId}</strong></p>
+                    <p class="text-muted small mt-2">
+                        <i class="fas fa-info-circle"></i> 
+                        El movimiento volverá a estar activo en el sistema
+                    </p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-check"></i> Sí, restaurar',
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    restaurarMovimiento(movimientoId);
+                }
+            });
+        }, 300); // 300ms para que termine la animación
+    });
+
+
 
     // ==========================================
     // ⭐ CARGAR TRAZABILIDAD AL CAMBIAR TAB
@@ -2929,10 +3356,24 @@ $(document).ready(function() {
 
 
                             let badgeClass = 'badge-secondary';
-                            if (tipo.toLowerCase().includes('registro')) badgeClass = 'badge-primary';
-                            else if (tipo.toLowerCase().includes('asignaci')) badgeClass = 'badge-success';
-                            else if (tipo.toLowerCase().includes('baja')) badgeClass = 'badge-danger';
-                            else if (tipo.toLowerCase().includes('revers')) badgeClass = 'badge-info';
+
+                                // 🟦 SIN ASIGNAR o REGISTRO = Celeste/Azul
+                                if (tipo.toLowerCase().includes('sin asignar') || tipo.toLowerCase().includes('registro')) {
+                                    badgeClass = 'badge-primary';
+                                }
+                                // 🟩 ASIGNACIÓN = Verde
+                                else if (tipo.toLowerCase().includes('asignaci')) {
+                                    badgeClass = 'badge-success';
+                                }
+                                // 🟥 BAJA = Rojo
+                                else if (tipo.toLowerCase().includes('baja')) {
+                                    badgeClass = 'badge-danger';
+                                }
+                                // 🔵 REVERSIÓN = Azul Info
+                                else if (tipo.toLowerCase().includes('revers')) {
+                                    badgeClass = 'badge-info';
+                                }
+
 
                             $('#tablaTrazabilidad').append(`
                                 <tr>
@@ -3186,13 +3627,15 @@ $(document).ready(function() {
             orden: ordenActual,
             direccion: direccionActual,
             page: paginaActual,
-            tipo_mvto: filtroTipoValor,  // ← Envía directamente: 'activos', '', o ID
+            tipo_mvto: filtroTipoValor,
             estado_bien: $('#filtroEstadoBien').val(),
-            area: $('#filtroArea').val(),  // ⭐ NUEVO
+            area: $('#filtroArea').val(),
             ubicacion: $('#filtroUbicacion').val(),
             fecha_desde: $('#filtroFechaDesde').val(),
-            fecha_hasta: $('#filtroFechaHasta').val()
+            fecha_hasta: $('#filtroFechaHasta').val(),
+            mostrar_anulados: $('#filtroAnulados').val() || '0'  // ⭐ NUEVO
         };
+
 
         $.ajax({
             url: '{{ route("movimiento.index") }}',
@@ -3245,98 +3688,115 @@ $(document).ready(function() {
 
 
     function renderizarMovimientos(movimientos) {
-        const tbody = $('#tablaMovimientos');
-        tbody.empty();
+    const tbody = $('#tablaMovimientos');
+    tbody.empty();
 
-        if (!movimientos || movimientos.length === 0) {
-            tbody.html(`
-                <tr>
-                    <td colspan="10" class="text-center text-muted">
-                        <i class="fas fa-inbox fa-2x mb-2"></i>
-                        <p>No hay movimientos registrados</p>
-                    </td>
-                </tr>
-            `);
-            return;
+    if (!movimientos || movimientos.length === 0) {
+        tbody.html(`
+            <tr>
+                <td colspan="11" class="text-center text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p>No hay movimientos registrados</p>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+
+    movimientos.forEach(function(mov) {
+        const tipoNormalizado = mov.tipo_movimiento.tipo_mvto.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, '-');
+
+        const badgeClass = `badge-tipo-${tipoNormalizado}`;
+        const fecha = typeof moment !== 'undefined' ? moment(mov.fecha_mvto).format('DD/MM/YYYY') : mov.fecha_mvto.split(' ')[0];
+
+        let estadoBadge = 'badge-secondary';
+        if (mov.estado_conservacion) {
+            const estado = mov.estado_conservacion.nombre_estado.toUpperCase();
+            if (estado.includes('BUENO') || estado.includes('EXCELENTE')) {
+                estadoBadge = 'badge-success';
+            } else if (estado.includes('REGULAR')) {
+                estadoBadge = 'badge-warning';
+            } else if (estado.includes('MALO') || estado.includes('DETERIORADO')) {
+                estadoBadge = 'badge-danger';
+            }
         }
 
-        movimientos.forEach(function(mov) {
-            const tipoNormalizado = mov.tipo_movimiento.tipo_mvto.toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/\s+/g, '-');
+        const denominacion = mov.bien.denominacion_bien || '';
+        const denominacionCorta = denominacion.length > 30 ? denominacion.substring(0, 30) + '...' : denominacion;
+        const tipoNombre = mov.bien.tipo_bien ? mov.bien.tipo_bien.nombre_tipo : '';
+        const ubicacionNombre = mov.ubicacion ? mov.ubicacion.nombre_sede : '';
 
-            const badgeClass = `badge-tipo-${tipoNormalizado}`;
-            const fecha = typeof moment !== 'undefined' ? moment(mov.fecha_mvto).format('DD/MM/YYYY') : mov.fecha_mvto.split(' ')[0];
+        // ✅ OBTENER ÁREA DE LA UBICACIÓN
+        const areaNombre = (mov.ubicacion && mov.ubicacion.area) ? mov.ubicacion.area.nombre_area : '-';
 
-            let estadoBadge = 'badge-secondary';
-            if (mov.estado_conservacion) {
-                const estado = mov.estado_conservacion.nombre_estado.toUpperCase();
-                if (estado.includes('BUENO') || estado.includes('EXCELENTE')) {
-                    estadoBadge = 'badge-success';
-                } else if (estado.includes('REGULAR')) {
-                    estadoBadge = 'badge-warning';
-                } else if (estado.includes('MALO') || estado.includes('DETERIORADO')) {
-                    estadoBadge = 'badge-danger';
-                }
-            }
+        // ⭐⭐⭐ BADGE ESTADO MOVIMIENTO (VIGENTE/ANULADO) ⭐⭐⭐
+        const badgeEstadoMovimiento = mov.anulado ? `
+            <span class="badge badge-anulado" title="Anulado el ${mov.fecha_anulacion || 'N/A'} por ${mov.usuario_anulo ? mov.usuario_anulo.name : 'N/A'}">
+                <i class="fas fa-ban"></i> ANULADO
+            </span>
+        ` : `
+            <span class="badge badge-success">
+                <i class="fas fa-check-circle"></i> VIGENTE
+            </span>
+        `;
 
-            const denominacion = mov.bien.denominacion_bien || '';
-            const denominacionCorta = denominacion.length > 30 ? denominacion.substring(0, 30) + '...' : denominacion;
-            const tipoNombre = mov.bien.tipo_bien ? mov.bien.tipo_bien.nombre_tipo : '';
-            const ubicacionNombre = mov.ubicacion ? mov.ubicacion.nombre_sede : '';
+        // ⭐ APLICAR CLASE CSS ESPECIAL SI ESTÁ ANULADO
+        const claseAnulado = mov.anulado ? 'tipo-anulado' : '';
 
-            // ✅ OBTENER ÁREA DE LA UBICACIÓN
-            const areaNombre = (mov.ubicacion && mov.ubicacion.area) ? mov.ubicacion.area.nombre_area : '-';
+        const row = `
+            <tr id="row-${mov.id_movimiento}" 
+                class="fila-movimiento tipo-${tipoNormalizado} ${claseAnulado}" 
+                data-id="${mov.id_movimiento}">
+                
+                <td class="text-center">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input checkbox-item"
+                            id="check-${mov.id_movimiento}"
+                            value="${mov.id_movimiento}"
+                            data-bien-id="${mov.idbien}"
+                            ${mov.anulado ? 'disabled' : ''}>
+                        <label class="custom-control-label" for="check-${mov.id_movimiento}"></label>
+                    </div>
+                </td>
+                
+                <td class="text-center"><strong>${mov.id_movimiento}</strong></td>
+                <td><strong>${fecha}</strong></td>
+                <td><span class="badge badge-info">${mov.bien.codigo_patrimonial}</span></td>
+                
+                <td>
+                    <strong>${denominacionCorta}</strong><br>
+                    <small class="text-muted">${tipoNombre}</small>
+                </td>
+                
+                <td><span class="badge ${badgeClass}">${mov.tipo_movimiento.tipo_mvto}</span></td>
+                <td><small class="text-muted"><i class="fas fa-building"></i> ${areaNombre}</small></td>
+                
+                <td>
+                    ${ubicacionNombre ? `<small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${ubicacionNombre}</small>` : '<span class="text-muted">-</span>'}
+                </td>
+                
+                <td>
+                    ${mov.estado_conservacion ? `<span class="badge ${estadoBadge}">${mov.estado_conservacion.nombre_estado}</span>` : '<span class="text-muted">-</span>'}
+                </td>
+                
+                <td class="text-center">${badgeEstadoMovimiento}</td>
+                
+                <!-- ⭐⭐⭐ SOLO BOTÓN VER (OJO) ⭐⭐⭐ -->
+                <td class="text-center">
+                    <button type="button" class="btn btn-info btn-sm btn-ver" 
+                            title="Ver Detalles" 
+                            data-id="${mov.id_movimiento}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
 
-            // ✅ MOSTRAR BOTÓN REVERTIR SOLO SI ES TIPO "BAJA"
-            const esBaja = mov.tipo_movimiento.tipo_mvto.toUpperCase().includes('BAJA');
-            const btnRevertir = esBaja ? `
-                <button type="button" class="btn btn-warning btn-revertir" title="Revertir Baja"
-                    data-id="${mov.id_movimiento}"
-                    data-bien-id="${mov.idbien}">
-                    <i class="fas fa-undo"></i>
-                </button>
-            ` : '';
+        tbody.append(row);
+    });
 
-            const row = `
-                <tr id="row-${mov.id_movimiento}" class="fila-movimiento tipo-${tipoNormalizado}" data-id="${mov.id_movimiento}">
-                    <td class="text-center">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input checkbox-item"
-                                id="check-${mov.id_movimiento}"
-                                value="${mov.id_movimiento}"
-                                data-bien-id="${mov.idbien}">
-                            <label class="custom-control-label" for="check-${mov.id_movimiento}"></label>
-                        </div>
-                    </td>
-                    <td class="text-center"><strong>${mov.id_movimiento}</strong></td>
-                    <td><strong>${fecha}</strong></td>
-                    <td><span class="badge badge-info">${mov.bien.codigo_patrimonial}</span></td>
-                    <td>
-                        <strong>${denominacionCorta}</strong><br>
-                        <small class="text-muted">${tipoNombre}</small>
-                    </td>
-                    <td><span class="badge ${badgeClass}">${mov.tipo_movimiento.tipo_mvto}</span></td>
-                    <td><small class="text-muted"><i class="fas fa-building"></i> ${areaNombre}</small></td>
-                    <td>
-                        ${ubicacionNombre ? `<small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${ubicacionNombre}</small>` : '<span class="text-muted">-</span>'}
-                    </td>
-                    <td>
-                        ${mov.estado_conservacion ? `<span class="badge ${estadoBadge}">${mov.estado_conservacion.nombre_estado}</span>` : '<span class="text-muted">-</span>'}
-                    </td>
-                    <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-info btn-ver" title="Ver Detalles" data-id="${mov.id_movimiento}">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            ${btnRevertir}
-                        </div>
-                    </td>
-                </tr>
-            `;
-
-            tbody.append(row);
-        });
     }
 
 

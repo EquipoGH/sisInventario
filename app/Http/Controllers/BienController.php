@@ -313,17 +313,21 @@ class BienController extends Controller
     }
 
     /**
-     * ✅ ELIMINAR LÓGICO (NO borra de BD)
+     * ✅ ELIMINAR LÓGICO CON VERIFICACIÓN DE MOVIMIENTOS
      */
     public function destroy(Bien $bien)
     {
         try {
-            // ✅ Eliminación lógica (activo = false)
+            // ⭐ Verificar si tiene movimientos
+            $tieneMovimientos = $bien->movimientos()->exists();
+            
+            // Eliminar lógicamente
             $bien->eliminarLogico();
-
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Bien eliminado correctamente'
+                'message' => 'Bien eliminado correctamente',
+                'tenia_movimientos' => $tieneMovimientos
             ]);
 
         } catch (\Exception $e) {
@@ -339,6 +343,7 @@ class BienController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * ✅ NUEVO: Ver bienes eliminados (para modal)
@@ -397,6 +402,150 @@ class BienController extends Controller
             ], 500);
         }
     }
+
+
+    /**
+     * ⭐⭐⭐ OBTENER ÚLTIMO MOVIMIENTO ANTES DE ELIMINAR ⭐⭐⭐
+     */
+    public function obtenerUltimoMovimiento(Bien $bien)
+    {
+        try {
+            // Obtener último movimiento con todas las relaciones
+            $ultimoMov = $bien->movimientos()
+                ->with([
+                    'tipoMovimiento',
+                    'ubicacion.area',
+                    'estadoConservacion',
+                    'usuario'
+                ])
+                ->where('anulado', false)  // ⭐ Solo movimientos vigentes
+                ->orderBy('fecha_mvto', 'desc')
+                ->first();
+
+            // Si no tiene movimientos
+            if (!$ultimoMov) {
+                return response()->json([
+                    'success' => true,
+                    'tiene_movimientos' => false,
+                    'solo_registro' => false,
+                    'message' => 'El bien no tiene movimientos registrados',
+                    'bien' => [
+                        'codigo' => $bien->codigo_patrimonial,
+                        'denominacion' => $bien->denominacion_bien
+                    ]
+                ]);
+            }
+
+            // ⭐⭐⭐ DETECTAR SI SOLO TIENE MOVIMIENTO INICIAL (SIN ASIGNAR) ⭐⭐⭐
+            $totalMovimientos = $bien->movimientos()->where('anulado', false)->count();
+            $tipoMovimiento = strtoupper($ultimoMov->tipoMovimiento->tipo_mvto ?? '');
+            
+            $esSoloRegistro = (
+                $totalMovimientos === 1 && 
+                (
+                    str_contains($tipoMovimiento, 'REGISTRO') ||
+                    str_contains($tipoMovimiento, 'SIN ASIGNAR') ||
+                    str_contains($tipoMovimiento, 'ALTA')
+                )
+            );
+
+            // ⭐ CASO ESPECIAL: Solo tiene movimiento de registro inicial
+            if ($esSoloRegistro) {
+                return response()->json([
+                    'success' => true,
+                    'tiene_movimientos' => false,  // ⭐ Se comporta como si no tuviera
+                    'solo_registro' => true,
+                    'message' => 'El bien está registrado pero sin asignar',
+                    'bien' => [
+                        'codigo' => $bien->codigo_patrimonial,
+                        'denominacion' => $bien->denominacion_bien
+                    ],
+                    'movimiento_inicial' => [
+                        'tipo' => $ultimoMov->tipoMovimiento->tipo_mvto ?? 'N/A',
+                        'fecha' => \Carbon\Carbon::parse($ultimoMov->fecha_mvto)->format('d/m/Y H:i'),
+                        'usuario' => $ultimoMov->usuario->name ?? 'Sistema'
+                    ]
+                ]);
+            }
+
+            // ⭐ CASO NORMAL: Tiene movimientos reales (asignaciones, bajas, etc.)
+            return response()->json([
+                'success' => true,
+                'tiene_movimientos' => true,
+                'solo_registro' => false,
+                'bien' => [
+                    'codigo' => $bien->codigo_patrimonial,
+                    'denominacion' => $bien->denominacion_bien
+                ],
+                'ultimo_movimiento' => [
+                    'tipo' => $ultimoMov->tipoMovimiento->tipo_mvto ?? 'N/A',
+                    'tipo_badge' => $this->getBadgeTipoMovimiento($ultimoMov->tipoMovimiento->tipo_mvto ?? ''),
+                    'area' => $ultimoMov->ubicacion->area->nombre_area ?? 'Sin área',
+                    'ubicacion' => $ultimoMov->ubicacion->nombre_sede ?? 'Sin ubicación',
+                    'estado_conservacion' => $ultimoMov->estadoConservacion->nombre_estado ?? 'Sin estado',
+                    'estado_badge' => $this->getBadgeEstadoConservacion($ultimoMov->estadoConservacion->nombre_estado ?? ''),
+                    'fecha' => \Carbon\Carbon::parse($ultimoMov->fecha_mvto)->format('d/m/Y H:i'),
+                    'usuario' => $ultimoMov->usuario->name ?? 'Sistema'
+                ],
+                'estadisticas' => [
+                    'total_movimientos' => $bien->movimientos()->count(),
+                    'movimientos_vigentes' => $bien->movimientos()->where('anulado', false)->count(),
+                    'movimientos_anulados' => $bien->movimientos()->where('anulado', true)->count()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener último movimiento:', [
+                'error' => $e->getMessage(),
+                'bien_id' => $bien->id_bien
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener información del movimiento'
+            ], 500);
+        }
+    }
+
+
+    /**
+     * ⭐ HELPER: Obtener clase de badge según tipo de movimiento
+     */
+    private function getBadgeTipoMovimiento($tipo)
+    {
+        $tipo = strtoupper($tipo);
+        
+        if (str_contains($tipo, 'ASIGNACIÓN') || str_contains($tipo, 'ASIGNACION')) {
+            return 'badge-success';
+        } elseif (str_contains($tipo, 'BAJA')) {
+            return 'badge-danger';
+        } elseif (str_contains($tipo, 'REGISTRO')) {
+            return 'badge-info';
+        } else {
+            return 'badge-secondary';
+        }
+    }
+
+    /**
+     * ⭐ HELPER: Obtener clase de badge según estado de conservación
+     */
+    private function getBadgeEstadoConservacion($estado)
+    {
+        $estado = strtoupper($estado);
+        
+        if (str_contains($estado, 'BUENO') || str_contains($estado, 'EXCELENTE')) {
+            return 'badge-success';
+        } elseif (str_contains($estado, 'REGULAR')) {
+            return 'badge-warning';
+        } elseif (str_contains($estado, 'MALO') || str_contains($estado, 'DETERIORADO')) {
+            return 'badge-danger';
+        } else {
+            return 'badge-secondary';
+        }
+    }
+
+
+
 
     /**
      * Verificar si el código patrimonial ya existe

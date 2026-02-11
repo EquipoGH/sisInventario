@@ -11,15 +11,22 @@ use Illuminate\Support\Facades\Log;
 class MovimientoService
 {
     /**
+     * ⭐⭐⭐ MODIFICADO: Buscar "SIN ASIGNAR" en vez de "REGISTRO" ⭐⭐⭐
      * Registrar movimiento automático al crear un bien
      */
     public function registrarCreacion($bien)
     {
         try {
-            $tipoRegistro = TipoMvto::where('tipo_mvto', 'ILIKE', 'REGISTRO')->first();
+            // ⭐⭐⭐ CAMBIO CRÍTICO: Buscar "SIN ASIGNAR" ⭐⭐⭐
+            $tipoSinAsignar = TipoMvto::where(function($query) {
+                $query->where('tipo_mvto', 'ILIKE', 'SIN ASIGNAR')
+                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
+                      ->orWhere('tipo_mvto', 'ILIKE', '%sin_asignar%')
+                      ->orWhere('tipo_mvto', 'ILIKE', 'REGISTRO'); // Fallback
+            })->first();
 
-            if (!$tipoRegistro) {
-                throw new \Exception('Tipo de movimiento "REGISTRO" no encontrado en la BD');
+            if (!$tipoSinAsignar) {
+                throw new \Exception('Tipo de movimiento "SIN ASIGNAR" no encontrado en la BD. Ejecuta: UPDATE tipo_mvto SET tipo_mvto = \'SIN ASIGNAR\' WHERE tipo_mvto ILIKE \'%registro%\'');
             }
 
             // ⭐⭐⭐ OBTENER UBICACIÓN DE RECEPCIÓN AUTOMÁTICAMENTE ⭐⭐⭐
@@ -29,13 +36,13 @@ class MovimientoService
                 // FALLBACK: Buscar por nombre
                 $ubicacionRecepcion = \App\Models\Ubicacion::where(function($q) {
                     $q->where('nombre_sede', 'ILIKE', '%abastecimiento%')
-                    ->orWhere('nombre_sede', 'ILIKE', '%almacen%')
-                    ->orWhere('nombre_sede', 'ILIKE', '%almacén%');
+                      ->orWhere('nombre_sede', 'ILIKE', '%almacen%')
+                      ->orWhere('nombre_sede', 'ILIKE', '%almacén%');
                 })
                 ->orWhereHas('area', function($q) {
                     $q->where('nombre_area', 'ILIKE', '%abastecimiento%')
-                    ->orWhere('nombre_area', 'ILIKE', '%almacen%')
-                    ->orWhere('nombre_area', 'ILIKE', '%logistica%');
+                      ->orWhere('nombre_area', 'ILIKE', '%almacen%')
+                      ->orWhere('nombre_area', 'ILIKE', '%logistica%');
                 })
                 ->first();
             }
@@ -53,16 +60,16 @@ class MovimientoService
             $ubicacionFinal = $ubicacionRecepcion ? $ubicacionRecepcion->id_ubicacion : ($bien->idubicacion ?? null);
 
             if ($ubicacionRecepcion) {
-                Log::info("✅ REGISTRO - Ubicación asignada desde MovimientoService: {$ubicacionRecepcion->nombre_sede} (ID: {$ubicacionRecepcion->id_ubicacion})");
+                Log::info("✅ SIN ASIGNAR - Ubicación asignada desde MovimientoService: {$ubicacionRecepcion->nombre_sede} (ID: {$ubicacionRecepcion->id_ubicacion})");
             } else {
-                Log::warning("⚠️ REGISTRO - No se encontró ubicación de recepción, usando ubicación del bien o NULL");
+                Log::warning("⚠️ SIN ASIGNAR - No se encontró ubicación de recepción, usando ubicación del bien o NULL");
             }
 
             return Movimiento::create([
                 'idbien' => $bien->id_bien,
-                'tipo_mvto' => $tipoRegistro->id_tipo_mvto,
+                'tipo_mvto' => $tipoSinAsignar->id_tipo_mvto, // ⭐ CAMBIO
                 'fecha_mvto' => now(),
-                'detalle_tecnico' => 'Registro inicial del bien: ' . strtoupper($bien->denominacion_bien),
+                'detalle_tecnico' => 'Bien registrado sin asignar: ' . strtoupper($bien->denominacion_bien), // ⭐ CAMBIO
                 'documento_sustentatorio' => $bien->id_documento ?? null,
                 'NumDocto' => $bien->NumDoc ?? null,
                 'idubicacion' => $ubicacionFinal, // ⭐ UBICACIÓN AUTOMÁTICA
@@ -75,7 +82,6 @@ class MovimientoService
             throw $e;
         }
     }
-
 
     /**
      * Registrar movimiento automático al actualizar un bien
@@ -98,7 +104,7 @@ class MovimientoService
             'fecha_mvto' => now(),
             'detalle_tecnico' => $detalle,
             'documento_sustentatorio' => $bien->id_documento ?? null,
-            'NumDocto' => $bien->NumDoc ?? null,  // ⭐ NUEVO
+            'NumDocto' => $bien->NumDoc ?? null,
             'idubicacion' => $bien->idubicacion ?? null,
             'id_estado_conservacion_bien' => $bien->id_estado_conservacion_bien ?? null,
             'idusuario' => Auth::id()

@@ -14,123 +14,504 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use PDF; // Agregar esta línea al inicio del archivo (después de otros use)
+use Illuminate\Validation\ValidationException;  // ⭐ AGREGAR ESTO
 
 
 class MovimientoController extends Controller
 {
-        public function index(Request $request)
-        {
-            $search = $request->get('search', '');
-            $perPage = 10;
+    public function index(Request $request)
+    {
+        $search = $request->get('search', '');
+        $perPage = 10;
 
-            $total = Movimiento::count();
+        $total = Movimiento::count();
 
-            // ⭐⭐⭐ ESTADÍSTICAS DINÁMICAS SEGÚN FILTROS ACTIVOS ⭐⭐⭐
+        // ⭐⭐⭐ ESTADÍSTICAS DINÁMICAS SEGÚN FILTROS ACTIVOS ⭐⭐⭐
 
-            // Crear query base para estadísticas (reutilizar la misma lógica de filtros)
-            $queryEstadisticas = DB::table('movimiento as m1')
-                ->join('tipo_mvto as tm', 'm1.tipo_mvto', '=', 'tm.id_tipo_mvto')
-                ->join('bien as b', 'm1.idbien', '=', 'b.id_bien')
-                ->join(DB::raw('(SELECT idbien, MAX(fecha_mvto) as max_fecha FROM movimiento GROUP BY idbien) as m2'), function($join) {
-                    $join->on('m1.idbien', '=', 'm2.idbien')
-                        ->on('m1.fecha_mvto', '=', 'm2.max_fecha');
-                });
+        // Crear query base para estadísticas (reutilizar la misma lógica de filtros)
+        $queryEstadisticas = DB::table('movimiento as m1')
+            ->join('tipo_mvto as tm', 'm1.tipo_mvto', '=', 'tm.id_tipo_mvto')
+            ->join('bien as b', 'm1.idbien', '=', 'b.id_bien')
+            ->join(DB::raw('(SELECT idbien, MAX(fecha_mvto) as max_fecha FROM movimiento GROUP BY idbien) as m2'), function($join) {
+                $join->on('m1.idbien', '=', 'm2.idbien')
+                    ->on('m1.fecha_mvto', '=', 'm2.max_fecha');
+            });
 
-            // ✅ APLICAR FILTRO DE ESTADO DEL BIEN A ESTADÍSTICAS
-            if ($request->filled('estado_bien')) {
-                $estadoBien = $request->estado_bien;
-                if ($estadoBien === '1') {
-                    $queryEstadisticas->where('b.activo', true);
-                } elseif ($estadoBien === '0') {
-                    $queryEstadisticas->where('b.activo', false);
-                }
-                // Si es 'todos', no aplica filtro
-            } else {
-                // Por defecto: solo activos
+        // ✅ APLICAR FILTRO DE ESTADO DEL BIEN A ESTADÍSTICAS
+        if ($request->filled('estado_bien')) {
+            $estadoBien = $request->estado_bien;
+            if ($estadoBien === '1') {
                 $queryEstadisticas->where('b.activo', true);
+            } elseif ($estadoBien === '0') {
+                $queryEstadisticas->where('b.activo', false);
             }
+            // Si es 'todos', no aplica filtro
+        } else {
+            // Por defecto: solo activos
+            $queryEstadisticas->where('b.activo', true);
+        }
 
-            // ✅ APLICAR FILTRO DE TIPO DE MOVIMIENTO A ESTADÍSTICAS
-            if ($request->filled('tipo_mvto')) {
-                if ($request->tipo_mvto === 'activos') {
-                    // Filtrar solo REGISTRO y ASIGNACIÓN
-                    $tiposActivos = TipoMvto::where(function($q) {
-                        $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                        ->orWhere('tipo_mvto', 'ILIKE', '%registro%');
-                    })->pluck('id_tipo_mvto');
-
-                    if ($tiposActivos->isNotEmpty()) {
-                        $queryEstadisticas->whereIn('m1.tipo_mvto', $tiposActivos);
-                    }
-                } elseif ($request->tipo_mvto !== '') {
-                    // Filtro específico por ID
-                    $queryEstadisticas->where('m1.tipo_mvto', $request->tipo_mvto);
-                }
-                // Si es '', no aplica filtro (todos los tipos)
-            } else {
-                // Por defecto: solo REGISTRO y ASIGNACIÓN
+        // ✅ APLICAR FILTRO DE TIPO DE MOVIMIENTO A ESTADÍSTICAS
+        if ($request->filled('tipo_mvto')) {
+            if ($request->tipo_mvto === 'activos') {
+                // Filtrar solo SIN ASIGNAR y ASIGNACIÓN
                 $tiposActivos = TipoMvto::where(function($q) {
                     $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                    ->orWhere('tipo_mvto', 'ILIKE', '%registro%');
+                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
+                      ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
                 })->pluck('id_tipo_mvto');
 
                 if ($tiposActivos->isNotEmpty()) {
                     $queryEstadisticas->whereIn('m1.tipo_mvto', $tiposActivos);
                 }
+            } elseif ($request->tipo_mvto !== '') {
+                // Filtro específico por ID
+                $queryEstadisticas->where('m1.tipo_mvto', $request->tipo_mvto);
+            }
+            // Si es '', no aplica filtro (todos los tipos)
+        } else {
+            // Por defecto: solo SIN ASIGNAR y ASIGNACIÓN
+            $tiposActivos = TipoMvto::where(function($q) {
+                $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
+                  ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
+                  ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
+            })->pluck('id_tipo_mvto');
+
+            if ($tiposActivos->isNotEmpty()) {
+                $queryEstadisticas->whereIn('m1.tipo_mvto', $tiposActivos);
+            }
+        }
+
+        // ✅ APLICAR FILTRO DE UBICACIÓN A ESTADÍSTICAS
+        if ($request->filled('ubicacion')) {
+            $queryEstadisticas->where('m1.idubicacion', $request->ubicacion);
+        }
+
+        // ⭐⭐⭐ APLICAR FILTRO DE ÁREA A ESTADÍSTICAS (NUEVO) ⭐⭐⭐
+        if ($request->filled('area')) {
+            $queryEstadisticas->whereExists(function($query) use ($request) {
+                $query->select(DB::raw(1))
+                    ->from('ubicacion as u')
+                    ->whereRaw('u.id_ubicacion = m1.idubicacion')
+                    ->where('u.idarea', $request->area);
+            });
+        }
+
+        // ✅ APLICAR FILTRO DE FECHAS A ESTADÍSTICAS
+        if ($request->filled('fecha_desde')) {
+            $queryEstadisticas->whereDate('m1.fecha_mvto', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $queryEstadisticas->whereDate('m1.fecha_mvto', '<=', $request->fecha_hasta);
+        }
+
+        // ✅ CALCULAR TOTAL DE BIENES (según filtros)
+        $totalBienes = $queryEstadisticas->distinct()->count('m1.idbien');
+
+        // ✅ CALCULAR ESTADÍSTICAS POR TIPO
+        $estadisticas = (clone $queryEstadisticas)
+            ->select('tm.tipo_mvto', DB::raw('COUNT(DISTINCT m1.idbien) as cantidad'))
+            ->groupBy('tm.tipo_mvto')
+            ->get()
+            ->keyBy('tipo_mvto');
+
+        // Extraer contadores por tipo (con valores por defecto en 0)
+        $bienesAsignados = 0;
+        $bienesRegistro = 0;
+        $bienesBaja = 0;
+
+        foreach ($estadisticas as $tipo => $data) {
+            $tipoUpper = strtoupper($tipo);
+
+            if (str_contains($tipoUpper, 'ASIGNACION') || str_contains($tipoUpper, 'ASIGNACIÓN')) {
+                $bienesAsignados = $data->cantidad;
+            } elseif (str_contains($tipoUpper, 'SIN ASIGNAR') || str_contains($tipoUpper, 'REGISTRO')) {
+                $bienesRegistro = $data->cantidad;
+            } elseif (str_contains($tipoUpper, 'BAJA')) {
+                $bienesBaja = $data->cantidad;
+            }
+        }
+
+        // ⭐⭐⭐ QUERY PRINCIPAL DE MOVIMIENTOS ⭐⭐⭐
+        // ⭐⭐⭐ POR DEFECTO SOLO MOVIMIENTOS ACTIVOS (NO ANULADOS) ⭐⭐⭐
+            $mostrarAnulados = $request->filled('mostrar_anulados') && $request->mostrar_anulados === '1';
+
+            if ($mostrarAnulados) {
+                // Solo admin puede ver anulados
+                if (!Auth::user()->esAdmin()) {
+                    abort(403, 'No autorizado para ver movimientos anulados');
+                }
+
+                $query = Movimiento::anulados()->with([
+                    'bien.tipoBien',
+                    'tipoMovimiento',
+                    'usuario',
+                    'usuarioAnulo',  // ⭐ Cargar quien anuló
+                    'ubicacion.area',
+                    'estadoConservacion',
+                    'documentoSustento'
+                ]);
+            } else {
+                // Por defecto: solo activos
+                $query = Movimiento::activos()->with([
+                    'bien.tipoBien',
+                    'tipoMovimiento',
+                    'usuario',
+                    'ubicacion.area',
+                    'estadoConservacion',
+                    'documentoSustento'
+                ]);
             }
 
-            // ✅ APLICAR FILTRO DE UBICACIÓN A ESTADÍSTICAS
-            if ($request->filled('ubicacion')) {
-                $queryEstadisticas->where('m1.idubicacion', $request->ubicacion);
-            }
 
-            // ⭐⭐⭐ APLICAR FILTRO DE ÁREA A ESTADÍSTICAS (NUEVO) ⭐⭐⭐
-            if ($request->filled('area')) {
-                $queryEstadisticas->whereExists(function($query) use ($request) {
-                    $query->select(DB::raw(1))
-                        ->from('ubicacion as u')
-                        ->whereRaw('u.id_ubicacion = m1.idubicacion')
-                        ->where('u.idarea', $request->area);
+        // ✅ FILTRO DE ESTADO DEL BIEN
+        if ($request->filled('estado_bien')) {
+            $estadoBien = $request->estado_bien;
+
+            if ($estadoBien === 'todos') {
+                // No aplicar filtro, mostrar todos
+            } elseif ($estadoBien === '1') {
+                // Solo activos
+                $query->whereHas('bien', function($q) {
+                    $q->where('activo', true);
+                });
+            } elseif ($estadoBien === '0') {
+                // Solo inactivos
+                $query->whereHas('bien', function($q) {
+                    $q->where('activo', false);
                 });
             }
+        } else {
+            // Por defecto: solo activos (comportamiento actual)
+            $query->whereHas('bien', function($q) {
+                $q->where('activo', true);
+            });
+        }
 
-            // ✅ APLICAR FILTRO DE FECHAS A ESTADÍSTICAS
-            if ($request->filled('fecha_desde')) {
-                $queryEstadisticas->whereDate('m1.fecha_mvto', '>=', $request->fecha_desde);
+        // ✅ FILTRO DE UBICACIÓN
+        if ($request->filled('ubicacion')) {
+            $query->where('idubicacion', $request->ubicacion);
+        }
+
+        // ⭐⭐⭐ FILTRO DE ÁREA (NUEVO) ⭐⭐⭐
+        if ($request->filled('area')) {
+            $query->whereHas('ubicacion', function($q) use ($request) {
+                $q->where('idarea', $request->area);
+            });
+        }
+
+        // 🔍 BÚSQUEDA AVANZADA
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('id_movimiento', 'LIKE', "%{$search}%")
+                  ->orWhere('detalle_tecnico', 'ILIKE', "%{$search}%")
+                  ->orWhere('NumDocto', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('bien', function($q) use ($search) {
+                      $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
+                        ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('tipoMovimiento', function($q) use ($search) {
+                      $q->where('tipo_mvto', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('usuario', function($q) use ($search) {
+                      $q->where('name', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('documentoSustento', function($q) use ($search) {
+                      $q->where('numero_documento', 'ILIKE', "%{$search}%")
+                        ->orWhere('tipo_documento', 'ILIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        // 📊 FILTROS ADICIONALES
+        // ✅ FILTRO DE TIPO DE MOVIMIENTO (CORREGIDO - BUENAS PRÁCTICAS UX)
+        if ($request->filled('tipo_mvto')) {
+            if ($request->tipo_mvto === 'activos') {
+                // ✅ OPCIÓN "MOVIMIENTOS ACTIVOS" → SIN ASIGNAR + ASIGNACIÓN
+                $tiposActivos = TipoMvto::where(function($q) {
+                    $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
+                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
+                      ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
+                })->pluck('id_tipo_mvto');
+
+                if ($tiposActivos->isNotEmpty()) {
+                    $query->whereIn('tipo_mvto', $tiposActivos);
+                }
+            } elseif ($request->tipo_mvto === '') {
+                // ✅ OPCIÓN "TODOS LOS MOVIMIENTOS" → SIN FILTRO (muestra TODO)
+                // No aplicar filtro de tipo, incluye BAJA
+            } else {
+                // ✅ FILTRO ESPECÍFICO POR ID (un tipo individual)
+                $query->where('tipo_mvto', $request->tipo_mvto);
             }
-            if ($request->filled('fecha_hasta')) {
-                $queryEstadisticas->whereDate('m1.fecha_mvto', '<=', $request->fecha_hasta);
+        } else {
+            // ✅ POR DEFECTO AL CARGAR: MOVIMIENTOS ACTIVOS (SIN ASIGNAR + ASIGNACIÓN)
+            $tiposActivos = TipoMvto::where(function($q) {
+                $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
+                  ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
+                  ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
+            })->pluck('id_tipo_mvto');
+
+            if ($tiposActivos->isNotEmpty()) {
+                $query->whereIn('tipo_mvto', $tiposActivos);
             }
+        }
 
-            // ✅ CALCULAR TOTAL DE BIENES (según filtros)
-            $totalBienes = $queryEstadisticas->distinct()->count('m1.idbien');
+        if ($request->filled('bien_id')) {
+            $query->where('idbien', $request->bien_id);
+        }
 
-            // ✅ CALCULAR ESTADÍSTICAS POR TIPO
-            $estadisticas = (clone $queryEstadisticas)
-                ->select('tm.tipo_mvto', DB::raw('COUNT(DISTINCT m1.idbien) as cantidad'))
-                ->groupBy('tm.tipo_mvto')
-                ->get()
-                ->keyBy('tipo_mvto');
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_mvto', '>=', $request->fecha_desde);
+        }
 
-            // Extraer contadores por tipo (con valores por defecto en 0)
-            $bienesAsignados = 0;
-            $bienesRegistro = 0;
-            $bienesBaja = 0;
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_mvto', '<=', $request->fecha_hasta);
+        }
 
-            foreach ($estadisticas as $tipo => $data) {
-                $tipoUpper = strtoupper($tipo);
+        if ($request->filled('usuario_id')) {
+            $query->where('idusuario', $request->usuario_id);
+        }
 
-                if (str_contains($tipoUpper, 'ASIGNACION') || str_contains($tipoUpper, 'ASIGNACIÓN')) {
-                    $bienesAsignados = $data->cantidad;
-                } elseif (str_contains($tipoUpper, 'REGISTRO')) {
-                    $bienesRegistro = $data->cantidad;
-                } elseif (str_contains($tipoUpper, 'BAJA')) {
-                    $bienesBaja = $data->cantidad;
+        // ⭐⭐⭐ ORDENAMIENTO DINÁMICO (POR DEFECTO ID DESC) ⭐⭐⭐
+        $columna = $request->get('orden', 'id');
+        $direccion = $request->get('direccion', 'desc');
+
+        $columnasPermitidas = [
+            'id' => 'id_movimiento',
+            'fecha' => 'fecha_mvto',
+            'tipo' => 'tipo_mvto',
+            'bien' => 'idbien',
+            'responsable' => 'idusuario'
+        ];
+
+        if (array_key_exists($columna, $columnasPermitidas)) {
+            $columnaReal = $columnasPermitidas[$columna];
+        } else {
+            $columnaReal = 'id_movimiento';
+        }
+
+        $direccion = in_array(strtolower($direccion), ['asc', 'desc'])
+            ? strtolower($direccion)
+            : 'desc';
+
+        // ✅ ORDENAMIENTO PRINCIPAL
+        $query->orderBy($columnaReal, $direccion);
+
+        // ✅ ORDENAMIENTO SECUNDARIO SOLO SI NO ES POR ID
+        if ($columnaReal !== 'id_movimiento') {
+            $query->orderBy('id_movimiento', 'desc');
+        }
+
+        // 📄 PAGINACIÓN
+        $movimientos = $query->paginate($perPage);
+
+        // ⭐ DATOS PARA LOS SELECTORES
+        $tiposMovimiento = TipoMvto::orderBy('tipo_mvto')->get();
+        $bienes = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
+        $usuarios = User::orderBy('name')->get();
+        $ubicaciones = Ubicacion::with('area')->orderBy('nombre_sede')->get();
+        $estadosConservacion = EstadoBien::orderBy('nombre_estado')->get();
+        $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
+
+        // ⭐⭐⭐ AGREGAR LISTA DE ÁREAS (NUEVO) ⭐⭐⭐
+        $areas = \App\Models\Area::orderBy('nombre_area')->get();
+
+        // ✅ RESPUESTA AJAX (CON ESTADÍSTICAS DINÁMICAS)
+        if ($request->ajax()) {
+            $movimientosData = $movimientos->getCollection()->map(function ($movimiento) {
+                return [
+                    'id_movimiento' => $movimiento->id_movimiento,
+                    'fecha_mvto' => $movimiento->fecha_mvto,
+                    'detalle_tecnico' => $movimiento->detalle_tecnico,
+                    'idbien' => $movimiento->idbien,
+                    'tipo_mvto' => $movimiento->tipo_mvto,
+                    'idubicacion' => $movimiento->idubicacion,
+                    'id_estado_conservacion_bien' => $movimiento->id_estado_conservacion_bien,
+                    'idusuario' => $movimiento->idusuario,
+                    'documento_sustentatorio' => $movimiento->documento_sustentatorio,
+                    'NumDocto' => $movimiento->NumDocto,
+
+                    'bien' => [
+                        'id_bien' => $movimiento->bien->id_bien,
+                        'codigo_patrimonial' => $movimiento->bien->codigo_patrimonial,
+                        'denominacion_bien' => $movimiento->bien->denominacion_bien,
+                        'tipo_bien' => $movimiento->bien->tipoBien ? [
+                            'id_tipo_bien' => $movimiento->bien->tipoBien->id_tipo_bien,
+                            'nombre_tipo' => $movimiento->bien->tipoBien->nombre_tipo
+                        ] : null
+                    ],
+
+                    'tipo_movimiento' => [
+                        'id_tipo_mvto' => $movimiento->tipoMovimiento->id_tipo_mvto,
+                        'tipo_mvto' => $movimiento->tipoMovimiento->tipo_mvto
+                    ],
+
+                    'usuario' => [
+                        'id' => $movimiento->usuario->id,
+                        'name' => $movimiento->usuario->name,
+                        'email' => $movimiento->usuario->email
+                    ],
+
+                    'ubicacion' => $movimiento->ubicacion ? [
+                        'id_ubicacion' => $movimiento->ubicacion->id_ubicacion,
+                        'nombre_sede' => $movimiento->ubicacion->nombre_sede,
+                        'ambiente' => $movimiento->ubicacion->ambiente,
+                        'piso_ubicacion' => $movimiento->ubicacion->piso_ubicacion,
+                        'idarea' => $movimiento->ubicacion->idarea,
+                        'area' => $movimiento->ubicacion->area ? [
+                            'id_area' => $movimiento->ubicacion->area->id_area,
+                            'nombre_area' => $movimiento->ubicacion->area->nombre_area
+                        ] : null
+                    ] : null,
+
+                    'estado_conservacion' => $movimiento->estadoConservacion ? [
+                        'id_estado' => $movimiento->estadoConservacion->id_estado,
+                        'nombre_estado' => $movimiento->estadoConservacion->nombre_estado
+                    ] : null,
+
+                    'documento_sustento' => $movimiento->documentoSustento ? [
+                        'id_documento' => $movimiento->documentoSustento->id_documento,
+                        'tipo_documento' => $movimiento->documentoSustento->tipo_documento,
+                        'numero_documento' => $movimiento->documentoSustento->numero_documento,
+                        'fecha_documento' => $movimiento->documentoSustento->fecha_documento
+                    ] : null
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $movimientosData,
+                'total' => $total,
+                'resultados' => $movimientos->total(),
+                'current_page' => $movimientos->currentPage(),
+                'last_page' => $movimientos->lastPage(),
+                'per_page' => $movimientos->perPage(),
+                'from' => $movimientos->firstItem(),
+                'to' => $movimientos->lastItem(),
+
+                // ⭐⭐⭐ ESTADÍSTICAS DINÁMICAS SEGÚN FILTROS ⭐⭐⭐
+                'estadisticas' => [
+                    'totalBienes' => $totalBienes,
+                    'bienesAsignados' => $bienesAsignados,
+                    'bienesRegistro' => $bienesRegistro,
+                    'bienesBaja' => $bienesBaja
+                ]
+            ]);
+        }
+
+        return view('movimiento.index', compact(
+            'movimientos',
+            'tiposMovimiento',
+            'bienes',
+            'usuarios',
+            'ubicaciones',
+            'estadosConservacion',
+            'documentos',
+            'areas',
+            'total',
+            'totalBienes',
+            'bienesAsignados',
+            'bienesRegistro',
+            'bienesBaja'
+        ));
+    } // ⭐ CIERRE DE index()
+
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'idbien' => 'required|exists:bien,id_bien',
+                'tipo_mvto' => 'required|exists:tipo_mvto,id_tipo_mvto',
+                'fecha_mvto' => 'required|date',
+                'detalle_tecnico' => 'nullable|string|max:500',
+                'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
+                'NumDocto' => 'nullable|string|max:20'
+            ]);
+
+            $validated['idusuario'] = Auth::id();
+
+            if ($validated['fecha_mvto']) {
+                $fecha = \Carbon\Carbon::parse($validated['fecha_mvto']);
+                if ($fecha->format('H:i:s') === '00:00:00') {
+                    $validated['fecha_mvto'] = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
                 }
             }
 
-            // ⭐⭐⭐ QUERY PRINCIPAL DE MOVIMIENTOS ⭐⭐⭐
-            $query = Movimiento::with([
+            // ⭐⭐⭐ OBTENER TIPO DE MOVIMIENTO ⭐⭐⭐
+            $tipoMovimiento = TipoMvto::find($validated['tipo_mvto']);
+            $tipoNombre = strtoupper($tipoMovimiento->tipo_mvto ?? '');
+
+            $esRegistro = stripos($tipoNombre, 'registro') !== false;
+            $esBaja = stripos($tipoNombre, 'baja') !== false;
+
+            // ⭐⭐⭐ LÓGICA PARA REGISTRO ⭐⭐⭐
+            if ($esRegistro) {
+                // ✅ SI NO TIENE UBICACIÓN, ASIGNAR LA DE RECEPCIÓN
+                if (empty($validated['idubicacion'])) {
+                    $ubicacionRecepcion = $this->obtenerUbicacionRecepcion();
+
+                    if ($ubicacionRecepcion) {
+                        $validated['idubicacion'] = $ubicacionRecepcion->id_ubicacion;
+                        \Log::info("✅ REGISTRO - Ubicación asignada automáticamente: {$ubicacionRecepcion->nombre_sede} (ID: {$ubicacionRecepcion->id_ubicacion})");
+                    } else {
+                        \Log::warning("⚠️ REGISTRO - No se encontró ubicación de recepción configurada. Ubicación = NULL");
+                    }
+                }
+
+                // ✅ ASIGNAR ESTADO "NUEVO" SI NO TIENE
+                if (empty($validated['id_estado_conservacion_bien'])) {
+                    $estadoNuevo = EstadoBien::where('nombre_estado', 'ILIKE', '%nuevo%')
+                        ->orWhere('nombre_estado', 'ILIKE', '%bueno%')
+                        ->first();
+
+                    if ($estadoNuevo) {
+                        $validated['id_estado_conservacion_bien'] = $estadoNuevo->id_estado;
+                        \Log::info("✅ REGISTRO - Estado asignado: {$estadoNuevo->nombre_estado}");
+                    }
+                }
+            }
+
+            // ⭐⭐⭐ LÓGICA PARA BAJA ⭐⭐⭐
+            if ($esBaja) {
+                // ✅ 1. OBTENER ÚLTIMA ASIGNACIÓN DEL BIEN
+                $ultimaAsignacion = Movimiento::where('idbien', $validated['idbien'])
+                    ->whereHas('tipoMovimiento', function($q) {
+                        $q->where('tipo_mvto', 'ILIKE', '%asignaci%');
+                    })
+                    ->orderBy('fecha_mvto', 'desc')
+                    ->orderBy('id_movimiento', 'desc')
+                    ->first();
+
+                // ✅ 2. HEREDAR UBICACIÓN DE LA ÚLTIMA ASIGNACIÓN
+                if ($ultimaAsignacion && $ultimaAsignacion->idubicacion) {
+                    $validated['idubicacion'] = $ultimaAsignacion->idubicacion;
+                    \Log::info("✅ BAJA - Heredando ubicación de asignación #{$ultimaAsignacion->id_movimiento}: {$ultimaAsignacion->idubicacion}");
+                } else {
+                    // Si no hay asignación previa, dejar NULL
+                    \Log::warning("⚠️ BAJA - Bien sin asignación previa. Ubicación = NULL");
+                }
+
+                // ✅ 3. FORZAR ESTADO "MALO"
+                $estadoMalo = EstadoBien::where('nombre_estado', 'ILIKE', '%malo%')
+                    ->orWhere('nombre_estado', 'ILIKE', '%inoperativo%')
+                    ->orWhere('nombre_estado', 'ILIKE', '%dañado%')
+                    ->first();
+
+                if ($estadoMalo) {
+                    $validated['id_estado_conservacion_bien'] = $estadoMalo->id_estado;
+                    \Log::info("✅ BAJA - Estado forzado a: {$estadoMalo->nombre_estado}");
+                } else {
+                    \Log::error("❌ BAJA - No se encontró estado 'MALO' en la BD");
+                }
+            }
+
+            // ⭐ CREAR MOVIMIENTO CON LÓGICA APLICADA
+            $movimiento = Movimiento::create($validated);
+
+            $movimiento->load([
                 'bien.tipoBien',
                 'tipoMovimiento',
                 'usuario',
@@ -139,386 +520,29 @@ class MovimientoController extends Controller
                 'documentoSustento'
             ]);
 
-            // ✅ FILTRO DE ESTADO DEL BIEN
-            if ($request->filled('estado_bien')) {
-                $estadoBien = $request->estado_bien;
+            return response()->json([
+                'success' => true,
+                'message' => 'Movimiento registrado exitosamente',
+                'data' => $movimiento
+            ]);
 
-                if ($estadoBien === 'todos') {
-                    // No aplicar filtro, mostrar todos
-                } elseif ($estadoBien === '1') {
-                    // Solo activos
-                    $query->whereHas('bien', function($q) {
-                        $q->where('activo', true);
-                    });
-                } elseif ($estadoBien === '0') {
-                    // Solo inactivos
-                    $query->whereHas('bien', function($q) {
-                        $q->where('activo', false);
-                    });
-                }
-            } else {
-                // Por defecto: solo activos (comportamiento actual)
-                $query->whereHas('bien', function($q) {
-                    $q->where('activo', true);
-                });
-            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
 
-            // ✅ FILTRO DE UBICACIÓN
-            if ($request->filled('ubicacion')) {
-                $query->where('idubicacion', $request->ubicacion);
-            }
+        } catch (\Exception $e) {
+            Log::error('Error al crear movimiento: ' . $e->getMessage());
 
-            // ⭐⭐⭐ FILTRO DE ÁREA (NUEVO) ⭐⭐⭐
-            if ($request->filled('area')) {
-                $query->whereHas('ubicacion', function($q) use ($request) {
-                    $q->where('idarea', $request->area);
-                });
-            }
-
-            // 🔍 BÚSQUEDA AVANZADA
-            if (!empty($search)) {
-                $query->where(function($q) use ($search) {
-                    $q->where('id_movimiento', 'LIKE', "%{$search}%")
-                    ->orWhere('detalle_tecnico', 'ILIKE', "%{$search}%")
-                    ->orWhere('NumDocto', 'ILIKE', "%{$search}%")
-                    ->orWhereHas('bien', function($q) use ($search) {
-                        $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
-                            ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereHas('tipoMovimiento', function($q) use ($search) {
-                        $q->where('tipo_mvto', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereHas('usuario', function($q) use ($search) {
-                        $q->where('name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereHas('documentoSustento', function($q) use ($search) {
-                        $q->where('numero_documento', 'ILIKE', "%{$search}%")
-                            ->orWhere('tipo_documento', 'ILIKE', "%{$search}%");
-                    });
-                });
-            }
-
-            // 📊 FILTROS ADICIONALES
-            // ✅ FILTRO DE TIPO DE MOVIMIENTO (CORREGIDO - BUENAS PRÁCTICAS UX)
-            if ($request->filled('tipo_mvto')) {
-                if ($request->tipo_mvto === 'activos') {
-                    // ✅ OPCIÓN "MOVIMIENTOS ACTIVOS" → REGISTRO + ASIGNACIÓN
-                    $tiposActivos = TipoMvto::where(function($q) {
-                        $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                        ->orWhere('tipo_mvto', 'ILIKE', '%registro%');
-                    })->pluck('id_tipo_mvto');
-
-                    if ($tiposActivos->isNotEmpty()) {
-                        $query->whereIn('tipo_mvto', $tiposActivos);
-                    }
-                } elseif ($request->tipo_mvto === '') {
-                    // ✅ OPCIÓN "TODOS LOS MOVIMIENTOS" → SIN FILTRO (muestra TODO)
-                    // No aplicar filtro de tipo, incluye BAJA
-                } else {
-                    // ✅ FILTRO ESPECÍFICO POR ID (un tipo individual)
-                    $query->where('tipo_mvto', $request->tipo_mvto);
-                }
-            } else {
-                // ✅ POR DEFECTO AL CARGAR: MOVIMIENTOS ACTIVOS (REGISTRO + ASIGNACIÓN)
-                $tiposActivos = TipoMvto::where(function($q) {
-                    $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                    ->orWhere('tipo_mvto', 'ILIKE', '%registro%');
-                })->pluck('id_tipo_mvto');
-
-                if ($tiposActivos->isNotEmpty()) {
-                    $query->whereIn('tipo_mvto', $tiposActivos);
-                }
-            }
-
-            if ($request->filled('bien_id')) {
-                $query->where('idbien', $request->bien_id);
-            }
-
-            if ($request->filled('fecha_desde')) {
-                $query->whereDate('fecha_mvto', '>=', $request->fecha_desde);
-            }
-
-            if ($request->filled('fecha_hasta')) {
-                $query->whereDate('fecha_mvto', '<=', $request->fecha_hasta);
-            }
-
-            if ($request->filled('usuario_id')) {
-                $query->where('idusuario', $request->usuario_id);
-            }
-
-            // ⭐⭐⭐ ORDENAMIENTO DINÁMICO (POR DEFECTO ID DESC) ⭐⭐⭐
-            $columna = $request->get('orden', 'id');
-            $direccion = $request->get('direccion', 'desc');
-
-            $columnasPermitidas = [
-                'id' => 'id_movimiento',
-                'fecha' => 'fecha_mvto',
-                'tipo' => 'tipo_mvto',
-                'bien' => 'idbien',
-                'responsable' => 'idusuario'
-            ];
-
-            if (array_key_exists($columna, $columnasPermitidas)) {
-                $columnaReal = $columnasPermitidas[$columna];
-            } else {
-                $columnaReal = 'id_movimiento';
-            }
-
-            $direccion = in_array(strtolower($direccion), ['asc', 'desc'])
-                ? strtolower($direccion)
-                : 'desc';
-
-            // ✅ ORDENAMIENTO PRINCIPAL
-            $query->orderBy($columnaReal, $direccion);
-
-            // ✅ ORDENAMIENTO SECUNDARIO SOLO SI NO ES POR ID
-            if ($columnaReal !== 'id_movimiento') {
-                $query->orderBy('id_movimiento', 'desc');
-            }
-
-            // 📄 PAGINACIÓN
-            $movimientos = $query->paginate($perPage);
-
-            // ⭐ DATOS PARA LOS SELECTORES
-            $tiposMovimiento = TipoMvto::orderBy('tipo_mvto')->get();
-            $bienes = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
-            $usuarios = User::orderBy('name')->get();
-            $ubicaciones = Ubicacion::with('area')->orderBy('nombre_sede')->get();
-            $estadosConservacion = EstadoBien::orderBy('nombre_estado')->get();
-            $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
-
-            // ⭐⭐⭐ AGREGAR LISTA DE ÁREAS (NUEVO) ⭐⭐⭐
-            $areas = \App\Models\Area::orderBy('nombre_area')->get();
-
-            // ✅ RESPUESTA AJAX (CON ESTADÍSTICAS DINÁMICAS)
-            if ($request->ajax()) {
-                $movimientosData = $movimientos->getCollection()->map(function ($movimiento) {
-                    return [
-                        'id_movimiento' => $movimiento->id_movimiento,
-                        'fecha_mvto' => $movimiento->fecha_mvto,
-                        'detalle_tecnico' => $movimiento->detalle_tecnico,
-                        'idbien' => $movimiento->idbien,
-                        'tipo_mvto' => $movimiento->tipo_mvto,
-                        'idubicacion' => $movimiento->idubicacion,
-                        'id_estado_conservacion_bien' => $movimiento->id_estado_conservacion_bien,
-                        'idusuario' => $movimiento->idusuario,
-                        'documento_sustentatorio' => $movimiento->documento_sustentatorio,
-                        'NumDocto' => $movimiento->NumDocto,
-
-                        'bien' => [
-                            'id_bien' => $movimiento->bien->id_bien,
-                            'codigo_patrimonial' => $movimiento->bien->codigo_patrimonial,
-                            'denominacion_bien' => $movimiento->bien->denominacion_bien,
-                            'tipo_bien' => $movimiento->bien->tipoBien ? [
-                                'id_tipo_bien' => $movimiento->bien->tipoBien->id_tipo_bien,
-                                'nombre_tipo' => $movimiento->bien->tipoBien->nombre_tipo
-                            ] : null
-                        ],
-
-                        'tipo_movimiento' => [
-                            'id_tipo_mvto' => $movimiento->tipoMovimiento->id_tipo_mvto,
-                            'tipo_mvto' => $movimiento->tipoMovimiento->tipo_mvto
-                        ],
-
-                        'usuario' => [
-                            'id' => $movimiento->usuario->id,
-                            'name' => $movimiento->usuario->name,
-                            'email' => $movimiento->usuario->email
-                        ],
-
-                        'ubicacion' => $movimiento->ubicacion ? [
-                            'id_ubicacion' => $movimiento->ubicacion->id_ubicacion,
-                            'nombre_sede' => $movimiento->ubicacion->nombre_sede,
-                            'ambiente' => $movimiento->ubicacion->ambiente,
-                            'piso_ubicacion' => $movimiento->ubicacion->piso_ubicacion,
-                            'idarea' => $movimiento->ubicacion->idarea,
-                            'area' => $movimiento->ubicacion->area ? [
-                                'id_area' => $movimiento->ubicacion->area->id_area,
-                                'nombre_area' => $movimiento->ubicacion->area->nombre_area
-                            ] : null
-                        ] : null,
-
-                        'estado_conservacion' => $movimiento->estadoConservacion ? [
-                            'id_estado' => $movimiento->estadoConservacion->id_estado,
-                            'nombre_estado' => $movimiento->estadoConservacion->nombre_estado
-                        ] : null,
-
-                        'documento_sustento' => $movimiento->documentoSustento ? [
-                            'id_documento' => $movimiento->documentoSustento->id_documento,
-                            'tipo_documento' => $movimiento->documentoSustento->tipo_documento,
-                            'numero_documento' => $movimiento->documentoSustento->numero_documento,
-                            'fecha_documento' => $movimiento->documentoSustento->fecha_documento
-                        ] : null
-                    ];
-                });
-
-                return response()->json([
-                    'success' => true,
-                    'data' => $movimientosData,
-                    'total' => $total,
-                    'resultados' => $movimientos->total(),
-                    'current_page' => $movimientos->currentPage(),
-                    'last_page' => $movimientos->lastPage(),
-                    'per_page' => $movimientos->perPage(),
-                    'from' => $movimientos->firstItem(),
-                    'to' => $movimientos->lastItem(),
-
-                    // ⭐⭐⭐ ESTADÍSTICAS DINÁMICAS SEGÚN FILTROS ⭐⭐⭐
-                    'estadisticas' => [
-                        'totalBienes' => $totalBienes,
-                        'bienesAsignados' => $bienesAsignados,
-                        'bienesRegistro' => $bienesRegistro,
-                        'bienesBaja' => $bienesBaja
-                    ]
-                ]);
-            }
-
-            return view('movimiento.index', compact(
-                'movimientos',
-                'tiposMovimiento',
-                'bienes',
-                'usuarios',
-                'ubicaciones',
-                'estadosConservacion',
-                'documentos',
-                'areas',  // ⭐ NUEVO
-                'total',
-                'totalBienes',
-                'bienesAsignados',
-                'bienesRegistro',
-                'bienesBaja'
-            ));
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear movimiento: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-
-
-
-
-        public function store(Request $request)
-        {
-            try {
-                $validated = $request->validate([
-                    'idbien' => 'required|exists:bien,id_bien',
-                    'tipo_mvto' => 'required|exists:tipo_mvto,id_tipo_mvto',
-                    'fecha_mvto' => 'required|date',
-                    'detalle_tecnico' => 'nullable|string|max:500',
-                    'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
-                    'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
-                    'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
-                    'NumDocto' => 'nullable|string|max:20'
-                ]);
-
-                $validated['idusuario'] = Auth::id();
-
-                if ($validated['fecha_mvto']) {
-                    $fecha = \Carbon\Carbon::parse($validated['fecha_mvto']);
-                    if ($fecha->format('H:i:s') === '00:00:00') {
-                        $validated['fecha_mvto'] = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
-                    }
-                }
-
-                // ⭐⭐⭐ OBTENER TIPO DE MOVIMIENTO ⭐⭐⭐
-                $tipoMovimiento = TipoMvto::find($validated['tipo_mvto']);
-                $tipoNombre = strtoupper($tipoMovimiento->tipo_mvto ?? '');
-
-                $esRegistro = stripos($tipoNombre, 'registro') !== false;
-                $esBaja = stripos($tipoNombre, 'baja') !== false;
-
-                // ⭐⭐⭐ LÓGICA PARA REGISTRO ⭐⭐⭐
-                if ($esRegistro) {
-                    // ✅ SI NO TIENE UBICACIÓN, ASIGNAR LA DE RECEPCIÓN
-                    if (empty($validated['idubicacion'])) {
-                        $ubicacionRecepcion = $this->obtenerUbicacionRecepcion();
-
-                        if ($ubicacionRecepcion) {
-                            $validated['idubicacion'] = $ubicacionRecepcion->id_ubicacion;
-                            \Log::info("✅ REGISTRO - Ubicación asignada automáticamente: {$ubicacionRecepcion->nombre_sede} (ID: {$ubicacionRecepcion->id_ubicacion})");
-                        } else {
-                            \Log::warning("⚠️ REGISTRO - No se encontró ubicación de recepción configurada. Ubicación = NULL");
-                        }
-                    }
-
-                    // ✅ ASIGNAR ESTADO "NUEVO" SI NO TIENE
-                    if (empty($validated['id_estado_conservacion_bien'])) {
-                        $estadoNuevo = EstadoBien::where('nombre_estado', 'ILIKE', '%nuevo%')
-                            ->orWhere('nombre_estado', 'ILIKE', '%bueno%')
-                            ->first();
-
-                        if ($estadoNuevo) {
-                            $validated['id_estado_conservacion_bien'] = $estadoNuevo->id_estado;
-                            \Log::info("✅ REGISTRO - Estado asignado: {$estadoNuevo->nombre_estado}");
-                        }
-                    }
-                }
-
-                // ⭐⭐⭐ LÓGICA PARA BAJA ⭐⭐⭐
-                if ($esBaja) {
-                    // ✅ 1. OBTENER ÚLTIMA ASIGNACIÓN DEL BIEN
-                    $ultimaAsignacion = Movimiento::where('idbien', $validated['idbien'])
-                        ->whereHas('tipoMovimiento', function($q) {
-                            $q->where('tipo_mvto', 'ILIKE', '%asignaci%');
-                        })
-                        ->orderBy('fecha_mvto', 'desc')
-                        ->orderBy('id_movimiento', 'desc')
-                        ->first();
-
-                    // ✅ 2. HEREDAR UBICACIÓN DE LA ÚLTIMA ASIGNACIÓN
-                    if ($ultimaAsignacion && $ultimaAsignacion->idubicacion) {
-                        $validated['idubicacion'] = $ultimaAsignacion->idubicacion;
-                        \Log::info("✅ BAJA - Heredando ubicación de asignación #{$ultimaAsignacion->id_movimiento}: {$ultimaAsignacion->idubicacion}");
-                    } else {
-                        // Si no hay asignación previa, dejar NULL
-                        \Log::warning("⚠️ BAJA - Bien sin asignación previa. Ubicación = NULL");
-                    }
-
-                    // ✅ 3. FORZAR ESTADO "MALO"
-                    $estadoMalo = EstadoBien::where('nombre_estado', 'ILIKE', '%malo%')
-                        ->orWhere('nombre_estado', 'ILIKE', '%inoperativo%')
-                        ->orWhere('nombre_estado', 'ILIKE', '%dañado%')
-                        ->first();
-
-                    if ($estadoMalo) {
-                        $validated['id_estado_conservacion_bien'] = $estadoMalo->id_estado;
-                        \Log::info("✅ BAJA - Estado forzado a: {$estadoMalo->nombre_estado}");
-                    } else {
-                        \Log::error("❌ BAJA - No se encontró estado 'MALO' en la BD");
-                    }
-                }
-
-                // ⭐ CREAR MOVIMIENTO CON LÓGICA APLICADA
-                $movimiento = Movimiento::create($validated);
-
-                $movimiento->load([
-                    'bien.tipoBien',
-                    'tipoMovimiento',
-                    'usuario',
-                    'ubicacion.area',
-                    'estadoConservacion',
-                    'documentoSustento'
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Movimiento registrado exitosamente',
-                    'data' => $movimiento
-                ]);
-
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación',
-                    'errors' => $e->errors()
-                ], 422);
-
-            } catch (\Exception $e) {
-                Log::error('Error al crear movimiento: ' . $e->getMessage());
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al crear movimiento: ' . $e->getMessage()
-                ], 500);
-            }
-        }
 
         /**
          * ⭐⭐⭐ OBTENER UBICACIÓN DE RECEPCIÓN INICIAL ⭐⭐⭐
@@ -660,58 +684,62 @@ class MovimientoController extends Controller
         }
     }
 
-    public function destroy(Movimiento $movimiento)
-    {
-        try {
-            $movimiento->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Movimiento eliminado exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al eliminar movimiento: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     /**
-     * Eliminar movimientos masivamente (hard delete)
+     * ⭐⭐⭐ ANULAR MOVIMIENTO (SOFT DELETE) ⭐⭐⭐
+     * No elimina físicamente, marca como anulado
      */
-    public function eliminarMasivo(Request $request)
+    public function anular(Request $request, Movimiento $movimiento)
     {
         try {
-            $validated = $request->validate([
-                'movimientos_ids' => 'required|array|min:1',
-                'movimientos_ids.*' => 'exists:movimiento,id_movimiento'
-            ], [
-                'movimientos_ids.required' => 'Debe seleccionar al menos un movimiento',
-                'movimientos_ids.*.exists' => 'Uno o más movimientos no existen'
-            ]);
-
-            $cantidadEliminados = 0;
-
-            foreach ($validated['movimientos_ids'] as $movimientoId) {
-                $movimiento = Movimiento::find($movimientoId);
-
-                if ($movimiento) {
-                    $movimiento->delete(); // Hard delete (elimina permanentemente)
-                    $cantidadEliminados++;
-                }
+            // ✅ VALIDAR QUE SOLO ADMIN PUEDA ANULAR
+            if (!Auth::user()->esAdmin()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solo el administrador puede anular movimientos'
+                ], 403);
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => "{$cantidadEliminados} movimiento(s) eliminado(s) exitosamente",
-                'cantidad' => $cantidadEliminados
+            // ✅ VALIDAR QUE NO ESTÉ YA ANULADO
+            if ($movimiento->anulado) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este movimiento ya fue anulado el ' .
+                                \Carbon\Carbon::parse($movimiento->fecha_anulacion)->format('d/m/Y H:i')
+                ], 400);
+            }
+
+            // ✅ VALIDAR MOTIVO (OBLIGATORIO)
+            $validated = $request->validate([
+                'motivo_anulacion' => 'required|string|min:10|max:200'
+            ], [
+                'motivo_anulacion.required' => 'El motivo de anulación es obligatorio',
+                'motivo_anulacion.min' => 'El motivo debe tener al menos 10 caracteres'
             ]);
 
-        } catch (ValidationException $e) {
+            // ⭐⭐⭐ MARCAR COMO ANULADO (NO ELIMINAR) ⭐⭐⭐
+            $movimiento->update([
+                'anulado' => true,
+                'anulado_por' => Auth::id(),
+                'fecha_anulacion' => now(),
+                'motivo_anulacion' => $validated['motivo_anulacion']
+            ]);
+
+            // 📊 LOG DE AUDITORÍA
+            Log::warning('MOVIMIENTO ANULADO', [
+                'id_movimiento' => $movimiento->id_movimiento,
+                'bien_codigo' => $movimiento->bien->codigo_patrimonial,
+                'tipo' => $movimiento->tipoMovimiento->tipo_mvto,
+                'anulado_por' => Auth::user()->name,
+                'motivo' => $validated['motivo_anulacion'],
+                'fecha' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Movimiento anulado exitosamente. Se mantiene en el historial para auditoría.'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación',
@@ -719,14 +747,159 @@ class MovimientoController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            Log::error('Error en eliminación masiva de movimientos: ' . $e->getMessage());
+            Log::error('Error al anular movimiento: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar: ' . $e->getMessage()
+                'message' => 'Error al anular movimiento: ' . $e->getMessage()
             ], 500);
         }
     }
+
+    /**
+     * ⭐⭐⭐ RESTAURAR MOVIMIENTO ANULADO ⭐⭐⭐
+     * Solo ADMIN puede restaurar
+     */
+    public function restaurar(Request $request, Movimiento $movimiento)
+    {
+        try {
+            // ✅ VALIDAR QUE SOLO ADMIN PUEDA RESTAURAR
+            if (!Auth::user()->esAdmin()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solo el administrador puede restaurar movimientos'
+                ], 403);
+            }
+
+            // ✅ VALIDAR QUE ESTÉ ANULADO
+            if (!$movimiento->anulado) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este movimiento no está anulado'
+                ], 400);
+            }
+
+            // ⭐⭐⭐ RESTAURAR ⭐⭐⭐
+            $movimiento->update([
+                'anulado' => false,
+                'anulado_por' => null,
+                'fecha_anulacion' => null,
+                'motivo_anulacion' => null
+            ]);
+
+            // 📊 LOG DE AUDITORÍA
+            Log::info('MOVIMIENTO RESTAURADO', [
+                'id_movimiento' => $movimiento->id_movimiento,
+                'bien_codigo' => $movimiento->bien->codigo_patrimonial,
+                'restaurado_por' => Auth::user()->name,
+                'fecha' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Movimiento restaurado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al restaurar movimiento: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al restaurar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    /**
+     * ⭐⭐⭐ ANULAR MOVIMIENTOS MASIVAMENTE (SOFT DELETE) ⭐⭐⭐
+     */
+    public function anularMasivo(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            // ✅ VALIDAR QUE SOLO ADMIN PUEDA ANULAR
+            if (!Auth::user()->esAdmin()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solo el administrador puede anular movimientos'
+                ], 403);
+            }
+
+            $validated = $request->validate([
+                'movimientos_ids' => 'required|array|min:1',
+                'movimientos_ids.*' => 'exists:movimiento,id_movimiento',
+                'motivo_anulacion' => 'required|string|min:10|max:200'
+            ], [
+                'movimientos_ids.required' => 'Debe seleccionar al menos un movimiento',
+                'movimientos_ids.*.exists' => 'Uno o más movimientos no existen',
+                'motivo_anulacion.required' => 'El motivo es obligatorio',
+                'motivo_anulacion.min' => 'El motivo debe tener al menos 10 caracteres'
+            ]);
+
+            $cantidadAnulados = 0;
+            $yaAnulados = [];
+
+            foreach ($validated['movimientos_ids'] as $movimientoId) {
+                $movimiento = Movimiento::find($movimientoId);
+
+                if ($movimiento && !$movimiento->anulado) {
+                    $movimiento->update([
+                        'anulado' => true,
+                        'anulado_por' => Auth::id(),
+                        'fecha_anulacion' => now(),
+                        'motivo_anulacion' => $validated['motivo_anulacion']
+                    ]);
+                    $cantidadAnulados++;
+                } elseif ($movimiento && $movimiento->anulado) {
+                    $yaAnulados[] = $movimiento->id_movimiento;
+                }
+            }
+
+            DB::commit();
+
+            // 📊 LOG DE AUDITORÍA
+            Log::warning('ANULACIÓN MASIVA DE MOVIMIENTOS', [
+                'cantidad_anulados' => $cantidadAnulados,
+                'ya_anulados' => count($yaAnulados),
+                'anulado_por' => Auth::user()->name,
+                'motivo' => $validated['motivo_anulacion'],
+                'fecha' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            $mensaje = "$cantidadAnulados movimientos anulados exitosamente";
+            if (count($yaAnulados) > 0) {
+                $mensaje .= ". " . count($yaAnulados) . " ya estaban anulados.";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $mensaje,
+                'cantidad' => $cantidadAnulados,
+                'ya_anulados' => $yaAnulados
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en anulación masiva de movimientos: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al anular: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 
     public function porTipo(Request $request)
