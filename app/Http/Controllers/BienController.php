@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\PermisosHelper;
+use Illuminate\Support\Facades\Auth; // ⭐⭐⭐ NUEVO ⭐⭐⭐
 
 class BienController extends Controller
 {
@@ -25,35 +27,36 @@ class BienController extends Controller
     }
 
     /**
-     * ✅ Listar SOLO bienes ACTIVOS
+     * ✅ Listar SOLO bienes ACTIVOS con permisos por área
      */
     public function index(Request $request)
     {
         $search = $request->get('search', '');
         $perPage = 10;
 
-        // ✅ Total de bienes ACTIVOS
-        $total = Bien::activos()->count();
+        // ⭐⭐⭐ FILTRAR POR PERMISOS DEL USUARIO (SIN ->activos()) ⭐⭐⭐
+        $query = PermisosHelper::getBienesQuery()
+            ->with(['tipoBien', 'documentoSustento'])
+            ->where('activo', true);
 
-        // ✅ SOLO BIENES ACTIVOS
-        $query = Bien::with(['tipoBien', 'documentoSustento'])
-            ->activos(); // ⭐ CAMBIO CRÍTICO
+        // Total de bienes que el usuario puede ver
+        $total = $query->count();
 
         // 🔍 BÚSQUEDA AVANZADA
         if (!empty($search)) {
             $query->where(function($q) use ($search) {
                 $q->where('id_bien', 'LIKE', "%{$search}%")
-                  ->orWhere('codigo_patrimonial', 'ILIKE', "%{$search}%")
-                  ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%")
-                  ->orWhere('marca_bien', 'ILIKE', "%{$search}%")
-                  ->orWhere('modelo_bien', 'ILIKE', "%{$search}%")
-                  ->orWhere('NumDoc', 'ILIKE', "%{$search}%")
-                  ->orWhereHas('tipoBien', function($q) use ($search) {
-                      $q->where('nombre_tipo', 'ILIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('documentoSustento', function($q) use ($search) {
-                      $q->where('numero_documento', 'ILIKE', "%{$search}%");
-                  });
+                ->orWhere('codigo_patrimonial', 'ILIKE', "%{$search}%")
+                ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%")
+                ->orWhere('marca_bien', 'ILIKE', "%{$search}%")
+                ->orWhere('modelo_bien', 'ILIKE', "%{$search}%")
+                ->orWhere('NumDoc', 'ILIKE', "%{$search}%")
+                ->orWhereHas('tipoBien', function($q) use ($search) {
+                    $q->where('nombre_tipo', 'ILIKE', "%{$search}%");
+                })
+                ->orWhereHas('documentoSustento', function($q) use ($search) {
+                    $q->where('numero_documento', 'ILIKE', "%{$search}%");
+                });
             });
         }
 
@@ -92,7 +95,7 @@ class BienController extends Controller
                     'fecha_registro' => $bien->fecha_registro,
                     'foto_bien' => $bien->foto_bien,
                     'NumDoc' => $bien->NumDoc,
-                    'activo' => $bien->activo, // ✅
+                    'activo' => $bien->activo,
                     'tipo_bien' => $bien->tipoBien ? [
                         'id_tipo_bien' => $bien->tipoBien->id_tipo_bien,
                         'nombre_tipo' => $bien->tipoBien->nombre_tipo
@@ -127,6 +130,14 @@ class BienController extends Controller
      */
     public function store(BienRequest $request)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!PermisosHelper::puedeRegistrarBien()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para registrar bienes'
+            ], 403);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -151,6 +162,9 @@ class BienController extends Controller
                 $data['foto_bien'] = $uploadedFile->getSecurePath();
                 $data['public_id'] = $uploadedFile->getPublicId();
             }
+
+            // ⭐⭐⭐ GUARDAR QUIÉN REGISTRÓ EL BIEN ⭐⭐⭐
+            $data['registrado_por'] = Auth::id();
 
             $bien = Bien::create($data);
             $bien->load('documentoSustento', 'tipoBien');
@@ -206,6 +220,14 @@ class BienController extends Controller
      */
     public function edit(Bien $bien)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!PermisosHelper::puedeEditarBien($bien)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para editar este bien (pertenece a otra área)'
+            ], 403);
+        }
+
         $bien->load(['tipoBien', 'documentoSustento']);
 
         return response()->json([
@@ -230,6 +252,14 @@ class BienController extends Controller
      */
     public function update(BienRequest $request, Bien $bien)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!PermisosHelper::puedeEditarBien($bien)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para editar este bien (pertenece a otra área)'
+            ], 403);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -317,13 +347,21 @@ class BienController extends Controller
      */
     public function destroy(Bien $bien)
     {
+        // ⭐ SOLO ADMIN PUEDE ELIMINAR
+        if (!PermisosHelper::puedeEliminarBien()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo el ADMIN puede eliminar bienes'
+            ], 403);
+        }
+
         try {
             // ⭐ Verificar si tiene movimientos
             $tieneMovimientos = $bien->movimientos()->exists();
-            
+
             // Eliminar lógicamente
             $bien->eliminarLogico();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Bien eliminado correctamente',
@@ -344,7 +382,6 @@ class BienController extends Controller
         }
     }
 
-
     /**
      * ✅ NUEVO: Ver bienes eliminados (para modal)
      */
@@ -354,7 +391,7 @@ class BienController extends Controller
             $search = $request->input('search', '');
 
             $bienes = Bien::with('tipoBien')
-                ->eliminados() // ✅ Solo inactivos
+                ->eliminados()
                 ->when($search, function($query, $search) {
                     $query->where(function($q) use ($search) {
                         $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
@@ -403,7 +440,6 @@ class BienController extends Controller
         }
     }
 
-
     /**
      * ⭐⭐⭐ OBTENER ÚLTIMO MOVIMIENTO ANTES DE ELIMINAR ⭐⭐⭐
      */
@@ -418,7 +454,7 @@ class BienController extends Controller
                     'estadoConservacion',
                     'usuario'
                 ])
-                ->where('anulado', false)  // ⭐ Solo movimientos vigentes
+                ->where('anulado', false)
                 ->orderBy('fecha_mvto', 'desc')
                 ->first();
 
@@ -439,9 +475,9 @@ class BienController extends Controller
             // ⭐⭐⭐ DETECTAR SI SOLO TIENE MOVIMIENTO INICIAL (SIN ASIGNAR) ⭐⭐⭐
             $totalMovimientos = $bien->movimientos()->where('anulado', false)->count();
             $tipoMovimiento = strtoupper($ultimoMov->tipoMovimiento->tipo_mvto ?? '');
-            
+
             $esSoloRegistro = (
-                $totalMovimientos === 1 && 
+                $totalMovimientos === 1 &&
                 (
                     str_contains($tipoMovimiento, 'REGISTRO') ||
                     str_contains($tipoMovimiento, 'SIN ASIGNAR') ||
@@ -453,7 +489,7 @@ class BienController extends Controller
             if ($esSoloRegistro) {
                 return response()->json([
                     'success' => true,
-                    'tiene_movimientos' => false,  // ⭐ Se comporta como si no tuviera
+                    'tiene_movimientos' => false,
                     'solo_registro' => true,
                     'message' => 'El bien está registrado pero sin asignar',
                     'bien' => [
@@ -507,14 +543,13 @@ class BienController extends Controller
         }
     }
 
-
     /**
      * ⭐ HELPER: Obtener clase de badge según tipo de movimiento
      */
     private function getBadgeTipoMovimiento($tipo)
     {
         $tipo = strtoupper($tipo);
-        
+
         if (str_contains($tipo, 'ASIGNACIÓN') || str_contains($tipo, 'ASIGNACION')) {
             return 'badge-success';
         } elseif (str_contains($tipo, 'BAJA')) {
@@ -532,7 +567,7 @@ class BienController extends Controller
     private function getBadgeEstadoConservacion($estado)
     {
         $estado = strtoupper($estado);
-        
+
         if (str_contains($estado, 'BUENO') || str_contains($estado, 'EXCELENTE')) {
             return 'badge-success';
         } elseif (str_contains($estado, 'REGULAR')) {
@@ -543,9 +578,6 @@ class BienController extends Controller
             return 'badge-secondary';
         }
     }
-
-
-
 
     /**
      * Verificar si el código patrimonial ya existe

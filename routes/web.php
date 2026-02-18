@@ -24,6 +24,7 @@ use App\Http\Controllers\ReporteKardexController;
 use App\Http\Controllers\ReporteBienController;
 use App\Http\Controllers\SystemSettingController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\QRBienController;
 
 /*
 |--------------------------------------------------------------------------
@@ -172,6 +173,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('movimiento', MovimientoController::class);
 
     // ==================== SEGURIDAD ====================
+    // ⭐⭐⭐ NUEVO: Ruta para obtener responsables (DEBE IR ANTES DEL RESOURCE) ⭐⭐⭐
+    Route::get('/usuarios/responsables', [UserController::class, 'obtenerResponsables'])
+        ->name('user.responsables');
+
     Route::delete('user/bulk-destroy', [UserController::class, 'bulkDestroy'])->name('user.bulk-destroy');
     Route::resource('user', UserController::class)->except(['show', 'create']);
 
@@ -211,6 +216,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bienes/pdf', [ReporteBienController::class, 'pdf'])->name('bienes.pdf');
         Route::get('/bienes/excel', [ReporteBienController::class, 'excel'])->name('bienes.excel');
     });
+
+    // ==================== QR CODES ====================
+    // Vista principal
+    Route::get('/qr-bienes', [QRBienController::class, 'index'])
+        ->name('qr-bienes.index');
+
+    // Generar PDF masivo
+    Route::post('/qr-bienes/generar-pdf', [QRBienController::class, 'generarPDFMasivo'])
+        ->name('qr-bienes.generar-pdf');
+
+    // Previsualizar QR individual
+    Route::get('/qr-bienes/preview/{codigo}', [QRBienController::class, 'previsualizar'])
+        ->name('qr-bienes.preview');
 });
 
 require __DIR__ . '/auth.php';

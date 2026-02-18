@@ -34,6 +34,9 @@ class Bien extends Model
         // ⭐ NUEVO: eliminación lógica
         'activo',
         'eliminado_en',
+
+        // ⭐⭐⭐ NUEVO: usuario que registró el bien ⭐⭐⭐
+        'registrado_por',
     ];
 
     protected $casts = [
@@ -98,6 +101,14 @@ class Bien extends Model
     public function movimientos()
     {
         return $this->hasMany(Movimiento::class, 'idbien', 'id_bien');
+    }
+
+    /**
+     * ⭐⭐⭐ NUEVO: Usuario que registró el bien ⭐⭐⭐
+     */
+    public function registradoPor()
+    {
+        return $this->belongsTo(User::class, 'registrado_por', 'id');
     }
 
     // ==================== MÉTODOS AUXILIARES ====================
@@ -244,10 +255,11 @@ class Bien extends Model
             ] : null,
         ];
     }
+
     public function latestMovimiento(): HasOne
     {
-    // Último por fecha_mvto y desempate por id_movimiento
-    return $this->hasOne(Movimiento::class, 'idbien', 'id_bien')
-        ->latestOfMany(['fecha_mvto', 'id_movimiento']);
+        // Último por fecha_mvto y desempate por id_movimiento
+        return $this->hasOne(Movimiento::class, 'idbien', 'id_bien')
+            ->latestOfMany(['fecha_mvto', 'id_movimiento']);
     }
 }

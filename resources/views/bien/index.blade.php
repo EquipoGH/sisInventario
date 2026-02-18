@@ -14,13 +14,20 @@
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
                     <i class="fas fa-plus"></i> Nuevo Bien
                 </button>
-                <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
-                    <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
-                </button>
-                <button type="button" class="btn btn-secondary ml-2" id="btnVerEliminados">
-                    <i class="fas fa-trash-restore"></i> Eliminados
-                    <span class="badge badge-light" id="badgeEliminados">0</span>
-                </button>
+                @if(Auth::user()->esAdmin())
+                    <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none">
+                        <i class="fas fa-trash-alt"></i> Eliminar 
+                        <span id="contadorSeleccionados">0</span>
+                    </button>
+                @endif
+
+                @if(Auth::user()->esAdmin())
+                    <button type="button" class="btn btn-secondary ml-2" id="btnVerEliminados">
+                        <i class="fas fa-trash-restore"></i> Eliminados 
+                        <span class="badge badge-light" id="badgeEliminados">0</span>
+                    </button>
+                @endif
+
 
             </div>
             <div class="col-md-8">
@@ -66,12 +73,15 @@
             <table class="table table-bordered table-striped table-hover" id="tablaBienes">
                 <thead class="thead-dark">
                     <tr>
-                        <th width="3%">
-                            <div class="custom-control custom-checkbox">
-                                <input type="checkbox" class="custom-control-input" id="checkAll">
-                                <label class="custom-control-label" for="checkAll"></label>
-                            </div>
-                        </th>
+                        @if(Auth::user()->esAdmin())
+                            <th width="3%">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="checkAll">
+                                    <label class="custom-control-label" for="checkAll"></label>
+                                </div>
+                            </th>
+                        @endif
+
                         <th width="5%">Foto</th>
                         <th width="10%" class="sortable" data-column="codigo" style="cursor:pointer;">
                             Código <i class="fas fa-sort sort-icon"></i>
@@ -94,14 +104,17 @@
                 <tbody id="tablaBody">
                     @forelse($bienes as $bien)
                     <tr id="row-{{ $bien->id_bien }}">
-                        <td class="text-center">
-                            <div class="custom-control custom-checkbox">
-                                <input type="checkbox" class="custom-control-input checkbox-item"
-                                       id="check-{{ $bien->id_bien }}"
-                                       value="{{ $bien->id_bien }}">
-                                <label class="custom-control-label" for="check-{{ $bien->id_bien }}"></label>
-                            </div>
-                        </td>
+                        @if(Auth::user()->esAdmin())
+                            <td class="text-center">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input checkbox-item" 
+                                        id="check-{{ $bien->id_bien }}" 
+                                        value="{{ $bien->id_bien }}">
+                                    <label class="custom-control-label" for="check-{{ $bien->id_bien }}"></label>
+                                </div>
+                            </td>
+                        @endif
+
                         <td class="text-center">
                             @if($bien->foto_bien)
                                 <button class="btn btn-sm btn-info btn-ver-foto" data-foto="{{ $bien->foto_bien }}">
@@ -689,9 +702,12 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
-                <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">
-                    <i class="fas fa-trash-alt"></i> Sí, eliminar de todas formas
-                </button>
+                @if(Auth::user()->esAdmin())
+                    <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">
+                        <i class="fas fa-trash-alt"></i> Sí, eliminar de todas formas
+                    </button>
+                @endif
+
             </div>
         </div>
     </div>

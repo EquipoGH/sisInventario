@@ -1,7 +1,6 @@
 @extends('layouts.main')
 
 @section('title', 'Gestión de Movimientos')
-
 @section('content_header')
 
 @section('css')
@@ -63,139 +62,6 @@
 .badge-tipo-baja {
     background-color: #F44336 !important;
     color: white !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════ */
-/* HEADER ULTRA COMPACTO - TODO EN UNA FILA */
-/* ═══════════════════════════════════════════════════════════════ */
-.header-ultra-compacto {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
-    border: 1px solid #e3e6f0;
-    border-radius: 8px;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-.row-compacto {
-    display: flex;
-    align-items: stretch;
-    gap: 15px;
-}
-
-/* BLOQUE IZQUIERDO: Leyenda de colores */
-.leyenda-box {
-    flex: 0 0 auto;
-    min-width: 180px;
-    background: white;
-    border: 2px solid #e3e6f0;
-    border-radius: 8px;
-    padding: 12px 16px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-}
-
-.leyenda-box-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #5a5c69;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-    border-bottom: 2px solid #e3e6f0;
-    padding-bottom: 6px;
-}
-
-.leyenda-box-items {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.leyenda-box-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #5a5c69;
-}
-
-.leyenda-dot-small {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid;
-    flex-shrink: 0;
-}
-
-.leyenda-dot-small.registro {
-    background-color: #e3f2fd;
-    border-color: #2196F3;
-}
-
-.leyenda-dot-small.asignacion {
-    background-color: #e8f5e9;
-    border-color: #4CAF50;
-}
-
-.leyenda-dot-small.baja {
-    background-color: #ffebee;
-    border-color: #F44336;
-}
-
-/* MINI CARDS DERECHOS */
-.mini-cards-container {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
-.mini-card-simple {
-    background: white;
-    border-left: 4px solid;
-    border-radius: 8px;
-    padding: 12px 16px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    text-align: center;
-}
-
-.mini-card-simple:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.mini-card-simple.primary {
-    border-left-color: #4e73df;
-}
-
-.mini-card-simple.success {
-    border-left-color: #1cc88a;
-}
-
-.mini-card-simple.info {
-    border-left-color: #36b9cc;
-}
-
-.mini-card-simple.danger {
-    border-left-color: #e74a3b;
-}
-
-.mini-card-simple-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #858796;
-    text-transform: lowercase;
-    letter-spacing: 0.3px;
-    margin-bottom: 8px;
-}
-
-.mini-card-simple-value {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #5a5c69;
-    line-height: 1;
 }
 
 
@@ -465,51 +331,7 @@
     font-weight: 700;
 }
 
-/* ==========================================
-   ⭐ RESPONSIVE
-   ========================================== */
-@media (max-width: 1200px) {
-    .row-compacto {
-        flex-direction: column;
-    }
 
-    .leyenda-box {
-        min-width: 100%;
-    }
-
-    .mini-cards-container {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .btn-action span:not(.badge) {
-        display: none !important;
-    }
-
-    .btn-action {
-        padding: 0.5rem 0.75rem;
-    }
-
-    .filter-label,
-    .filter-label-inline {
-        font-size: 0.75rem;
-    }
-
-    .mini-cards-container {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .mini-card-simple-value {
-        font-size: 1.5rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .mini-cards-container {
-        grid-template-columns: 1fr;
-    }
-}
 
 /* ==========================================
    DISEÑO COMPACTO DE FILTROS EN UNA FILA
@@ -565,21 +387,7 @@
     vertical-align: middle;
 }
 
-/* Animación para actualización de cards */
-.card-updating {
-    animation: cardPulse 0.3s ease-in-out;
-}
 
-@keyframes cardPulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.15);
-        color: #007bff;
-        font-weight: bold;
-    }
-}
 
 
 
@@ -715,44 +523,8 @@
 
 @section('content')
 <h2>Gestión de Movimientos</h2>
+<br>
 <div class="card">
-
-<div class="card-header">
-    {{-- ═══════════════════════════════════════════════════════════════ --}}
-    {{-- HEADER ULTRA COMPACTO: Leyenda + Cards en UNA SOLA FILA --}}
-    {{-- ═══════════════════════════════════════════════════════════════ --}}
-    <div class="header-ultra-compacto">
-        <div class="row-compacto">
-
-            {{-- BLOQUES DERECHOS: Mini Cards de estadísticas --}}
-            <div class="mini-cards-container">
-                {{-- Card 1: Total --}}
-                <div class="mini-card-simple primary">
-                    <div class="mini-card-simple-label">Total</div>
-                    <div class="mini-card-simple-value" id="cardTotalBienes">{{ $totalBienes ?? 0 }}</div>
-                </div>
-
-                {{-- Card 2: Asignación --}}
-                <div class="mini-card-simple success">
-                    <div class="mini-card-simple-label">Asignación</div>
-                    <div class="mini-card-simple-value" id="cardBienesAsignados">{{ $bienesAsignados ?? 0 }}</div>
-                </div>
-
-                {{-- Card 3: Registro --}}
-                <div class="mini-card-simple info">
-                    <div class="mini-card-simple-label">Registro</div>
-                    <div class="mini-card-simple-value" id="cardBienesRegistro">{{ $bienesRegistro ?? 0 }}</div>
-                </div>
-
-                {{-- Card 4: Baja --}}
-                <div class="mini-card-simple danger">
-                    <div class="mini-card-simple-label">Baja</div>
-                    <div class="mini-card-simple-value" id="cardBienesBaja">{{ $bienesBaja ?? 0 }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="card-body">
     {{-- ═══════════════════════════════════════════════════════════ --}}
@@ -769,11 +541,14 @@
                     <span class="d-none d-sm-inline">Asignar</span>
                     <span class="badge badge-light ml-1" id="contadorAsignar">0</span>
                 </button>
-                <button type="button" class="btn btn-warning btn-action" id="btnBajaSeleccionados">
-                    <i class="fas fa-times-circle"></i>
-                    <span class="d-none d-sm-inline">Dar de Baja</span>
-                    <span class="badge badge-light ml-1" id="contadorBaja">0</span>
-                </button>
+                @if(Auth::user()->esAdmin())
+                    <button type="button" class="btn btn-warning btn-action" id="btnBajaSeleccionados">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="d-none d-sm-inline">Dar de Baja</span>
+                        <span class="badge badge-light ml-1" id="contadorBaja">0</span>
+                    </button>
+                @endif
+
                 <button type="button" class="btn btn-info btn-action" id="btnRevertirBajaSeleccionados">
                     <i class="fas fa-undo-alt"></i>
                     <span class="d-none d-sm-inline">Revertir Baja</span>
@@ -1929,96 +1704,6 @@
 $(document).ready(function() {
 
 
-        // ==========================================
-        // ⭐⭐⭐ FUNCIÓN ACTUALIZAR ESTADÍSTICAS ⭐⭐⭐
-        // ==========================================
-        function actualizarEstadisticas() {
-            $.ajax({
-                url: '{{ route("movimiento.estadisticas") }}',
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        console.log('✅ Estadísticas recibidas:', response.data);
-
-                        // ⭐ ACTUALIZAR SIN ANIMACIÓN (más confiable)
-                        $('#cardTotalBienes').text(response.data.totalBienes);
-                        $('#cardBienesAsignados').text(response.data.bienesAsignados);
-                        $('#cardBienesRegistro').text(response.data.bienesRegistro);
-                        $('#cardBienesBaja').text(response.data.bienesBaja);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('❌ Error al actualizar estadísticas:', error);
-                }
-            });
-        }
-
-        // ==========================================
-        // ⭐⭐⭐ FUNCIÓN PROTEGER TÍTULOS DE CARDS (VERSIÓN MEJORADA) ⭐⭐⭐
-        // ==========================================
-        function protegerTitulosCards() {
-            // Definir los títulos correctos
-            const titulos = {
-                '.border-left-primary .text-primary': 'Total de Bienes',
-                '.border-left-success .text-success': 'Bienes Asignados',
-                '.border-left-info .text-info': 'Bienes en Registro',
-                '.border-left-danger .text-danger': 'Bienes de Baja'
-            };
-
-            // Iterar sobre cada título y verificar/restaurar
-            $.each(titulos, function(selector, textoCorrect) {
-                const elemento = $(selector);
-
-                if (elemento.length > 0) {
-                    const textoActual = elemento.text().trim();
-
-                    // Si está vacío o es incorrecto, restaurar
-                    if (textoActual === '' || textoActual !== textoCorrect) {
-                        elemento.text(textoCorrect);
-                        console.log('🔧 Título restaurado: "' + textoCorrect + '"');
-                    }
-                } else {
-                    console.warn('⚠️ Elemento no encontrado: ' + selector);
-                }
-            });
-        }
-
-
-        // ==========================================
-        // ⭐⭐⭐ PROTEGER TÍTULOS AL ABRIR/CERRAR MODALES ⭐⭐⭐
-        // ==========================================
-
-        // Cuando SE ABRE cualquier modal
-        $('.modal').on('show.bs.modal', function() {
-            console.log('🔓 Modal abierto - Protegiendo títulos...');
-            setTimeout(function() {
-                protegerTitulosCards();
-            }, 100); // Esperar 100ms para que el modal termine de abrir
-        });
-
-        // Cuando SE CIERRA cualquier modal
-        $('.modal').on('hidden.bs.modal', function() {
-            console.log('🔒 Modal cerrado - Protegiendo títulos...');
-            setTimeout(function() {
-                protegerTitulosCards();
-            }, 100); // Esperar 100ms para que el modal termine de cerrar
-        });
-
-        // Cuando SE ESTÁ MOSTRANDO el modal (animación en progreso)
-        $('.modal').on('shown.bs.modal', function() {
-            console.log('✅ Modal visible - Verificando títulos...');
-            protegerTitulosCards();
-        });
-
-        // ⭐ PROTECCIÓN CADA 2 SEGUNDOS (FAILSAFE)
-        setInterval(function() {
-            protegerTitulosCards();
-        }, 2000); // Verifica cada 2 segundos
-
-
-
-
 
         // ==========================================
         // VARIABLES GLOBALES
@@ -2321,9 +2006,7 @@ $(document).ready(function() {
 
                     cargarMovimientos();
 
-                    // ⭐⭐⭐ ACTUALIZAR ESTADÍSTICAS ⭐⭐⭐
-                    actualizarEstadisticas();
-                    protegerTitulosCards();
+                
 
                     // Limpiar selección
                     $('.checkbox-item').prop('checked', false);
@@ -2574,8 +2257,7 @@ $(document).ready(function() {
                     }).then(() => {
                         // ✅✅✅ RECARGAR DATOS DESPUÉS DEL MODAL ✅✅✅
                         cargarMovimientos();
-                        actualizarEstadisticas();
-                        protegerTitulosCards();
+                       
                     });
 
                     // ✅ LIMPIAR FORMULARIO
@@ -2784,9 +2466,6 @@ $(document).ready(function() {
 
                     cargarMovimientos();
 
-                    // ⭐⭐⭐ ACTUALIZAR ESTADÍSTICAS ⭐⭐⭐
-                    actualizarEstadisticas();
-                    protegerTitulosCards();
 
                     // Limpiar selección
                     $('.checkbox-item').prop('checked', false);
@@ -2958,8 +2637,6 @@ $(document).ready(function() {
                         });
                         
                         cargarMovimientos();
-                        actualizarEstadisticas();
-                        protegerTitulosCards();
                     }
                 },
                 error: function(xhr) {
@@ -3000,8 +2677,7 @@ $(document).ready(function() {
                         });
                         
                         cargarMovimientos();
-                        actualizarEstadisticas();
-                        protegerTitulosCards();
+                        
                         
                         // Limpiar selección
                         $('.checkbox-item').prop('checked', false);
@@ -3094,8 +2770,7 @@ $(document).ready(function() {
                     
                     // Recargar tabla
                     cargarMovimientos();
-                    actualizarEstadisticas();
-                    protegerTitulosCards();
+                   
                 }
             },
             error: function(xhr) {
@@ -3578,41 +3253,6 @@ $(document).ready(function() {
     });
 
 
-    // ==========================================
-    // ⭐ ACTUALIZAR CARDS DE ESTADÍSTICAS (NUEVA)
-    // ==========================================
-    function actualizarCards(estadisticas) {
-        if (!estadisticas) return;
-
-        // Animación al cambiar números
-        const animarCambio = (selector, valorNuevo) => {
-            const $elemento = $(selector);
-            const valorActual = parseInt($elemento.text()) || 0;
-
-            if (valorActual !== valorNuevo) {
-                $elemento.addClass('card-updating');
-
-                setTimeout(() => {
-                    $elemento.text(valorNuevo);
-                    $elemento.removeClass('card-updating');
-                }, 150);
-            }
-        };
-
-        // Actualizar cada card con animación
-        animarCambio('#cardTotalBienes', estadisticas.totalBienes);
-        animarCambio('#cardBienesAsignados', estadisticas.bienesAsignados);
-        animarCambio('#cardBienesRegistro', estadisticas.bienesRegistro);
-        animarCambio('#cardBienesBaja', estadisticas.bienesBaja);
-
-        console.log('✅ Cards actualizados:', estadisticas);
-    }
-
-
-
-
-
-
 
     // ==========================================
     // ⭐ CARGAR MOVIMIENTOS (CORREGIDO CON CARDS DINÁMICOS + ÁREA)
@@ -3647,10 +3287,7 @@ $(document).ready(function() {
                     renderizarMovimientos(response.data);
                     actualizarPaginacion(response);
 
-                    // 2️⃣ ⭐⭐⭐ ACTUALIZAR CARDS DINÁMICAMENTE ⭐⭐⭐
-                    if (response.estadisticas) {
-                        actualizarCards(response.estadisticas);
-                    }
+                   
 
                     // 3️⃣ MANEJO DE UI
                     $('#loadingSearch').hide();
@@ -3665,11 +3302,7 @@ $(document).ready(function() {
                         $('#paginacionContainer').show();
                     }
 
-                    // 4️⃣ PROTEGER TÍTULOS DESPUÉS DE CARGAR
-                    setTimeout(function() {
-                        protegerTitulosCards();
-                        console.log('✅ Títulos protegidos después de cargar movimientos');
-                    }, 150);
+                
                 }
             },
             error: function(xhr) {
@@ -4014,12 +3647,6 @@ $(document).ready(function() {
     cargarMovimientos();
     // ✅ CORRECTO: Carga movimientos con el filtro por defecto (activos)
 
-    // 4. ⭐ PROTEGER TÍTULOS DE LAS CARDS (failsafe inicial)
-    setTimeout(function() {
-        protegerTitulosCards();
-        console.log('✅ Sistema de movimientos inicializado correctamente');
-    }, 150);
-    // ✅ CORRECTO: Protección contra modificaciones accidentales
 
 
 

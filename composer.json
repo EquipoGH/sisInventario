@@ -36,11 +36,12 @@
         },
         "files": [
             "app/Helpers/helpers.php",
-            "app/Support/settings.php"
+            "app/Support/settings.php",
+            "app/Helpers/PermisosHelper.php"
         ]
     },
 
-    
+
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"

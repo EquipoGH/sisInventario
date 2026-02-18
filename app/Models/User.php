@@ -20,6 +20,7 @@ class User extends Authenticatable
         'dni_usuario',
         'rol_usuario',
         'estado_usuario',
+        'id_responsable', // ⭐ NUEVO
     ];
 
     protected $hidden = [
@@ -180,5 +181,59 @@ class User extends Authenticatable
     public function tieneAccesoAuditoria(): bool
     {
         return $this->esAdmin();
+    }
+
+    // ==========================================
+    // ⭐⭐⭐ CONTROL DE PERMISOS POR ÁREA ⭐⭐⭐
+    // ==========================================
+
+    /**
+     * ⭐ Relación: Responsable asignado al usuario
+     */
+    public function responsable()
+    {
+        return $this->belongsTo(Responsable::class, 'id_responsable', 'dni_responsable');
+    }
+
+    /**
+     * ⭐ Obtener áreas a las que tiene acceso el usuario
+     */
+    public function getAreasAcceso()
+    {
+        // ADMIN tiene acceso a todas las áreas
+        if (strtoupper($this->rol_usuario) === 'ADMIN') {
+            return Area::all();
+        }
+
+        // Si tiene responsable asignado, obtener sus áreas
+        if ($this->responsable) {
+            return $this->responsable->areas;
+        }
+
+        return collect(); // Sin acceso
+    }
+
+    /**
+     * ⭐ Verificar si tiene acceso a un área específica
+     */
+    public function tieneAccesoArea($idArea): bool
+    {
+        if (strtoupper($this->rol_usuario) === 'ADMIN') {
+            return true;
+        }
+
+        return $this->getAreasAcceso()->contains('id_area', $idArea);
+    }
+
+    /**
+     * ⭐ Obtener IDs de áreas permitidas
+     */
+    public function getIdsAreasPermitidas(): array
+    {
+        if (strtoupper($this->rol_usuario) === 'ADMIN') {
+            return Area::pluck('id_area')->toArray();
+        }
+
+        return $this->getAreasAcceso()->pluck('id_area')->toArray();
     }
 }

@@ -20,6 +20,7 @@ class UpdateUserRequest extends FormRequest
         $dni = trim((string) $this->input('dni_usuario', ''));
         $rol = trim((string) $this->input('rol_usuario', ''));
         $estado = strtoupper(trim((string) $this->input('estado_usuario', 'A')));
+        $idResponsable = trim((string) $this->input('id_responsable', '')); // ⭐ NUEVO
 
         $this->merge([
             'name' => $name,
@@ -27,33 +28,29 @@ class UpdateUserRequest extends FormRequest
             'dni_usuario' => $dni === '' ? null : $dni,
             'rol_usuario' => $rol === '' ? null : $rol,
             'estado_usuario' => in_array($estado, ['A','I'], true) ? $estado : 'A',
+            'id_responsable' => $idResponsable === '' ? null : $idResponsable, // ⭐ NUEVO
         ]);
     }
 
     public function rules(): array
     {
-        $id = $this->route('user')?->id; // importante: parámetro {user} [web:252]
+        $id = $this->route('user')?->id;
 
         return [
             'name' => ['required', 'string', 'max:255'],
-
             'email' => [
                 'required', 'email', 'max:255',
-                Rule::unique('users', 'email')->ignore($id), // [web:243]
+                Rule::unique('users', 'email')->ignore($id),
             ],
-
-            // En update: password opcional. Si lo envías, que sea fuerte y confirmado.
-            'password' => ['nullable', 'confirmed', Password::defaults()], // [web:256]
-
+            'password' => ['nullable', 'confirmed', Password::defaults()],
             'dni_usuario' => [
-    'nullable',
-    'digits:8',
-    Rule::unique('users', 'dni_usuario')->ignore($id),
-],
-
-
+                'nullable',
+                'digits:8',
+                Rule::unique('users', 'dni_usuario')->ignore($id),
+            ],
             'rol_usuario' => ['nullable', 'string', 'max:50'],
-            'estado_usuario' => ['required', Rule::in(['A','I'])], // [web:155]
+            'estado_usuario' => ['required', Rule::in(['A','I'])],
+            'id_responsable' => ['nullable', 'string', 'exists:responsable,dni_responsable'], // ⭐ NUEVO
         ];
     }
 
@@ -66,6 +63,7 @@ class UpdateUserRequest extends FormRequest
             'dni_usuario' => 'DNI',
             'rol_usuario' => 'rol',
             'estado_usuario' => 'estado',
+            'id_responsable' => 'responsable', // ⭐ NUEVO
         ];
     }
 
@@ -75,6 +73,7 @@ class UpdateUserRequest extends FormRequest
             'email.unique' => 'Ese correo ya está registrado.',
             'dni_usuario.unique' => 'Ese DNI ya está registrado.',
             'estado_usuario.in' => 'El estado debe ser A (Activo) o I (Inactivo).',
+            'id_responsable.exists' => 'El responsable seleccionado no existe.', // ⭐ NUEVO
         ];
     }
 }

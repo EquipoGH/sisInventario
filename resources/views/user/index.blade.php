@@ -24,47 +24,48 @@
 
     {{-- FILTROS --}}
     <div class="p-2 mb-3" style="background:#f8f9fa;border:1px solid rgba(0,0,0,.08);border-radius:.35rem;">
-      <div class="form-row align-items-end">
-        <div class="col-md-3 col-12 mb-2">
-          <label class="text-muted mb-1">Rol</label>
-          <select id="filterRol" class="form-control form-control-sm">
-            <option value="">Todos</option>
-            <option value="ADMIN">ADMIN</option>
-            <option value="USUARIO">USUARIO</option>
-            <option value="INVITADO">INVITADO</option>
-          </select>
-        </div>
+        <div class="form-row align-items-end">
+            <div class="col-md-3 col-12 mb-2">
+            <label class="text-muted mb-1">Rol</label>
+            <select id="filterRol" class="form-control form-control-sm">
+                <option value="">Todos</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="INFORMATICA">INFORMÁTICA</option>
+                <option value="INVITADO">INVITADO</option>
+            </select>
+            </div>
 
-        <div class="col-md-3 col-12 mb-2">
-          <label class="text-muted mb-1">Estado</label>
-          <select id="filterEstado" class="form-control form-control-sm">
-            <option value="">Todos</option>
-            <option value="A">Activo</option>
-            <option value="I">Inactivo</option>
-          </select>
-        </div>
+            <div class="col-md-3 col-12 mb-2">
+            <label class="text-muted mb-1">Estado</label>
+            <select id="filterEstado" class="form-control form-control-sm">
+                <option value="">Todos</option>
+                <option value="A">Activo</option>
+                <option value="I">Inactivo</option>
+            </select>
+            </div>
 
-        <div class="col-md-3 col-12 mb-2">
-          <label class="text-muted mb-1">Último acceso</label>
-          <select id="filterUltimo" class="form-control form-control-sm">
-            <option value="">Todos</option>
-            <option value="hoy">Hoy</option>
-            <option value="7d">Últimos 7 días</option>
-            <option value="30d">Últimos 30 días</option>
-            <option value="nunca">Nunca (sin login)</option>
-          </select>
-        </div>
+            <div class="col-md-3 col-12 mb-2">
+            <label class="text-muted mb-1">Último acceso</label>
+            <select id="filterUltimo" class="form-control form-control-sm">
+                <option value="">Todos</option>
+                <option value="hoy">Hoy</option>
+                <option value="7d">Últimos 7 días</option>
+                <option value="30d">Últimos 30 días</option>
+                <option value="nunca">Nunca (sin login)</option>
+            </select>
+            </div>
 
-        <div class="col-md-3 col-12 mb-2 d-flex">
-          <button type="button" class="btn btn-sm btn-primary mr-2 flex-fill" id="btnAplicarFiltros">
-            <i class="fas fa-filter"></i> Aplicar
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="btnLimpiarFiltros">
-            <i class="fas fa-undo"></i> Limpiar
-          </button>
+            <div class="col-md-3 col-12 mb-2 d-flex">
+            <button type="button" class="btn btn-sm btn-primary mr-2 flex-fill" id="btnAplicarFiltros">
+                <i class="fas fa-filter"></i> Aplicar
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="btnLimpiarFiltros">
+                <i class="fas fa-undo"></i> Limpiar
+            </button>
+            </div>
         </div>
-      </div>
     </div>
+
 
     <div class="row mb-3 align-items-start">
       {{-- Mostrar --}}
@@ -248,7 +249,7 @@
                 <label>Rol <span class="text-danger">*</span></label>
                 <select name="rol_usuario" id="rol_usuario" class="form-control" required>
                   <option value="ADMIN">ADMIN</option>
-                  <option value="USUARIO" selected>USUARIO</option>
+                  <option value="INFORMATICA" selected>INFORMÁTICA</option>
                   <option value="INVITADO">INVITADO</option>
                 </select>
                 <span class="text-danger error-rol_usuario"></span>
@@ -263,6 +264,21 @@
                   <option value="I">Inactivo</option>
                 </select>
                 <span class="text-danger error-estado_usuario"></span>
+              </div>
+            </div>
+
+            {{-- ⭐⭐⭐ NUEVO: SELECT DE RESPONSABLES ⭐⭐⭐ --}}
+            <div class="col-md-12">
+              <div class="form-group">
+                <label>Responsable (Opcional)</label>
+                <select name="id_responsable" id="id_responsable" class="form-control">
+                  <option value="">Sin asignar</option>
+                </select>
+                <small class="text-muted">
+                  <i class="fas fa-info-circle"></i>
+                  Asigna un responsable para heredar sus áreas de acceso. Solo ADMIN tiene acceso a todas las áreas.
+                </small>
+                <span class="text-danger error-id_responsable"></span>
               </div>
             </div>
 
@@ -296,6 +312,7 @@
     </div>
   </div>
 </div>
+
 
 {{-- MODAL EDIT --}}
 <div class="modal fade" id="modalEdit" tabindex="-1">
@@ -354,7 +371,7 @@
                 <label>Rol <span class="text-danger">*</span></label>
                 <select name="rol_usuario" id="edit_rol_usuario" class="form-control" required>
                   <option value="ADMIN">ADMIN</option>
-                  <option value="USUARIO">USUARIO</option>
+                  <option value="INFORMATICA">INFORMÁTICA</option>
                   <option value="INVITADO">INVITADO</option>
                 </select>
                 <span class="text-danger error-edit-rol_usuario"></span>
@@ -369,6 +386,21 @@
                   <option value="I">Inactivo</option>
                 </select>
                 <span class="text-danger error-edit-estado_usuario"></span>
+              </div>
+            </div>
+
+            {{-- ⭐⭐⭐ NUEVO: SELECT DE RESPONSABLES ⭐⭐⭐ --}}
+            <div class="col-md-12">
+              <div class="form-group">
+                <label>Responsable (Opcional)</label>
+                <select name="id_responsable" id="edit_id_responsable" class="form-control">
+                  <option value="">Sin asignar</option>
+                </select>
+                <small class="text-muted">
+                  <i class="fas fa-info-circle"></i>
+                  Asigna un responsable para heredar sus áreas de acceso. Solo ADMIN tiene acceso a todas las áreas.
+                </small>
+                <span class="text-danger error-edit-id_responsable"></span>
               </div>
             </div>
 
@@ -402,6 +434,7 @@
     </div>
   </div>
 </div>
+
 {{-- MODAL PERFILES --}}
 <div class="modal fade" id="modalPerfiles" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
@@ -455,7 +488,7 @@ $(document).ready(function() {
     didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
   });
 
-  // DNI: solo números y máximo 8 (al escribir/pegar) [web:448][web:491]
+  // DNI: solo números y máximo 8 (al escribir/pegar)
   function aplicarDniRules(selector) {
     $(document).on('input', selector, function() {
       let v = $(this).val() || '';
@@ -579,74 +612,74 @@ $(document).ready(function() {
   }
 
   function actualizarTabla(items) {
-  const tbody = $('#tablaBody');
-  tbody.empty();
+    const tbody = $('#tablaBody');
+    tbody.empty();
 
-  // 1) Sin registros
-  if (!items || items.length === 0) {
-    tbody.append(`
-      <tr id="filaVacia">
-        <td colspan="9" class="text-center text-muted py-4">
-          <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-          No hay usuarios registrados
-        </td>
-      </tr>
-    `);
-    $('#checkAll').prop('checked', false).prop('disabled', true);
+    // 1) Sin registros
+    if (!items || items.length === 0) {
+      tbody.append(`
+        <tr id="filaVacia">
+          <td colspan="9" class="text-center text-muted py-4">
+            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+            No hay usuarios registrados
+          </td>
+        </tr>
+      `);
+      $('#checkAll').prop('checked', false).prop('disabled', true);
+      actualizarBotonEliminar();
+      return;
+    }
+
+    // 2) Hay registros
+    $('#checkAll').prop('disabled', false);
+
+    items.forEach(u => {
+      tbody.append(`
+        <tr id="row-${u.id}">
+          <td class="text-center">
+            <input type="checkbox" class="checkbox-item" value="${u.id}">
+          </td>
+
+          <td class="text-center"><strong>${u.id}</strong></td>
+
+          <td class="editable-cell" data-id="${u.id}" title="Doble click para editar">
+            <strong>${(u.name || '').toUpperCase()}</strong>
+          </td>
+
+          <td>${safeText(u.email)}</td>
+          <td>${safeText(u.dni_usuario)}</td>
+          <td>${safeText(u.rol_usuario)}</td>
+          <td class="text-center">${badgeEstado(u.estado_usuario)}</td>
+          <td class="text-center">${formatUltimoAcceso(u.ultimo_acceso)}</td>
+
+          <td class="text-center">
+            <div class="btn-group">
+              <button type="button"
+                      class="btn btn-sm btn-light border dropdown-toggle"
+                      data-toggle="dropdown"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                      style="border-radius:999px;">
+                <i class="fas fa-id-card"></i>
+              </button>
+
+              <div class="dropdown-menu dropdown-menu-right">
+                <a class="dropdown-item btn-perfiles" href="#"
+                   data-id="${u.id}"
+                   data-name="${(u.name || '').replace(/"/g,'&quot;')}">
+                  <i class="fas fa-id-card mr-2"></i> Perfiles
+                </a>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `);
+    });
+
+    // 3) Eventos de checks
+    $('#checkAll').prop('checked', false);
     actualizarBotonEliminar();
-    return;
   }
-
-  // 2) Hay registros
-  $('#checkAll').prop('disabled', false);
-
-  items.forEach(u => {
-    tbody.append(`
-      <tr id="row-${u.id}">
-        <td class="text-center">
-          <input type="checkbox" class="checkbox-item" value="${u.id}">
-        </td>
-
-        <td class="text-center"><strong>${u.id}</strong></td>
-
-        <td class="editable-cell" data-id="${u.id}" title="Doble click para editar">
-          <strong>${(u.name || '').toUpperCase()}</strong>
-        </td>
-
-        <td>${safeText(u.email)}</td>
-        <td>${safeText(u.dni_usuario)}</td>
-        <td>${safeText(u.rol_usuario)}</td>
-        <td class="text-center">${badgeEstado(u.estado_usuario)}</td>
-        <td class="text-center">${formatUltimoAcceso(u.ultimo_acceso)}</td>
-
-        <td class="text-center">
-  <div class="btn-group">
-    <button type="button"
-            class="btn btn-sm btn-light border dropdown-toggle"
-            data-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-            style="border-radius:999px;">
-      <i class="fas fa-id-card"></i>
-    </button>
-
-    <div class="dropdown-menu dropdown-menu-right">
-      <a class="dropdown-item btn-perfiles" href="#"
-         data-id="${u.id}"
-         data-name="${(u.name || '').replace(/"/g,'&quot;')}">
-        <i class="fas fa-id-card mr-2"></i> Perfiles
-      </a>
-    </div>
-  </div>
-</td>
-      </tr>
-    `);
-  });
-
-  // 3) Eventos de checks
-  $('#checkAll').prop('checked', false);
-  actualizarBotonEliminar();
-}
 
   function actualizarContadores(res) {
     $('#from').text(res.from || 0);
@@ -808,6 +841,31 @@ $(document).ready(function() {
     });
   }
 
+  // ⭐⭐⭐ CARGAR RESPONSABLES AL INICIAR ⭐⭐⭐
+  function cargarResponsables() {
+    $.ajax({
+      url: '{{ route("user.responsables") }}',
+      method: 'GET',
+      dataType: 'json',
+      success: function(responsables) {
+        const optionCreate = $('#id_responsable');
+        const optionEdit = $('#edit_id_responsable');
+
+        optionCreate.find('option:not(:first)').remove();
+        optionEdit.find('option:not(:first)').remove();
+
+        responsables.forEach(resp => {
+          optionCreate.append(`<option value="${resp.id}">${resp.text}</option>`);
+          optionEdit.append(`<option value="${resp.id}">${resp.text}</option>`);
+        });
+      },
+      error: function(xhr) {
+        console.error('Error al cargar responsables:', xhr);
+        Toast.fire({ icon: 'warning', title: 'No se pudieron cargar los responsables' });
+      }
+    });
+  }
+
   // Edit (dblclick)
   $(document).on('dblclick', '.editable-cell', function() {
     const id = $(this).data('id');
@@ -817,8 +875,9 @@ $(document).ready(function() {
       $('#edit_name').val(data.name || '');
       $('#edit_email').val(data.email || '');
       $('#edit_dni_usuario').val(data.dni_usuario || '');
-      $('#edit_rol_usuario').val(data.rol_usuario || 'USUARIO');
+      $('#edit_rol_usuario').val(data.rol_usuario || 'INFORMATICA'); // ⭐ CAMBIADO
       $('#edit_estado_usuario').val(String(data.estado_usuario || 'A'));
+      $('#edit_id_responsable').val(data.id_responsable || ''); // ⭐ NUEVO
 
       $('#edit_password').val('');
       $('#edit_password_confirmation').val('');
@@ -904,118 +963,122 @@ $(document).ready(function() {
   $('#modalCreate').on('hidden.bs.modal', function(){
     $('#formCreate')[0].reset();
     $('.text-danger').text('');
+    $('#id_responsable').val(''); // ⭐ NUEVO
   });
 
   $('#modalEdit').on('hidden.bs.modal', function(){
     $('#formEdit')[0].reset();
     $('.text-danger').text('');
+    $('#edit_id_responsable').val(''); // ⭐ NUEVO
   });
+
+  // ⭐⭐⭐ CARGAR RESPONSABLES AL INICIAR ⭐⭐⭐
+  cargarResponsables();
 
   // Inicial
   buscar('', 1);
+
   // Abrir modal y cargar formulario
-$(document).on('click', '.btn-perfiles', function(e){
-  e.preventDefault();
-  const id = $(this).data('id');
-  const name = $(this).data('name') || '';
-  $('#modalPerfilesTitle').html(`<i class="fas fa-id-card mr-1"></i> Perfiles de: ${name}`);
+  $(document).on('click', '.btn-perfiles', function(e){
+    e.preventDefault();
+    const id = $(this).data('id');
+    const name = $(this).data('name') || '';
+    $('#modalPerfilesTitle').html(`<i class="fas fa-id-card mr-1"></i> Perfiles de: ${name}`);
 
-  $('#modalPerfiles').modal('show');
-  $('#perfilesLoading').show();
-  $('#perfilesContent').hide().empty();
+    $('#modalPerfiles').modal('show');
+    $('#perfilesLoading').show();
+    $('#perfilesContent').hide().empty();
 
-  $.ajax({
-    url: `/user/${id}/perfiles`,
-    method: 'GET',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    success: function(html){
-      $('#perfilesContent').html(html);
-      initPerfilesUI();         // activa buscador/contadores
-      $('#perfilesLoading').hide();
-      $('#perfilesContent').fadeIn(150);
-    },
-    error: function(xhr){
-      $('#perfilesLoading').hide();
-      $('#perfilesContent').show().html(`<div class="alert alert-danger">Error al cargar perfiles (HTTP ${xhr.status})</div>`);
-    }
+    $.ajax({
+      url: `/user/${id}/perfiles`,
+      method: 'GET',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function(html){
+        $('#perfilesContent').html(html);
+        initPerfilesUI();
+        $('#perfilesLoading').hide();
+        $('#perfilesContent').fadeIn(150);
+      },
+      error: function(xhr){
+        $('#perfilesLoading').hide();
+        $('#perfilesContent').show().html(`<div class="alert alert-danger">Error al cargar perfiles (HTTP ${xhr.status})</div>`);
+      }
+    });
   });
-});
 
-// Guardar perfiles (AJAX)
-$(document).on('submit', '#formPerfilesModal', function(e){
-  e.preventDefault();
-  const id = $(this).data('user-id');
+  // Guardar perfiles (AJAX)
+  $(document).on('submit', '#formPerfilesModal', function(e){
+    e.preventDefault();
+    const id = $(this).data('user-id');
 
-  const $btn = $('#btnGuardarPerfiles');
-  $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
+    const $btn = $('#btnGuardarPerfiles');
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
 
-  $.ajax({
-    url: `/user/${id}/perfiles`,
-    method: 'POST',
-    data: $(this).serialize() + '&_method=PUT',
-    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    success: function(res){
-      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
-      // Si tu update devuelve redirect, esto igual puede caer aquí si no devuelves JSON.
-      // Recomendado: que update devuelva JSON (te lo dejo abajo).
-      $('#modalPerfiles').modal('hide');
-      Toast.fire({ icon: 'success', title: 'Perfiles actualizados' });
-    },
-    error: function(xhr){
-      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
-      Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
-    }
+    $.ajax({
+      url: `/user/${id}/perfiles`,
+      method: 'POST',
+      data: $(this).serialize() + '&_method=PUT',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      success: function(res){
+        $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+        $('#modalPerfiles').modal('hide');
+        Toast.fire({ icon: 'success', title: 'Perfiles actualizados' });
+      },
+      error: function(xhr){
+        $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+        Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
+      }
+    });
   });
-});
 
-function initPerfilesUI(){
-  const $items = $('.perfil-item');
-  const $search = $('#perfilSearch');
-  const $noMatch = $('#noMatch');
+  function initPerfilesUI(){
+    const $items = $('.perfil-item');
+    const $search = $('#perfilSearch');
+    const $noMatch = $('#noMatch');
 
-  function updateCounts(){
-    $('#countTotal').text($('.perfil-item:visible').length);
-    $('#countSeleccionados').text($('.perfil-check:checked').length);
-  }
+    function updateCounts(){
+      $('#countTotal').text($('.perfil-item:visible').length);
+      $('#countSeleccionados').text($('.perfil-check:checked').length);
+    }
 
-  function applyFilter(){
-    const q = ($search.val() || '').toLowerCase().trim();
-    let visibles = 0;
+    function applyFilter(){
+      const q = ($search.val() || '').toLowerCase().trim();
+      let visibles = 0;
 
-    $items.each(function(){
-      const nombre = ($(this).data('nombre') || '');
-      const show = (q === '' || nombre.includes(q));
-      $(this).toggle(show);
-      if (show) visibles++;
+      $items.each(function(){
+        const nombre = ($(this).data('nombre') || '');
+        const show = (q === '' || nombre.includes(q));
+        $(this).toggle(show);
+        if (show) visibles++;
+      });
+
+      $noMatch.toggle(visibles === 0);
+      updateCounts();
+    }
+
+    $(document).off('change.perfiles').on('change.perfiles', '.perfil-check', function(){
+      $(this).closest('.perfil-item').find('.perfil-chip').toggleClass('is-checked', $(this).is(':checked'));
+      updateCounts();
     });
 
-    $noMatch.toggle(visibles === 0);
-    updateCounts();
-  }
+    $search.off('input').on('input', applyFilter);
 
-  $(document).off('change.perfiles').on('change.perfiles', '.perfil-check', function(){
-    $(this).closest('.perfil-item').find('.perfil-chip').toggleClass('is-checked', $(this).is(':checked'));
-    updateCounts();
-  });
+    $('#btnClearSearch').off('click').on('click', function(){
+      $search.val('');
+      applyFilter();
+      $search.focus();
+    });
 
-  $search.off('input').on('input', applyFilter);
+    $('#btnSelectAll').off('click').on('click', function(){
+      $('.perfil-item:visible .perfil-check').prop('checked', true).trigger('change');
+    });
 
-  $('#btnClearSearch').off('click').on('click', function(){
-    $search.val('');
+    $('#btnSelectNone').off('click').on('click', function(){
+      $('.perfil-item:visible .perfil-check').prop('checked', false).trigger('change');
+    });
+
     applyFilter();
-    $search.focus();
-  });
-
-  $('#btnSelectAll').off('click').on('click', function(){
-    $('.perfil-item:visible .perfil-check').prop('checked', true).trigger('change');
-  });
-
-  $('#btnSelectNone').off('click').on('click', function(){
-    $('.perfil-item:visible .perfil-check').prop('checked', false).trigger('change');
-  });
-
-  applyFilter();
-}
+  }
 
 });
 </script>

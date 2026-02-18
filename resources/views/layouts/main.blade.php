@@ -6,6 +6,48 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') | {{ config_sistema('nombre_sistema', 'GesInventario') }}</title>
 
+
+
+    {{-- ⭐ ESTILOS PARA BADGES DE ROL --}}
+<style>
+    /* Badge en navbar superior */
+    .navbar .nav-item.dropdown .badge {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    /* Badge en sidebar */
+    .user-panel .badge {
+        font-size: 9px !important;
+        padding: 3px 6px;
+        border-radius: 3px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    /* Ajuste del dropdown del usuario */
+    .navbar .nav-item.dropdown > .nav-link {
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+
+    /* Animación suave */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Responsive: ocultar badge en móviles pequeños */
+    @media (max-width: 576px) {
+        .navbar .nav-item.dropdown .badge {
+            display: none;
+        }
+    }
+</style>
+
 @php $fav = setting('favicon_path'); @endphp
 @if($fav)
     <link rel="icon" type="image/png" href="{{ asset('storage/'.$fav) }}">
@@ -37,8 +79,15 @@
     <!-- 7️⃣ CSS DINÁMICO DESDE BD -->
     @include('components.dynamic-styles')
 
+
+
+
     <!-- 8️⃣ CSS ESPECÍFICO DE CADA VISTA -->
     @yield('css')
+
+
+
+
 </head>
 
 @php
@@ -75,8 +124,24 @@
             </li>
 
             <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                    <i class="fas fa-user"></i> {{ Auth::user()->name }}
+                <a class="nav-link" data-toggle="dropdown" href="#" style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-user"></i>
+                    <span>{{ Auth::user()->name }}</span>
+
+                    {{-- ⭐ BADGE DEL ROL (Usando rol_usuario) --}}
+                    @php
+                        $rol = Auth::user()->rol_usuario ?? 'USUARIO';
+                        $colorRol = match(strtoupper($rol)) {
+                            'ADMIN', 'ADMINISTRADOR' => 'badge-danger',
+                            'ENCARGADO', 'SUPERVISOR' => 'badge-warning',
+                            'USUARIO' => 'badge-info',
+                            default => 'badge-secondary'
+                        };
+                    @endphp
+
+                    <span class="badge {{ $colorRol }}" style="font-size: 9px; padding: 3px 8px; border-radius: 10px;">
+                        {{ strtoupper($rol) }}
+                    </span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right">
                     <a href="{{ route('profile.edit') }}" class="dropdown-item">
@@ -91,6 +156,7 @@
                     </form>
                 </div>
             </li>
+
         </ul>
     </nav>
 
@@ -277,6 +343,16 @@
                             </li>
                         </ul>
                     </li>
+
+
+
+                    <li class="nav-item">
+    <a href="{{ route('qr-bienes.index') }}" class="nav-link {{ request()->is('qr-bienes*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-qrcode"></i>
+        <p>Códigos QR</p>
+    </a>
+</li>
+
 
                     <!-- SEGURIDAD (Treeview) -->
                     <li class="nav-item {{ $segOpen ? 'menu-open' : '' }}">
