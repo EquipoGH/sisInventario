@@ -15,11 +15,12 @@ class PerfilModuloPermisoController extends Controller
         $perfilModulo->load(['perfil', 'modulo', 'permisos']);
 
         $permisos = Permiso::query()
-            ->orderBy('nombpermiso') // ajusta al campo real
+            ->orderBy('nombpermiso')
             ->get();
 
-        $asignados = $perfilModulo->permisos->pluck('idpermiso')->all();
+        $asignados = $perfilModulo->permisos->pluck('idpermiso')->values()->all();
 
+        // ✅ Siempre devolvemos el partial para tu modal AJAX
         if ($request->expectsJson() || $request->ajax()) {
             return view('perfil_modulo.permisos.form', compact('perfilModulo', 'permisos', 'asignados'));
         }
@@ -29,7 +30,10 @@ class PerfilModuloPermisoController extends Controller
 
     public function update(SyncPerfilModuloPermisosRequest $request, PerfilModulo $perfilModulo)
     {
+        // ✅ Si no manda nada, queda []
         $ids = $request->input('permisos', []);
+        $ids = is_array($ids) ? $ids : [];
+
         $perfilModulo->permisos()->sync($ids);
 
         if ($request->expectsJson() || $request->ajax()) {

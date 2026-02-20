@@ -10,13 +10,15 @@ class Modulo extends Model
 {
     protected $table = 'modulos';
     protected $primaryKey = 'idmodulo';
-    public $timestamps = true; // tu migración tiene timestamps() [web:139]
+    public $timestamps = true;
 
     protected $fillable = [
         'nommodulo',
         'estadomodulo',
         'etiqueta',
         'color',
+        'icono',
+        'route_prefix',
     ];
 
     protected $casts = [
@@ -25,18 +27,18 @@ class Modulo extends Model
         'estadomodulo' => 'string',
         'etiqueta' => 'string',
         'color' => 'string',
+        'icono' => 'string',
+        'route_prefix' => 'string',
     ];
 
     public function perfiles()
-{
-    return $this->belongsToMany(Perfil::class, 'perfil_modulo', 'idmodulo', 'idperfil')
-        ->using(PerfilModulo::class)
-        ->withPivot('idperfilmodulo')
-        ->withTimestamps();
-}
+    {
+        return $this->belongsToMany(Perfil::class, 'perfil_modulo', 'idmodulo', 'idperfil')
+            ->using(PerfilModulo::class)
+            ->withPivot('idperfilmodulo')
+            ->withTimestamps();
+    }
 
-
-    // Normaliza nombre
     protected function nommodulo(): Attribute
     {
         return Attribute::make(
@@ -49,7 +51,6 @@ class Modulo extends Model
         );
     }
 
-    // Estado A/I
     protected function estadomodulo(): Attribute
     {
         return Attribute::make(
@@ -61,7 +62,6 @@ class Modulo extends Model
         );
     }
 
-    // Etiqueta: trim, null si vacío
     protected function etiqueta(): Attribute
     {
         return Attribute::make(
@@ -73,13 +73,36 @@ class Modulo extends Model
         );
     }
 
-    // Color: trim, null si vacío
     protected function color(): Attribute
     {
         return Attribute::make(
             get: fn ($value) => $value === null ? null : (string) $value,
             set: function ($value) {
                 $v = trim((string) $value);
+                return $v === '' ? null : $v;
+            }
+        );
+    }
+
+    protected function icono(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value === null ? null : (string) $value,
+            set: function ($value) {
+                $v = trim((string) $value);
+                $v = preg_replace('/\s+/', ' ', $v);
+                return $v === '' ? null : $v;
+            }
+        );
+    }
+
+    protected function routePrefix(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value === null ? null : (string) $value,
+            set: function ($value) {
+                $v = trim((string) $value);
+                $v = preg_replace('/\s+/', '', $v); // lista por coma sin espacios
                 return $v === '' ? null : $v;
             }
         );
@@ -97,7 +120,12 @@ class Modulo extends Model
             $q->where('nommodulo', $op, "%{$term}%")
               ->orWhere('etiqueta', $op, "%{$term}%")
               ->orWhere('color', $op, "%{$term}%")
-              ->orWhere('idmodulo', $op, "%{$term}%");
+              ->orWhere('icono', $op, "%{$term}%")
+              ->orWhere('route_prefix', $op, "%{$term}%");
+
+            if (ctype_digit($term)) {
+                $q->orWhere('idmodulo', (int) $term);
+            }
         });
     }
 

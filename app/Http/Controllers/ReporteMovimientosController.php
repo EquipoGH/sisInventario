@@ -1,0 +1,223 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Exports\MovimientosBienesExport;
+use App\Models\Area;
+use App\Models\TipoMvto;
+use App\Models\Ubicacion;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+
+class ReporteMovimientosController extends Controller
+{
+    public function index()
+    {
+        $tiposMovimiento = TipoMvto::orderBy('tipo_mvto')->get();
+        $ubicaciones = Ubicacion::orderBy('nombre_sede')->orderBy('ambiente')->get();
+        $areas = Area::orderBy('nombre_area')->get();
+        $settings = $this->reportSettings();
+
+        return view('reportes.movimientos.index', compact('tiposMovimiento', 'ubicaciones', 'areas', 'settings'));
+    }
+
+    private function reportSettings(): array
+    {
+        $s = [
+            'nombre_institucion' => setting('nombre_institucion', ''),
+            'ruc' => setting('ruc', ''),
+            'direccion' => setting('direccion', ''),
+            'telefono' => setting('telefono', ''),
+            'pie_reportes' => setting('pie_reportes', ''),
+            'texto_legal' => setting('texto_legal', ''),
+            'logo_reportes_path' => setting('logo_reportes_path'),
+        ];
+
+        $s['logo_reportes_abs'] = null;
+        if (!empty($s['logo_reportes_path']) && Storage::disk('public')->exists($s['logo_reportes_path'])) {
+            $s['logo_reportes_abs'] = Storage::disk('public')->path($s['logo_reportes_path']);
+        }
+
+        return $s;
+    }
+
+    /**
+     * Último movimiento por bien (PostgreSQL DISTINCT ON).
+     * ORDER BY debe iniciar con el mismo campo del DISTINCT ON. [web:119]
+     */
+    private function ultimosMovimientosSub(Request $request)
+    {
+        $desde = $request->input('desde');
+        $hasta = $request->input('hasta');
+
+        $mov = DB::table('movimiento as m')
+            ->where(function ($w) {
+                $w->whereNull('m.anulado')->orWhere('m.anulado', 0);
+            });
+
+        if ($desde) $mov->whereDate('m.fecha_mvto', '>=', $desde);
+        if ($hasta) $mov->whereDate('m.fecha_mvto', '<=', $hasta);
+
+        // Tu columna es movimiento.tipo_mvto
+        if ($request->filled('tipo_mvto')) $mov->where('m.tipo_mvto', $request->tipo_mvto);
+
+        if ($request->filled('ubicacion_id')) $mov->where('m.idubicacion', $request->ubicacion_id);
+
+        return $mov
+            ->selectRaw('DISTINCT ON (m.idbien) m.*')
+            ->orderBy('m.idbien')
+            ->orderByDesc('m.fecha_mvto')
+            ->orderByDesc('m.id_movimiento');
+    }
+
+    private function baseQuery(Request $request)
+    {
+        $ult = $this->ultimosMovimientosSub($request);
+
+        return DB::table('bien as b')
+            // Si quieres incluir bienes sin movimiento cambia a leftJoinSub.
+            ->joinSub($ult, 'm', function ($join) {
+                $join->on('b.id_bien', '=', 'm.idbien');
+            })
+            ->leftJoin('tipo_bien as tb', 'tb.id_tipo_bien', '=', 'b.id_tipobien')
+            ->leftJoin('tipo_mvto as tm', 'tm.id_tipo_mvto', '=', 'm.tipo_mvto')
+            ->leftJoin('ubicacion as u', 'u.id_ubicacion', '=', 'm.idubicacion')
+            ->leftJoin('area as a', 'a.id_area', '=', 'u.idarea')
+            ->select([
+                'b.id_bien',
+                'b.codigo_patrimonial',
+                'b.denominacion_bien',
+                'tb.nombre_tipo as tipo_bien',
+                'm.fecha_mvto',
+                'tm.tipo_mvto as tipo_mov',
+                'a.nombre_area as area',
+                'u.nombre_sede',
+                'u.ambiente',
+            ])
+            ->when($request->filled('area_id'), function ($q) use ($request) {
+                $q->where('u.idarea', $request->area_id);
+            })
+            ->when(trim((string) $request->input('q', '')) !== '', function ($q) use ($request) {
+                $term = trim((string) $request->input('q', ''));
+                $q->where(function ($w) use ($term) {
+                    $w->where('b.codigo_patrimonial', 'ILIKE', "%{$term}%")
+                      ->orWhere('b.denominacion_bien', 'ILIKE', "%{$term}%")
+                      ->orWhere('b.marca_bien', 'ILIKE', "%{$term}%")
+                      ->orWhere('b.modelo_bien', 'ILIKE', "%{$term}%")
+                      ->orWhere('b.nserie_bien', 'ILIKE', "%{$term}%");
+                });
+            });
+    }
+
+    private function countFiltered(Request $request): int
+    {
+        // Cuenta sobre la misma query, pero sin select y sin paginación
+        return (int) DB::query()->fromSub($this->baseQuery($request), 'q')->count();
+    }
+
+    public function data(Request $request)
+    {
+        try {
+            $draw   = (int) $request->input('draw', 1);
+            $start  = (int) $request->input('start', 0);
+            $length = (int) $request->input('length', 10);
+
+            $query = $this->baseQuery($request);
+
+            $recordsFiltered = $this->countFiltered($request);
+            $recordsTotal    = $recordsFiltered;
+
+            $rows = $query->orderBy('b.codigo_patrimonial')
+                ->offset($start)
+                ->limit($length)
+                ->get();
+
+            $data = $rows->values()->map(function ($r, $idx) use ($start) {
+                $ubicTxt = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
+                if ($ubicTxt === '' || $ubicTxt === '-') $ubicTxt = '-';
+
+                $docTxt = trim(($r->tipo_documento ?? '') . ' ' . ($r->numero_documento ?? ''));
+                if ($docTxt === '') $docTxt = '-';
+
+                $fechaTxt = '-';
+                if (!empty($r->fecha_mvto)) {
+                    try { $fechaTxt = Carbon::parse($r->fecha_mvto)->format('d/m/Y'); }
+                    catch (\Throwable $e) { $fechaTxt = (string) $r->fecha_mvto; }
+                }
+
+                return [
+                    'num'          => $start + $idx + 1,
+                    'codigo'       => $r->codigo_patrimonial ?? '-',
+                    'denominacion' => mb_strtoupper($r->denominacion_bien ?? ''),
+                    'tipo_bien'    => $r->tipo_bien ?? '-',
+                    'fecha_mov'    => $fechaTxt,
+                    'tipo_mov'     => $r->tipo_mov ?? '-',
+                    'area'         => $r->area ?? '-',
+                    'ubicacion'    => $ubicTxt,
+                ];
+            });
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'draw' => (int) $request->input('draw', 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function pdf(Request $request)
+    {
+        $rows = $this->baseQuery($request)->orderBy('b.codigo_patrimonial')->get();
+
+        $settings = $this->reportSettings();
+        $filtros = [
+            'desde' => $request->input('desde'),
+            'hasta' => $request->input('hasta'),
+            'tipo_mvto' => $request->input('tipo_mvto'),
+            'ubicacion_id' => $request->input('ubicacion_id'),
+            'area_id' => $request->input('area_id'),
+            'q' => $request->input('q'),
+        ];
+
+        return Pdf::loadView('reportes.movimientos.pdf', [
+            'rows' => $rows,
+            'settings' => $settings,
+            'filtros' => $filtros,
+            'usuario' => Auth::user(),
+        ])->setPaper('a4', 'portrait')->stream('reporte_movimientos_por_fecha.pdf');
+    }
+
+    public function excel(Request $request)
+    {
+        $rows = $this->baseQuery($request)->orderBy('b.codigo_patrimonial')->get();
+
+        $settings = $this->reportSettings();
+        $filtros = [
+            'desde' => $request->input('desde'),
+            'hasta' => $request->input('hasta'),
+            'tipo_mvto' => $request->input('tipo_mvto'),
+            'ubicacion_id' => $request->input('ubicacion_id'),
+            'area_id' => $request->input('area_id'),
+            'q' => $request->input('q'),
+        ];
+
+        return Excel::download(
+            new MovimientosBienesExport($rows, $settings, $filtros, 'movimientos_por_fecha'),
+            'reporte_movimientos_por_fecha.xlsx'
+        );
+    }
+}

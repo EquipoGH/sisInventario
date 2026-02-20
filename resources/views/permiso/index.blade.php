@@ -7,8 +7,8 @@
     <h1 class="mb-0"><i class="fas fa-key"></i> Permisos</h1>
 
     <div class="mt-2 mt-md-0 d-flex align-items-center">
-      <button type="button" class="btn btn-danger mr-2" id="btnEliminarSeleccionados" style="display:none;">
-        <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
+      <button type="button" class="btn btn-danger mr-2" id="btnAccionSeleccionados" style="display:none;">
+        <i class="fas fa-ban"></i> Desactivar seleccionados (<span id="contadorSeleccionados">0</span>)
       </button>
 
       <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
@@ -23,24 +23,35 @@
   <div class="card-body">
 
     <div class="row mb-3 align-items-start">
-      {{-- Mostrar --}}
-      <div class="col-md-4">
-        <div class="d-flex align-items-center">
-          <span class="text-muted mr-2">Mostrar</span>
+      {{-- Mostrar + Estado --}}
+      <div class="col-md-5">
+        <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
+          <div class="d-flex align-items-center">
+            <span class="text-muted mr-2">Mostrar</span>
 
-          <select id="perPage" class="form-control form-control-sm" style="width:auto;">
-            @foreach([5,10,20,25,50,100] as $n)
-              <option value="{{ $n }}" @selected((int)request('per_page', 10) === $n)>{{ $n }}</option>
-            @endforeach
-          </select>
+            <select id="perPage" class="form-control form-control-sm" style="width:auto;">
+              @foreach([5,10,20,25,50,100] as $n)
+                <option value="{{ $n }}" @selected((int)request('per_page', 10) === $n)>{{ $n }}</option>
+              @endforeach
+            </select>
 
-          <span class="text-muted ml-2">registros</span>
+            <span class="text-muted ml-2">registros</span>
+          </div>
+
+          <div class="d-flex align-items-center">
+            <span class="text-muted mr-2">Estado</span>
+            <select id="filtroEstado" class="form-control form-control-sm" style="width:auto;">
+              <option value="A" @selected(($estado ?? 'A') === 'A')>Activos</option>
+              <option value="I" @selected(($estado ?? 'A') === 'I')>Inactivos</option>
+              <option value="ALL" @selected(($estado ?? 'A') === 'ALL')>Todos</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {{-- Buscar + info --}}
-      <div class="col-md-8">
-        <div class="float-right" style="width: 100%; max-width: 520px;">
+      <div class="col-md-7">
+        <div class="float-right" style="width: 100%; max-width: 620px;">
           <div class="input-group">
             <div class="input-group-prepend">
               <span class="input-group-text bg-primary">
@@ -49,10 +60,10 @@
             </div>
 
             <input type="text" id="searchInput" class="form-control"
-                   placeholder="Buscar por permiso o ID..." autocomplete="off">
+                   placeholder="Buscar por permiso, ruta (route_name) o ID..." autocomplete="off">
 
             <div class="input-group-append">
-              <button class="btn btn-outline-secondary" type="button" id="btnLimpiar">
+              <button class="btn btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar">
                 <i class="fas fa-times"></i>
               </button>
             </div>
@@ -81,7 +92,7 @@
           <tr>
             <th width="5%" class="text-center"><input type="checkbox" id="checkAll"></th>
 
-            <th width="12%" class="text-center sortable" data-column="id">
+            <th width="10%" class="text-center sortable" data-column="id">
               ID <i class="fas fa-sort sort-icon"></i>
             </th>
 
@@ -89,7 +100,11 @@
               Permiso <i class="fas fa-sort sort-icon"></i>
             </th>
 
-            <th width="15%" class="text-center sortable" data-column="estado">
+            <th width="30%" class="sortable" data-column="route">
+              Ruta (route_name) <i class="fas fa-sort sort-icon"></i>
+            </th>
+
+            <th width="12%" class="text-center sortable" data-column="estado">
               Estado <i class="fas fa-sort sort-icon"></i>
             </th>
           </tr>
@@ -97,7 +112,7 @@
 
         <tbody id="tablaBody">
           <tr id="filaVacia">
-            <td colspan="4" class="text-center text-muted py-4">
+            <td colspan="5" class="text-center text-muted py-4">
               <i class="fas fa-spinner fa-spin mr-1"></i> Cargando...
             </td>
           </tr>
@@ -145,6 +160,7 @@
         @csrf
         <div class="modal-body">
           <div class="row">
+
             <div class="col-md-8">
               <div class="form-group">
                 <label>Nombre del Permiso <span class="text-danger">*</span></label>
@@ -163,6 +179,26 @@
                 <span class="text-danger error-estadopermiso"></span>
               </div>
             </div>
+
+            <div class="col-md-12">
+              <div class="form-group">
+                <label>Ruta (route_name)</label>
+
+                <select name="route_name" id="route_name" class="form-control">
+                  <option value="">-- Sin ruta (no navega) --</option>
+                  @foreach(($routeNames ?? []) as $rn)
+                    <option value="{{ $rn }}">{{ $rn }}</option>
+                  @endforeach
+                </select>
+
+                <small class="text-muted d-block mt-1">
+                  Se usa para navegar desde el sidebar con route(). [Ej: bien.index]
+                </small>
+
+                <span class="text-danger error-route_name"></span>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -195,6 +231,7 @@
 
         <div class="modal-body">
           <div class="row">
+
             <div class="col-md-8">
               <div class="form-group">
                 <label>Nombre del Permiso <span class="text-danger">*</span></label>
@@ -213,6 +250,26 @@
                 <span class="text-danger error-edit-estadopermiso"></span>
               </div>
             </div>
+
+            <div class="col-md-12">
+              <div class="form-group">
+                <label>Ruta (route_name)</label>
+
+                <select name="route_name" id="edit_route_name" class="form-control">
+                  <option value="">-- Sin ruta (no navega) --</option>
+                  @foreach(($routeNames ?? []) as $rn)
+                    <option value="{{ $rn }}">{{ $rn }}</option>
+                  @endforeach
+                </select>
+
+                <small class="text-muted d-block mt-1">
+                  Si cambias esto, cambia el link del sidebar para este permiso.
+                </small>
+
+                <span class="text-danger error-edit-route_name"></span>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -237,6 +294,16 @@
   .sort-icon{ font-size:.8rem; margin-left:5px; }
   .editable-cell{ user-select:none; cursor:pointer; }
   .editable-cell:hover{ background:#e3f2fd !important; font-weight:bold; }
+
+  .route-chip{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:4px 10px; border-radius:999px;
+    border:1px solid rgba(0,0,0,.12);
+    font-weight:700; font-size:.82rem; line-height:1;
+    background:#f8f9fa;
+    max-width: 320px;
+  }
+  .route-chip code{ font-weight:700; }
 </style>
 @stop
 
@@ -244,26 +311,64 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
-  $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
-  const Toast = Swal.mixin({
-    toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
-    didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
+  $.ajaxSetup({
+    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
   });
 
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+
+  // Estado global
   let paginaActual = 1;
-  let ordenActual = { columna: 'id', direccion: 'asc' };
+  let ordenActual = { columna: 'id', direccion: 'asc' }; // id | nombre | route | estado
   let terminoBusqueda = '';
   let perPage = parseInt($('#perPage').val() || '10', 10);
+  let estadoActual = ($('#filtroEstado').val() || 'A').toUpperCase();
 
   actualizarIconosOrdenamiento();
+  actualizarBotonAccionMasiva();
 
+  // Helpers seguridad UI
+  function escapeHtml(text) {
+    return String(text ?? '').replace(/[&<>"']/g, function(m) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]);
+    });
+  }
+  function safeText(v) {
+    const s = (v === null || v === undefined) ? '' : String(v).trim();
+    return s === '' ? '-' : escapeHtml(s);
+  }
+
+  // Mostrar por página
   $('#perPage').on('change', function(){
     perPage = parseInt($(this).val() || '10', 10);
     paginaActual = 1;
     buscar(terminoBusqueda, paginaActual);
   });
 
+  // Filtro Estado
+  $('#filtroEstado').on('change', function(){
+    estadoActual = ($(this).val() || 'A').toUpperCase();
+    paginaActual = 1;
+
+    $('#checkAll').prop('checked', false);
+    $('.checkbox-item').prop('checked', false);
+
+    actualizarBotonAccionMasiva();
+    buscar(terminoBusqueda, paginaActual);
+  });
+
+  // Búsqueda
   let searchTimeout;
   $('#searchInput').on('keyup', function() {
     terminoBusqueda = $(this).val().trim();
@@ -275,47 +380,66 @@ $(document).ready(function() {
     }
   });
 
-  function buscar(termino, page = 1) {
-    mostrarCargando(true);
-
-    $.ajax({
-      url: '{{ route("permiso.index") }}',
-      method: 'GET',
-      headers: { // para que el controller responda JSON (wantsJson) [web:169]
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      data: {
-        search: termino,
-        page: page,
-        per_page: perPage,
-        orden: ordenActual.columna,
-        direccion: ordenActual.direccion
-      },
-      dataType: 'json',
-      success: function(res) {
-        actualizarTabla(res.data || []);
-        actualizarContadores(res);
-        actualizarPaginacion(res);
-        mostrarCargando(false);
-
-        if ((res.total || 0) === 0 || (res.resultados || 0) === 0) mostrarSinResultados(termino);
-        else ocultarSinResultados();
-      },
-      error: function(xhr) {
-        mostrarCargando(false);
-        console.log('INDEX ERROR', xhr.status, xhr.responseText);
-        Toast.fire({ icon: 'error', title: 'Error al cargar datos', text: `HTTP ${xhr.status}` });
-      }
-    });
+  function mostrarCargando(mostrar) {
+    if (mostrar) { $('#loadingSearch').show(); $('#infoResultados').hide(); }
+    else { $('#loadingSearch').hide(); $('#infoResultados').show(); }
   }
 
+  function mostrarSinResultados(termino) {
+    $('#tablaPermisos').hide();
+    $('#paginacionContainer').hide();
+    $('#terminoBuscado').text(termino);
+    $('#noResultados').fadeIn();
+  }
+
+  function ocultarSinResultados() {
+    $('#noResultados').hide();
+    $('#tablaPermisos').show();
+    $('#paginacionContainer').show();
+  }
+
+  $('#btnLimpiar, #btnMostrarTodo').on('click', function() {
+    $('#searchInput').val('');
+    terminoBusqueda = '';
+    paginaActual = 1;
+    ordenActual = { columna: 'id', direccion: 'asc' };
+    actualizarIconosOrdenamiento();
+    buscar('', 1);
+  });
+
+  // Ordenamiento
+  $('.sortable').on('click', function() {
+    const columna = $(this).data('column');
+
+    if (ordenActual.columna === columna) ordenActual.direccion = (ordenActual.direccion === 'asc') ? 'desc' : 'asc';
+    else { ordenActual.columna = columna; ordenActual.direccion = 'asc'; }
+
+    actualizarIconosOrdenamiento();
+    paginaActual = 1;
+    buscar(terminoBusqueda, paginaActual);
+  });
+
+  function actualizarIconosOrdenamiento() {
+    $('.sortable .sort-icon').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
+    const icono = $(`.sortable[data-column="${ordenActual.columna}"] .sort-icon`);
+    icono.removeClass('fa-sort').addClass(ordenActual.direccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+  }
+
+  // Badge estado
   function badgeEstado(valor) {
-    const v = String(valor).toUpperCase();
+    const v = String(valor || '').toUpperCase();
     if (v === 'A') return '<span class="badge badge-success">Activo</span>';
     return '<span class="badge badge-secondary">Inactivo</span>';
   }
 
+  // Chip route
+  function routeChip(routeName) {
+    const rn = (routeName || '').toString().trim();
+    if (!rn) return '<span class="text-muted">-</span>';
+    return `<span class="route-chip" title="${escapeHtml(rn)}"><i class="fas fa-link text-muted"></i> <code>${escapeHtml(rn)}</code></span>`;
+  }
+
+  // Tabla
   function actualizarTabla(items) {
     const tbody = $('#tablaBody');
     tbody.empty();
@@ -323,14 +447,14 @@ $(document).ready(function() {
     if (!items.length) {
       tbody.append(`
         <tr id="filaVacia">
-          <td colspan="4" class="text-center text-muted py-4">
+          <td colspan="5" class="text-center text-muted py-4">
             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
             No hay permisos registrados
           </td>
         </tr>
       `);
       $('#checkAll').prop('checked', false).prop('disabled', true);
-      actualizarBotonEliminar();
+      actualizarBotonAccionMasiva();
       return;
     }
 
@@ -338,15 +462,18 @@ $(document).ready(function() {
 
     items.forEach(p => {
       tbody.append(`
-        <tr id="row-${p.idpermiso}">
+        <tr id="row-${escapeHtml(p.idpermiso)}">
           <td class="text-center">
-            <input type="checkbox" class="checkbox-item" value="${p.idpermiso}">
+            <input type="checkbox" class="checkbox-item" value="${escapeHtml(p.idpermiso)}">
           </td>
-          <td class="text-center"><strong>${p.idpermiso}</strong></td>
 
-          <td class="editable-cell" data-id="${p.idpermiso}" title="Doble click para editar">
-            <strong>${(p.nombpermiso || '').toUpperCase()}</strong>
+          <td class="text-center"><strong>${escapeHtml(p.idpermiso)}</strong></td>
+
+          <td class="editable-cell" data-id="${escapeHtml(p.idpermiso)}" title="Doble click para editar">
+            <strong>${escapeHtml((p.nombpermiso || '').toUpperCase())}</strong>
           </td>
+
+          <td>${routeChip(p.route_name)}</td>
 
           <td class="text-center">
             ${badgeEstado(p.estadopermiso)}
@@ -355,9 +482,8 @@ $(document).ready(function() {
       `);
     });
 
-    $('.checkbox-item').on('change', actualizarBotonEliminar);
     $('#checkAll').prop('checked', false);
-    actualizarBotonEliminar();
+    actualizarBotonAccionMasiva();
   }
 
   function actualizarContadores(res) {
@@ -367,6 +493,11 @@ $(document).ready(function() {
     $('#totalCount').text(res.total || 0);
     $('#totalFooter').text(res.total || 0);
     $('#paginaInfo').text((res.from || 0) + ' - ' + (res.to || 0));
+  }
+
+  function generarBtn(activo, pagina, contenido) {
+    if (activo) return `<li class="page-item"><a class="page-link paginar" href="#" data-page="${pagina}">${contenido}</a></li>`;
+    return `<li class="page-item disabled"><span class="page-link">${contenido}</span></li>`;
   }
 
   function actualizarPaginacion(res) {
@@ -401,122 +532,138 @@ $(document).ready(function() {
     });
   }
 
-  function generarBtn(activo, pagina, contenido) {
-    if (activo) return `<li class="page-item"><a class="page-link paginar" href="#" data-page="${pagina}">${contenido}</a></li>`;
-    return `<li class="page-item disabled"><span class="page-link">${contenido}</span></li>`;
+  // Buscar AJAX
+  function buscar(termino, page = 1) {
+    mostrarCargando(true);
+
+    $.ajax({
+      url: '{{ route("permiso.index") }}',
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      data: {
+        search: termino,
+        page: page,
+        per_page: perPage,
+        orden: ordenActual.columna,
+        direccion: ordenActual.direccion,
+        estado: estadoActual,
+      },
+      dataType: 'json',
+      success: function(res) {
+        actualizarTabla(res.data || []);
+        actualizarContadores(res);
+        actualizarPaginacion(res);
+        mostrarCargando(false);
+
+        if ((res.total || 0) === 0 || (res.resultados || 0) === 0) mostrarSinResultados(termino);
+        else ocultarSinResultados();
+      },
+      error: function(xhr) {
+        mostrarCargando(false);
+        console.log('INDEX ERROR', xhr.status, xhr.responseText);
+        Toast.fire({ icon: 'error', title: 'Error al cargar datos', text: `HTTP ${xhr.status}` });
+      }
+    });
   }
-
-  $('.sortable').on('click', function() {
-    const columna = $(this).data('column');
-
-    if (ordenActual.columna === columna) ordenActual.direccion = (ordenActual.direccion === 'asc') ? 'desc' : 'asc';
-    else { ordenActual.columna = columna; ordenActual.direccion = 'asc'; }
-
-    actualizarIconosOrdenamiento();
-    paginaActual = 1;
-    buscar(terminoBusqueda, paginaActual);
-  });
-
-  function actualizarIconosOrdenamiento() {
-    $('.sortable .sort-icon').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
-
-    const icono = $(`.sortable[data-column="${ordenActual.columna}"] .sort-icon`);
-    icono.removeClass('fa-sort').addClass(ordenActual.direccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
-  }
-
-  function mostrarCargando(mostrar) {
-    if (mostrar) { $('#loadingSearch').show(); $('#infoResultados').hide(); }
-    else { $('#loadingSearch').hide(); $('#infoResultados').show(); }
-  }
-
-  function mostrarSinResultados(termino) {
-    $('#tablaPermisos').hide();
-    $('#paginacionContainer').hide();
-    $('#terminoBuscado').text(termino);
-    $('#noResultados').fadeIn();
-  }
-
-  function ocultarSinResultados() {
-    $('#noResultados').hide();
-    $('#tablaPermisos').show();
-    $('#paginacionContainer').show();
-  }
-
-  $('#btnLimpiar, #btnMostrarTodo').on('click', function() {
-    $('#searchInput').val('');
-    terminoBusqueda = '';
-    paginaActual = 1;
-    ordenActual = { columna: 'id', direccion: 'asc' };
-    actualizarIconosOrdenamiento();
-    buscar('', 1);
-  });
 
   // Checkboxes
   $('#checkAll').on('change', function() {
     $('.checkbox-item').prop('checked', $(this).is(':checked'));
-    actualizarBotonEliminar();
+    actualizarBotonAccionMasiva();
   });
 
   $(document).on('change', '.checkbox-item', function() {
-    actualizarBotonEliminar();
+    actualizarBotonAccionMasiva();
     const total = $('.checkbox-item').length;
     const checked = $('.checkbox-item:checked').length;
     $('#checkAll').prop('checked', total > 0 && total === checked);
   });
 
-  function actualizarBotonEliminar() {
+  // Botón masivo dinámico
+  function actualizarBotonAccionMasiva() {
     const seleccionados = $('.checkbox-item:checked').length;
+    const esInactivos = (estadoActual === 'I');
+
     $('#contadorSeleccionados').text(seleccionados);
 
-    if (seleccionados > 0) $('#btnEliminarSeleccionados').fadeIn(200);
-    else $('#btnEliminarSeleccionados').fadeOut(200);
+    if (seleccionados > 0) $('#btnAccionSeleccionados').fadeIn(200);
+    else $('#btnAccionSeleccionados').fadeOut(200);
+
+    $('#btnAccionSeleccionados')
+      .toggleClass('btn-danger', !esInactivos)
+      .toggleClass('btn-success', esInactivos)
+      .html(esInactivos
+        ? `<i class="fas fa-check"></i> Activar seleccionados (<span id="contadorSeleccionados">${seleccionados}</span>)`
+        : `<i class="fas fa-ban"></i> Desactivar seleccionados (<span id="contadorSeleccionados">${seleccionados}</span>)`
+      );
   }
 
-  // Eliminar múltiple
-  $('#btnEliminarSeleccionados').on('click', function() {
+  $('#btnAccionSeleccionados').on('click', function() {
     const ids = $('.checkbox-item:checked').map(function(){ return $(this).val(); }).get();
     if (!ids.length) return;
 
+    const esRestore = (estadoActual === 'I');
+
     Swal.fire({
-      title: `¿Eliminar ${ids.length} permiso(s)?`,
-      text: "Esta acción no se puede revertir",
+      title: esRestore
+        ? `¿Activar ${ids.length} permiso(s)?`
+        : `¿Desactivar ${ids.length} permiso(s)?`,
+      html: esRestore
+        ? 'Los permisos quedarán <b>Activos</b>.'
+        : 'Los permisos quedarán <b>Inactivos</b> (no se borran).',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
+      confirmButtonColor: esRestore ? '#28a745' : '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: '<i class="fas fa-trash"></i> Sí, eliminar',
+      confirmButtonText: esRestore
+        ? '<i class="fas fa-check"></i> Sí, activar'
+        : '<i class="fas fa-ban"></i> Sí, desactivar',
       cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
-    }).then((result) => { if (result.isConfirmed) eliminarMultiples(ids); });
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+      if (esRestore) bulkActivar(ids);
+      else bulkDesactivar(ids);
+    });
   });
 
-  function eliminarMultiples(ids) {
-    let eliminados = 0, errores = 0;
-
-    Swal.fire({
-      title: 'Eliminando...',
-      html: `Procesando <b>${eliminados}</b> de <b>${ids.length}</b>`,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    Promise.allSettled(
-      ids.map(id =>
-        $.ajax({
-          url: `/permiso/${id}`,
-          method: 'POST',
-          data: { _method: 'DELETE' }
-        }).then(() => eliminados++)
-          .catch(() => errores++)
-      )
-    ).then(() => {
-      Swal.close();
-
-      if (eliminados > 0) {
-        Toast.fire({ icon: 'success', title: `${eliminados} eliminado(s)`, text: errores ? `${errores} error(es)` : '' });
+  function bulkDesactivar(ids){
+    $.ajax({
+      url: '{{ route("permiso.bulk-destroy") }}',
+      type: 'POST',
+      dataType: 'json',
+      processData: false,
+      contentType: 'application/json; charset=utf-8',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      data: JSON.stringify({ _method: 'DELETE', ids: ids.map(Number) }),
+      success: function(res){
+        Toast.fire({ icon: 'success', title: res.message || 'Registros desactivados' });
         $('#checkAll').prop('checked', false);
         buscar(terminoBusqueda, paginaActual);
-      } else {
-        Toast.fire({ icon: 'error', title: 'No se pudo eliminar ninguno' });
+      },
+      error: function(xhr){
+        console.log('BULK DESACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
+        Toast.fire({ icon: 'error', title: 'Error al desactivar', text: `HTTP ${xhr.status}` });
+      }
+    });
+  }
+
+  function bulkActivar(ids){
+    $.ajax({
+      url: '{{ route("permiso.bulk-restore") }}',
+      type: 'POST',
+      dataType: 'json',
+      processData: false,
+      contentType: 'application/json; charset=utf-8',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      data: JSON.stringify({ ids: ids.map(Number) }),
+      success: function(res){
+        Toast.fire({ icon: 'success', title: res.message || 'Registros activados' });
+        $('#checkAll').prop('checked', false);
+        buscar(terminoBusqueda, paginaActual);
+      },
+      error: function(xhr){
+        console.log('BULK ACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
+        Toast.fire({ icon: 'error', title: 'Error al activar', text: `HTTP ${xhr.status}` });
       }
     });
   }
@@ -529,14 +676,15 @@ $(document).ready(function() {
       $('#edit_id').val(data.idpermiso);
       $('#edit_nombpermiso').val(data.nombpermiso);
       $('#edit_estadopermiso').val(String(data.estadopermiso || 'A'));
-      $('#modalEdit').modal('show'); // Bootstrap4 [web:57]
+      $('#edit_route_name').val(data.route_name || '');
+      $('#modalEdit').modal('show');
     }).fail(() => Toast.fire({ icon: 'error', title: 'No se pudo cargar el permiso' }));
   });
 
   // Create
   $('#formCreate').on('submit', function(e) {
     e.preventDefault();
-    $('.text-danger').text('');
+    $('.error-nombpermiso,.error-estadopermiso,.error-route_name').text('');
 
     const btn = $('#btnGuardar');
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
@@ -544,7 +692,7 @@ $(document).ready(function() {
     $.ajax({
       url: '{{ route("permiso.store") }}',
       method: 'POST',
-      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, // [web:169]
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       data: $(this).serialize(),
       success: function(res) {
         btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
@@ -560,9 +708,7 @@ $(document).ready(function() {
 
         if (xhr.status === 422) {
           const errors = xhr.responseJSON?.errors || {};
-          Object.keys(errors).forEach(campo => {
-            $(`.error-${campo}`).text(errors[campo][0]);
-          });
+          Object.keys(errors).forEach(campo => $(`.error-${campo}`).text(errors[campo][0]));
           return;
         }
 
@@ -574,7 +720,7 @@ $(document).ready(function() {
   // Update
   $('#formEdit').on('submit', function(e) {
     e.preventDefault();
-    $('.text-danger').text('');
+    $('.error-edit-nombpermiso,.error-edit-estadopermiso,.error-edit-route_name').text('');
 
     const btn = $('#btnActualizar');
     const id = $('#edit_id').val();
@@ -583,7 +729,7 @@ $(document).ready(function() {
     $.ajax({
       url: `/permiso/${id}`,
       method: 'PUT',
-      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, // [web:169]
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       data: $(this).serialize(),
       success: function(res) {
         btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
@@ -599,9 +745,7 @@ $(document).ready(function() {
 
         if (xhr.status === 422) {
           const errors = xhr.responseJSON?.errors || {};
-          Object.keys(errors).forEach(campo => {
-            $(`.error-edit-${campo}`).text(errors[campo][0]);
-          });
+          Object.keys(errors).forEach(campo => $(`.error-edit-${campo}`).text(errors[campo][0]));
           return;
         }
 
@@ -611,8 +755,15 @@ $(document).ready(function() {
   });
 
   // Limpiar modales
-  $('#modalCreate').on('hidden.bs.modal', function(){ $('#formCreate')[0].reset(); $('.text-danger').text(''); });
-  $('#modalEdit').on('hidden.bs.modal', function(){ $('#formEdit')[0].reset(); $('.text-danger').text(''); });
+  $('#modalCreate').on('hidden.bs.modal', function(){
+    $('#formCreate')[0].reset();
+    $('.error-nombpermiso,.error-estadopermiso,.error-route_name').text('');
+  });
+
+  $('#modalEdit').on('hidden.bs.modal', function(){
+    $('#formEdit')[0].reset();
+    $('.error-edit-nombpermiso,.error-edit-estadopermiso,.error-edit-route_name').text('');
+  });
 
   // Inicial
   buscar('', 1);

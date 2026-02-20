@@ -10,20 +10,21 @@ class Permiso extends Model
 {
     protected $table = 'permisos';
     protected $primaryKey = 'idpermiso';
-    public $timestamps = true; // porque en migración usaste timestamps() [web:136]
+    public $timestamps = true;
 
     protected $fillable = [
         'nombpermiso',
+        'route_name',     // <-- NUEVO
         'estadopermiso',
     ];
 
     protected $casts = [
         'idpermiso' => 'integer',
         'nombpermiso' => 'string',
+        'route_name' => 'string',    // <-- NUEVO
         'estadopermiso' => 'string',
     ];
 
-    // Mutator: normaliza nombre al guardar (columna: nombpermiso)
     protected function nombpermiso(): Attribute
     {
         return Attribute::make(
@@ -36,7 +37,18 @@ class Permiso extends Model
         );
     }
 
-    // Estado: A/I (Activo/Inactivo) según migración (default A)
+    protected function routeName(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value,
+            set: function ($value) {
+                $value = trim((string) $value);
+                $value = preg_replace('/\s+/', '', $value);
+                return $value === '' ? null : $value;
+            }
+        );
+    }
+
     protected function estadopermiso(): Attribute
     {
         return Attribute::make(
@@ -57,7 +69,9 @@ class Permiso extends Model
         $op = $driver === 'pgsql' ? 'ilike' : 'like';
 
         return $query->where(function (Builder $q) use ($term, $op) {
-            $q->where('nombpermiso', $op, "%{$term}%");
+            $q->where('nombpermiso', $op, "%{$term}%")
+              ->orWhere('route_name', $op, "%{$term}%")
+              ->orWhereRaw('CAST(idpermiso AS TEXT) ' . strtoupper($op) . ' ?', ["%{$term}%"]);
         });
     }
 
@@ -72,8 +86,7 @@ class Permiso extends Model
     }
 
     public function moduloPermisos()
-{
-    return $this->hasMany(ModuloPermiso::class, 'idpermiso', 'idpermiso');
-}
-
+    {
+        return $this->hasMany(ModuloPermiso::class, 'idpermiso', 'idpermiso');
+    }
 }

@@ -18,36 +18,44 @@ class UserController extends Controller
         $q = trim((string) $request->get('q', ''));
         $search = trim((string) $request->get('search', $q));
 
-        // NUEVO: filtros (vienen de tu vista)
-        $rol    = trim((string) $request->get('rol', ''));      // ADMIN|USUARIO|INVITADO|''(todos)
-        $estado = trim((string) $request->get('estado', ''));   // A|I|''
-        $ultimo = trim((string) $request->get('ultimo', ''));   // hoy|7d|30d|nunca|''
+        // Filtros
+        $rol = trim((string) $request->get('rol', '')); // ADMIN|USUARIO|INVITADO|''
+        $estado = strtoupper(trim((string) $request->get('estado', 'A'))); // A|I|ALL  (A por defecto)
+        $ultimo = trim((string) $request->get('ultimo', '')); // hoy|7d|30d|nunca|''
 
-        $orden = $request->get('orden', 'id');          // id | nombre | email | dni | rol | estado | ultimo
-        $direccion = $request->get('direccion', 'asc'); // asc | desc
+        if (!in_array($estado, ['A', 'I', 'ALL'], true)) {
+            $estado = 'A';
+        }
+
+        $orden = (string) $request->get('orden', 'id');          // id | nombre | email | dni | rol | estado | ultimo
+        $direccion = strtolower((string) $request->get('direccion', 'asc')) === 'desc' ? 'desc' : 'asc';
 
         $query = User::query();
 
-        // Search (igual que tú)
+        // Search
         if ($search !== '') {
             $driver = $query->getConnection()->getDriverName();
             $op = $driver === 'pgsql' ? 'ilike' : 'like';
 
             $query->where(function ($qq) use ($search, $op) {
                 $qq->where('name', $op, "%{$search}%")
-                   ->orWhere('email', $op, "%{$search}%")
-                   ->orWhere('dni_usuario', $op, "%{$search}%")
-                   ->orWhere('rol_usuario', $op, "%{$search}%")
-                   ->orWhere('estado_usuario', $op, "%{$search}%")
-                   ->orWhere('id', $op, "%{$search}%");
+                    ->orWhere('email', $op, "%{$search}%")
+                    ->orWhere('dni_usuario', $op, "%{$search}%")
+                    ->orWhere('rol_usuario', $op, "%{$search}%")
+                    ->orWhere('estado_usuario', $op, "%{$search}%")
+                    ->orWhereRaw('CAST(id AS TEXT) ' . ($op === 'ilike' ? 'ILIKE' : 'LIKE') . ' ?', ["%{$search}%"]);
             });
         }
 
-        // NUEVO: aplicar filtros (solo si vienen)
+        // Aplicar filtros
         $query->when($rol !== '', fn ($q) => $q->where('rol_usuario', $rol));
-        $query->when($estado !== '', fn ($q) => $q->where('estado_usuario', $estado));
 
-        // Último acceso (si tu campo es datetime/timestamp)
+        // Estado: A/I/ALL
+        if ($estado !== 'ALL') {
+            $query->where('estado_usuario', $estado);
+        }
+
+        // Último acceso
         $query->when($ultimo !== '', function ($q) use ($ultimo) {
             if ($ultimo === 'nunca') {
                 $q->whereNull('ultimo_acceso');
@@ -70,7 +78,7 @@ class UserController extends Controller
             }
         });
 
-        // Ordenamiento (igual que tú)
+        // Ordenamiento (whitelist)
         $map = [
             'id' => 'id',
             'nombre' => 'name',
@@ -82,8 +90,7 @@ class UserController extends Controller
         ];
 
         $col = $map[$orden] ?? 'id';
-        $dir = $direccion === 'desc' ? 'desc' : 'asc';
-        $query->orderBy($col, $dir);
+        $query->orderBy($col, $direccion);
 
         $items = $query->paginate($perPage)->withQueryString();
 
@@ -96,7 +103,7 @@ class UserController extends Controller
                     'dni_usuario' => $u->dni_usuario,
                     'rol_usuario' => $u->rol_usuario,
                     'estado_usuario' => $u->estado_usuario,
-                    'id_responsable' => $u->id_responsable, // ⭐ NUEVO
+                    'id_responsable' => $u->id_responsable,
                     'ultimo_acceso' => $u->ultimo_acceso ? $u->ultimo_acceso->format('d/m/Y H:i') : null,
                 ];
             })->values();
@@ -110,6 +117,7 @@ class UserController extends Controller
                 'current_page' => $items->currentPage(),
                 'last_page' => $items->lastPage(),
                 'per_page' => $items->perPage(),
+                'estado' => $estado,
             ]);
         }
 
@@ -117,6 +125,9 @@ class UserController extends Controller
             'items' => $items,
             'q' => $q,
             'perPage' => $perPage,
+            'estado' => $estado,
+            'rol' => $rol,
+            'ultimo' => $ultimo,
         ]);
     }
 
@@ -145,7 +156,7 @@ class UserController extends Controller
             'dni_usuario' => $user->dni_usuario,
             'rol_usuario' => $user->rol_usuario,
             'estado_usuario' => $user->estado_usuario,
-            'id_responsable' => $user->id_responsable, // ⭐ NUEVO
+            'id_responsable' => $user->id_responsable,
             'ultimo_acceso' => $user->ultimo_acceso ? $user->ultimo_acceso->format('d/m/Y H:i') : null,
         ]);
     }
@@ -154,7 +165,7 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        // Si password viene vacío/null, no tocarlo (así no lo borra)
+        // Si password viene vacío/null, no tocarlo
         if (!array_key_exists('password', $data) || $data['password'] === null || $data['password'] === '') {
             unset($data['password']);
         }
@@ -171,20 +182,41 @@ class UserController extends Controller
         return redirect()->route('user.index')->with('ok', 'Actualizado');
     }
 
+    // Desactivar (lógico) - NO borrar
     public function destroy(Request $request, User $user)
     {
-        $user->delete();
+        if (strtoupper((string) $user->estado_usuario) !== 'I') {
+            $user->update(['estado_usuario' => 'I']);
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Eliminado',
+                'message' => 'Desactivado',
             ]);
         }
 
-        return back()->with('ok', 'Eliminado');
+        return back()->with('ok', 'Desactivado');
     }
 
+    // Activar (uno)
+    public function restore(Request $request, User $user)
+    {
+        if (strtoupper((string) $user->estado_usuario) !== 'A') {
+            $user->update(['estado_usuario' => 'A']);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Activado',
+            ]);
+        }
+
+        return back()->with('ok', 'Activado');
+    }
+
+    // Desactivar masivo (NO borra)
     public function bulkDestroy(Request $request)
     {
         $data = $request->validate([
@@ -193,21 +225,45 @@ class UserController extends Controller
         ]);
 
         DB::transaction(function () use ($data) {
-            User::whereIn('id', $data['ids'])->delete();
+            User::whereIn('id', $data['ids'])
+                ->update(['estado_usuario' => 'I']);
         });
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Registros eliminados',
+                'message' => 'Registros desactivados',
             ]);
         }
 
-        return back()->with('ok', 'Registros eliminados');
+        return back()->with('ok', 'Registros desactivados');
+    }
+
+    // Activar masivo
+    public function bulkRestore(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        DB::transaction(function () use ($data) {
+            User::whereIn('id', $data['ids'])
+                ->update(['estado_usuario' => 'A']);
+        });
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Registros activados',
+            ]);
+        }
+
+        return back()->with('ok', 'Registros activados');
     }
 
     /**
-     * ⭐⭐⭐ NUEVO: Obtener lista de responsables para SELECT ⭐⭐⭐
+     * Obtener lista de responsables para SELECT
      */
     public function obtenerResponsables()
     {
@@ -215,15 +271,14 @@ class UserController extends Controller
             $responsables = \App\Models\Responsable::select('dni_responsable', 'nombre_responsable', 'apellidos_responsable')
                 ->orderBy('nombre_responsable')
                 ->get()
-                ->map(function($resp) {
+                ->map(function ($resp) {
                     return [
                         'id' => $resp->dni_responsable,
-                        'text' => $resp->nombre_completo
+                        'text' => $resp->nombre_completo,
                     ];
                 });
 
             return response()->json($responsables);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

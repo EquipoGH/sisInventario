@@ -20,7 +20,9 @@ class DatabaseSeeder extends Seeder
         // ]);
         $this->call([
         SystemSettingSeeder::class,
-        UsuarioAdminSeeder::class,    
+        UsuarioAdminSeeder::class,
+        SidebarModulosSeeder::class,
+        SidebarPermisosSeeder::class,   
         ]);
     }
 }

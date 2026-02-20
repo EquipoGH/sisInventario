@@ -260,45 +260,154 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-$(document).ready(function() {
-  $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
-
-  const Toast = Swal.mixin({
-    toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
-    didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
+$(function () {
+  $.ajaxSetup({
+    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
   });
 
+  const Toast = Swal.mixin({
+    toast: true, position: 'top-end', showConfirmButton: false,
+    timer: 3000, timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+
+  // =========================
+  // PERFIL: listado + search
+  // =========================
   let paginaActual = 1;
   let ordenActual = { columna: 'id', direccion: 'asc' };
   let terminoBusqueda = '';
   let perPage = parseInt($('#perPage').val() || '10', 10);
 
-  actualizarIconosOrdenamiento();
+  function actualizarIconosOrdenamiento() {
+    $('.sortable .sort-icon').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
+    const icono = $(`.sortable[data-column="${ordenActual.columna}"] .sort-icon`);
+    icono.removeClass('fa-sort').addClass(ordenActual.direccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+  }
 
-  $('#paginacionLinks').on('click', '.paginar', function(e){
-  e.preventDefault();
-  paginaActual = $(this).data('page');
-  buscar(terminoBusqueda, paginaActual);
-  $('html, body').animate({ scrollTop: 0 }, 300);
-});
+  function mostrarCargando(mostrar) {
+    if (mostrar) { $('#loadingSearch').show(); $('#infoResultados').hide(); }
+    else { $('#loadingSearch').hide(); $('#infoResultados').show(); }
+  }
 
-  // per_page
-  $('#perPage').on('change', function(){
-    perPage = parseInt($(this).val() || '10', 10);
-    paginaActual = 1;
-    buscar(terminoBusqueda, paginaActual);
-  });
+  function actualizarBotonEliminar() {
+    const seleccionados = $('.checkbox-item:checked').length;
+    $('#contadorSeleccionados').text(seleccionados);
+    if (seleccionados > 0) $('#btnEliminarSeleccionados').fadeIn(200);
+    else $('#btnEliminarSeleccionados').fadeOut(200);
+  }
 
-  let searchTimeout;
-  $('#searchInput').on('keyup', function() {
-    terminoBusqueda = $(this).val().trim();
-    clearTimeout(searchTimeout);
-    paginaActual = 1;
+  function actualizarTabla(perfiles) {
+    const tbody = $('#tablaBody');
+    tbody.empty();
 
-    if (terminoBusqueda.length === 0 || terminoBusqueda.length >= 2) {
-      searchTimeout = setTimeout(() => buscar(terminoBusqueda, paginaActual), 400);
+    if (!perfiles.length) {
+      tbody.append(`
+        <tr id="filaVacia">
+          <td colspan="4" class="text-center text-muted py-4">
+            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+            No hay perfiles registrados
+          </td>
+        </tr>
+      `);
+      $('#checkAll').prop('checked', false).prop('disabled', true);
+      actualizarBotonEliminar();
+      return;
     }
-  });
+
+    $('#checkAll').prop('disabled', false);
+
+    perfiles.forEach(p => {
+      tbody.append(`
+        <tr id="row-${p.idperfil}">
+          <td class="text-center">
+            <input type="checkbox" class="checkbox-item" value="${p.idperfil}">
+          </td>
+          <td class="text-center"><strong>${p.idperfil}</strong></td>
+          <td class="editable-cell" data-id="${p.idperfil}" title="Doble click para editar">
+            <strong>${(p.nomperfil || '').toUpperCase()}</strong>
+          </td>
+          <td class="text-center">
+            <div class="btn-group">
+              <button type="button"
+                      class="btn btn-sm btn-light border dropdown-toggle"
+                      data-toggle="dropdown"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                      style="border-radius:999px;">
+                <i class="fas fa-cog"></i>
+              </button>
+              <div class="dropdown-menu dropdown-menu-right">
+                <a class="dropdown-item btn-modulos" href="#"
+                   data-id="${p.idperfil}"
+                   data-name="${(p.nomperfil || '').replace(/"/g,'&quot;')}">
+                  <i class="fas fa-layer-group mr-2"></i> Módulos
+                </a>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `);
+    });
+
+    $('#checkAll').prop('checked', false);
+    actualizarBotonEliminar();
+  }
+
+  function actualizarContadores(res) {
+    $('#from').text(res.from || 0);
+    $('#to').text(res.to || 0);
+    $('#resultadosCount').text(res.resultados || 0);
+    $('#totalCount').text(res.total || 0);
+    $('#totalFooter').text(res.total || 0);
+    $('#paginaInfo').text((res.from || 0) + ' - ' + (res.to || 0));
+  }
+
+  function generarBtn(activo, pagina, contenido) {
+    if (activo) return `<li class="page-item"><a class="page-link paginar" href="#" data-page="${pagina}">${contenido}</a></li>`;
+    return `<li class="page-item disabled"><span class="page-link">${contenido}</span></li>`;
+  }
+
+  function actualizarPaginacion(res) {
+    const links = $('#paginacionLinks');
+    links.empty();
+    if (!res.last_page || res.last_page <= 1) return;
+
+    let html = '<ul class="pagination pagination-sm m-0">';
+    html += generarBtn(res.current_page > 1, res.current_page - 1, '<i class="fas fa-chevron-left"></i>');
+
+    const rango = 2;
+    for (let i = 1; i <= res.last_page; i++) {
+      const esActual = i === res.current_page;
+      const esPrimera = i === 1;
+      const esUltima = i === res.last_page;
+      const cerca = Math.abs(i - res.current_page) <= rango;
+
+      if (esActual) html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+      else if (esPrimera || esUltima || cerca) html += `<li class="page-item"><a class="page-link paginar" href="#" data-page="${i}">${i}</a></li>`;
+      else if (i === res.current_page - rango - 1 || i === res.current_page + rango + 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+    }
+
+    html += generarBtn(res.current_page < res.last_page, res.current_page + 1, '<i class="fas fa-chevron-right"></i>');
+    html += '</ul>';
+    links.html(html);
+  }
+
+  function mostrarSinResultados(termino) {
+    $('#tablaPerfiles').hide();
+    $('#paginacionContainer').hide();
+    $('#terminoBuscado').text(termino);
+    $('#noResultados').fadeIn();
+  }
+
+  function ocultarSinResultados() {
+    $('#noResultados').hide();
+    $('#tablaPerfiles').show();
+    $('#paginacionContainer').show();
+  }
 
   function buscar(termino, page = 1) {
     mostrarCargando(true);
@@ -314,162 +423,57 @@ $(document).ready(function() {
         direccion: ordenActual.direccion
       },
       dataType: 'json',
-      success: function(res) {
+      success: function (res) {
         actualizarTabla(res.data || []);
         actualizarContadores(res);
         actualizarPaginacion(res);
         mostrarCargando(false);
 
-        if ((res.total || 0) === 0 || (res.resultados || 0) === 0) {
-          mostrarSinResultados(termino);
-        } else {
-          ocultarSinResultados();
-        }
+        if ((res.total || 0) === 0 || (res.resultados || 0) === 0) mostrarSinResultados(termino);
+        else ocultarSinResultados();
       },
-      error: function() {
+      error: function () {
         mostrarCargando(false);
         Toast.fire({ icon: 'error', title: 'Error al cargar datos' });
       }
     });
   }
 
-  function actualizarTabla(perfiles) {
-    const tbody = $('#tablaBody');
-    tbody.empty();
+  actualizarIconosOrdenamiento();
 
-    if (!perfiles.length) {
-  tbody.append(`
-    <tr id="filaVacia">
-      <td colspan="4" class="text-center text-muted py-4">
-        <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-        No hay perfiles registrados
-      </td>
-    </tr>
-  `);
-  $('#checkAll').prop('checked', false).prop('disabled', true);
-  actualizarBotonEliminar();
-  return;
-}
+  $('#paginacionLinks').on('click', '.paginar', function (e) {
+    e.preventDefault();
+    paginaActual = $(this).data('page');
+    buscar(terminoBusqueda, paginaActual);
+    $('html, body').animate({ scrollTop: 0 }, 300);
+  });
 
+  $('#perPage').on('change', function () {
+    perPage = parseInt($(this).val() || '10', 10);
+    paginaActual = 1;
+    buscar(terminoBusqueda, paginaActual);
+  });
 
-    $('#checkAll').prop('disabled', false);
+  let searchTimeout;
+  $('#searchInput').on('keyup', function () {
+    terminoBusqueda = $(this).val().trim();
+    clearTimeout(searchTimeout);
+    paginaActual = 1;
+    if (terminoBusqueda.length === 0 || terminoBusqueda.length >= 2) {
+      searchTimeout = setTimeout(() => buscar(terminoBusqueda, paginaActual), 400);
+    }
+  });
 
-    perfiles.forEach(p => {
-  tbody.append(`
-    <tr id="row-${p.idperfil}">
-      <td class="text-center">
-        <input type="checkbox" class="checkbox-item" value="${p.idperfil}">
-      </td>
-
-      <td class="text-center"><strong>${p.idperfil}</strong></td>
-
-      <td class="editable-cell" data-id="${p.idperfil}" title="Doble click para editar">
-        <strong>${(p.nomperfil || '').toUpperCase()}</strong>
-      </td>
-
-      <td class="text-center">
-        <div class="btn-group">
-          <button type="button"
-                  class="btn btn-sm btn-light border dropdown-toggle"
-                  data-toggle="dropdown"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                  style="border-radius:999px;">
-            <i class="fas fa-cog"></i>
-          </button>
-
-          <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item btn-modulos" href="#"
-               data-id="${p.idperfil}"
-               data-name="${(p.nomperfil || '').replace(/"/g,'&quot;')}">
-              <i class="fas fa-layer-group mr-2"></i> Módulos
-            </a>
-          </div>
-        </div>
-      </td>
-    </tr>
-  `);
-});
-
-
-    $('#checkAll').prop('checked', false);
-    actualizarBotonEliminar();
-  }
-
-  function actualizarContadores(res) {
-    $('#from').text(res.from || 0);
-    $('#to').text(res.to || 0);
-    $('#resultadosCount').text(res.resultados || 0);
-    $('#totalCount').text(res.total || 0);
-    $('#totalFooter').text(res.total || 0);
-    $('#paginaInfo').text((res.from || 0) + ' - ' + (res.to || 0));
-  }
-
-  function actualizarPaginacion(res) {
-  const links = $('#paginacionLinks');
-  links.empty();
-  if (!res.last_page || res.last_page <= 1) return;
-
-  let html = '<ul class="pagination pagination-sm m-0">';
-  html += generarBtn(res.current_page > 1, res.current_page - 1, '<i class="fas fa-chevron-left"></i>');
-
-  const rango = 2;
-  for (let i=1; i<=res.last_page; i++) {
-    const esActual = i === res.current_page;
-    const esPrimera = i === 1;
-    const esUltima = i === res.last_page;
-    const cerca = Math.abs(i - res.current_page) <= rango;
-
-    if (esActual) html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
-    else if (esPrimera || esUltima || cerca) html += `<li class="page-item"><a class="page-link paginar" href="#" data-page="${i}">${i}</a></li>`;
-    else if (i === res.current_page - rango - 1 || i === res.current_page + rango + 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-  }
-
-  html += generarBtn(res.current_page < res.last_page, res.current_page + 1, '<i class="fas fa-chevron-right"></i>');
-  html += '</ul>';
-
-  links.html(html);
-}
-
-  function generarBtn(activo, pagina, contenido) {
-    if (activo) return `<li class="page-item"><a class="page-link paginar" href="#" data-page="${pagina}">${contenido}</a></li>`;
-    return `<li class="page-item disabled"><span class="page-link">${contenido}</span></li>`;
-  }
-
-  $('.sortable').on('click', function() {
+  $('.sortable').on('click', function () {
     const columna = $(this).data('column');
     if (ordenActual.columna === columna) ordenActual.direccion = (ordenActual.direccion === 'asc') ? 'desc' : 'asc';
     else { ordenActual.columna = columna; ordenActual.direccion = 'asc'; }
-
     actualizarIconosOrdenamiento();
     paginaActual = 1;
     buscar(terminoBusqueda, paginaActual);
   });
 
-  function actualizarIconosOrdenamiento() {
-    $('.sortable .sort-icon').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
-    const icono = $(`.sortable[data-column="${ordenActual.columna}"] .sort-icon`);
-    icono.removeClass('fa-sort').addClass(ordenActual.direccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
-  }
-
-  function mostrarCargando(mostrar) {
-    if (mostrar) { $('#loadingSearch').show(); $('#infoResultados').hide(); }
-    else { $('#loadingSearch').hide(); $('#infoResultados').show(); }
-  }
-
-  function mostrarSinResultados(termino) {
-    $('#tablaPerfiles').hide();
-    $('#paginacionContainer').hide();
-    $('#terminoBuscado').text(termino);
-    $('#noResultados').fadeIn();
-  }
-  function ocultarSinResultados() {
-    $('#noResultados').hide();
-    $('#tablaPerfiles').show();
-    $('#paginacionContainer').show();
-  }
-
-  $('#btnLimpiar, #btnMostrarTodo').on('click', function() {
+  $('#btnLimpiar, #btnMostrarTodo').on('click', function () {
     $('#searchInput').val('');
     terminoBusqueda = '';
     paginaActual = 1;
@@ -478,81 +482,31 @@ $(document).ready(function() {
     buscar('', 1);
   });
 
-  $('#checkAll').on('change', function() {
+  $('#checkAll').on('change', function () {
     $('.checkbox-item').prop('checked', $(this).is(':checked'));
     actualizarBotonEliminar();
   });
 
-  $(document).on('change', '.checkbox-item', function() {
+  $(document).on('change', '.checkbox-item', function () {
     actualizarBotonEliminar();
     const total = $('.checkbox-item').length;
     const checked = $('.checkbox-item:checked').length;
     $('#checkAll').prop('checked', total > 0 && total === checked);
   });
 
-  function actualizarBotonEliminar() {
-    const seleccionados = $('.checkbox-item:checked').length;
-    $('#contadorSeleccionados').text(seleccionados);
-
-    if (seleccionados > 0) $('#btnEliminarSeleccionados').fadeIn(200);
-    else $('#btnEliminarSeleccionados').fadeOut(200);
-  }
-
-  $('#btnEliminarSeleccionados').on('click', function() {
-    const ids = $('.checkbox-item:checked').map(function(){ return $(this).val(); }).get();
-    if (!ids.length) return;
-
-    Swal.fire({
-      title: `¿Eliminar ${ids.length} perfil(es)?`,
-      text: "Esta acción no se puede revertir",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: '<i class="fas fa-trash"></i> Sí, eliminar',
-      cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
-    }).then((result) => { if (result.isConfirmed) eliminarMultiples(ids); });
-  });
-
-  function eliminarMultiples(ids) {
-    let eliminados = 0, errores = 0;
-
-    Swal.fire({
-      title: 'Eliminando...',
-      html: `Procesando <b>${eliminados}</b> de <b>${ids.length}</b>`,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    Promise.allSettled(
-      ids.map(id =>
-        $.ajax({ url: `/perfil/${id}`, method: 'POST', data: { _method: 'DELETE' } })
-          .then(() => eliminados++)
-          .catch(() => errores++)
-      )
-    ).then(() => {
-      Swal.close();
-      if (eliminados > 0) {
-        Toast.fire({ icon: 'success', title: `${eliminados} eliminado(s)`, text: errores ? `${errores} error(es)` : '' });
-        $('#checkAll').prop('checked', false);
-        buscar(terminoBusqueda, paginaActual);
-      } else {
-        Toast.fire({ icon: 'error', title: 'No se pudo eliminar ninguno' });
-      }
-    });
-  }
-
-  $(document).on('dblclick', '.editable-cell', function() {
+  // =========================
+  // PERFIL: CRUD (create/edit)
+  // =========================
+  $(document).on('dblclick', '.editable-cell', function () {
     const id = $(this).data('id');
-
-    $.get(`/perfil/${id}/edit`, function(data) {
+    $.get(`/perfil/${id}/edit`, function (data) {
       $('#edit_id').val(data.idperfil);
       $('#edit_nomperfil').val(data.nomperfil);
       $('#modalEdit').modal('show');
     }).fail(() => Toast.fire({ icon: 'error', title: 'No se pudo cargar el perfil' }));
   });
 
-  $('#formCreate').on('submit', function(e) {
+  $('#formCreate').on('submit', function (e) {
     e.preventDefault();
     $('.text-danger').text('');
 
@@ -563,7 +517,7 @@ $(document).ready(function() {
       url: '{{ route("perfil.store") }}',
       method: 'POST',
       data: $(this).serialize(),
-      success: function(res) {
+      success: function (res) {
         btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
         if (res.success) {
           $('#modalCreate').modal('hide');
@@ -571,7 +525,7 @@ $(document).ready(function() {
           buscar('', 1);
         }
       },
-      error: function(xhr) {
+      error: function (xhr) {
         btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
         if (xhr.status === 422) {
           $.each(xhr.responseJSON.errors, (campo, mensajes) => $(`.error-${campo}`).text(mensajes[0]));
@@ -580,7 +534,7 @@ $(document).ready(function() {
     });
   });
 
-  $('#formEdit').on('submit', function(e) {
+  $('#formEdit').on('submit', function (e) {
     e.preventDefault();
     $('.text-danger').text('');
 
@@ -592,7 +546,7 @@ $(document).ready(function() {
       url: `/perfil/${id}`,
       method: 'PUT',
       data: $(this).serialize(),
-      success: function(res) {
+      success: function (res) {
         btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
         if (res.success) {
           $('#modalEdit').modal('hide');
@@ -600,7 +554,7 @@ $(document).ready(function() {
           buscar(terminoBusqueda, paginaActual);
         }
       },
-      error: function(xhr) {
+      error: function (xhr) {
         btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
         if (xhr.status === 422) {
           $.each(xhr.responseJSON.errors, (campo, mensajes) => $(`.error-edit-${campo}`).text(mensajes[0]));
@@ -609,127 +563,223 @@ $(document).ready(function() {
     });
   });
 
-  $('#modalCreate').on('hidden.bs.modal', function(){ $('#formCreate')[0].reset(); $('.text-danger').text(''); });
-  $('#modalEdit').on('hidden.bs.modal', function(){ $('#formEdit')[0].reset(); $('.text-danger').text(''); });
+  $('#modalCreate').on('hidden.bs.modal', function () { $('#formCreate')[0].reset(); $('.text-danger').text(''); });
+  $('#modalEdit').on('hidden.bs.modal', function () { $('#formEdit')[0].reset(); $('.text-danger').text(''); });
 
-  buscar('', 1);
-  // Abrir modal módulos y cargar formulario
-$(document).on('click', '.btn-modulos', function(e){
-  e.preventDefault();
-
-  const id = $(this).data('id');
-  const name = $(this).data('name') || '';
-
-  $('#modalModulosTitle').html(`<i class="fas fa-layer-group mr-1"></i> Módulos de: ${name}`);
-
-  $('#modalModulos').modal('show');
-  $('#modulosLoading').show();
-  $('#modulosContent').hide().empty();
-
-  $.ajax({
-    url: `/perfil/${id}/modulos`,
-    method: 'GET',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    success: function(html){
-      $('#modulosContent').html(html);
-      // Si tu partial trae su propio JS (como el que te pasé), acá no necesitas más.
-      $('#modulosLoading').hide();
-      $('#modulosContent').fadeIn(150);
-    },
-    error: function(xhr){
-      $('#modulosLoading').hide();
-      $('#modulosContent').show().html(
-        `<div class="alert alert-danger">Error al cargar módulos (HTTP ${xhr.status})</div>`
-      );
-    }
-  });
-});
-// Guardar módulos (AJAX)
-$(document).on('submit', '#formPerfilModulosModal', function(e){
-  e.preventDefault();
-
-  const id = $(this).data('perfil-id');
-  const $btn = $('#btnGuardarModulos');
-
-  $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
-
-  $.ajax({
-    url: `/perfil/${id}/modulos`,
-    method: 'POST',
-    data: $(this).serialize() + '&_method=PUT',
-    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    success: function(){
-      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
-      $('#modalModulos').modal('hide');
-      Toast.fire({ icon: 'success', title: 'Módulos actualizados' });
-    },
-    error: function(xhr){
-      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
-      Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
-    }
-  });
-});
-// Abrir modal permisos y cargar formulario
-$(document).on('click', '.btn-permisos', function(e){
-  e.preventDefault();
-
-  const idperfilmodulo = $(this).data('perfilmodulo-id');
-  const nomModulo = $(this).data('modulo') || '';
-
-  if(!idperfilmodulo){
-    Toast.fire({ icon: 'error', title: 'Primero guarda el módulo en el perfil' });
-    return;
+  // =========================
+  // MÓDULOS MODAL (sin script en partial)
+  // =========================
+  function modulos_contar(){
+    const n = $('#formPerfilModulosModal .chk-modulo:checked').length;
+    $('#contadorModulosSel').text(n);
   }
 
-  $('#modalPermisosTitle').html(`<i class="fas fa-key mr-1"></i> Permisos: ${nomModulo}`);
-  $('#modalPermisos').modal('show');
-  $('#permisosLoading').show();
-  $('#permisosContent').hide().empty();
+  $(document).on('change', '#modulosContent .chk-modulo', modulos_contar);
 
-  $.ajax({
-    url: `/perfil-modulo/${idperfilmodulo}/permisos`,
-    method: 'GET',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    success: function(html){
-      $('#permisosContent').html(html);
-      $('#permisosLoading').hide();
-      $('#permisosContent').fadeIn(150);
-    },
-    error: function(xhr){
-      $('#permisosLoading').hide();
-      $('#permisosContent').show().html(
-        `<div class="alert alert-danger">Error al cargar permisos (HTTP ${xhr.status})</div>`
-      );
-    }
+  $(document).on('click', '#btnLimpiarFiltro', function(){
+    $('#filtroModulos').val('').trigger('keyup').focus();
   });
-});
 
-// Guardar permisos (AJAX)
-$(document).on('submit', '#formPerfilModuloPermisos', function(e){
-  e.preventDefault();
-
-  const idperfilmodulo = $(this).data('perfilmodulo-id');
-  const $btn = $('#btnGuardarPermisos');
-
-  $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
-
-  $.ajax({
-    url: `/perfil-modulo/${idperfilmodulo}/permisos`,
-    method: 'POST',
-    data: $(this).serialize() + '&_method=PUT',
-    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    success: function(){
-      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
-      $('#modalPermisos').modal('hide');
-      Toast.fire({ icon: 'success', title: 'Permisos actualizados' });
-    },
-    error: function(xhr){
-      $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
-      Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
-    }
+  $(document).on('keyup', '#filtroModulos', function(){
+    const q = ($(this).val() || '').toLowerCase().trim();
+    const $items = $('#modulosContent .modulo-item');
+    if(!q){ $items.show(); return; }
+    $items.each(function(){ $(this).toggle(($(this).data('text') || '').includes(q)); });
   });
-});
 
+  $(document).on('click', '#btnMarcarTodo', function(){
+    $('#modulosContent .chk-modulo:not(:disabled)').prop('checked', true).trigger('change');
+  });
+
+  $(document).on('click', '#btnDesmarcarTodo', function(){
+    $('#modulosContent .chk-modulo').prop('checked', false).trigger('change');
+  });
+
+  $(document).on('click', '.btnToggleGrupo', function(){
+    const target = $(this).data('target');
+    const mode = $(this).data('mode'); // all | none
+    const $checks = $(target).find('.chk-modulo:not(:disabled)');
+    $checks.prop('checked', mode === 'all').trigger('change');
+  });
+
+  $(document).on('click', '#btnExpandirTodo', function(){
+    $('#modulosContent .collapse').collapse('show');
+  });
+
+  $(document).on('click', '#btnColapsarTodo', function(){
+    $('#modulosContent .collapse').collapse('hide');
+  });
+
+  // Abrir modal módulos
+  $(document).on('click', '.btn-modulos', function (e) {
+    e.preventDefault();
+
+    const id = $(this).data('id');
+    const name = $(this).data('name') || '';
+
+    $('#modalModulosTitle').html(`<i class="fas fa-layer-group mr-1"></i> Módulos de: ${name}`);
+    $('#modalModulos').modal('show');
+    $('#modulosLoading').show();
+    $('#modulosContent').hide().empty();
+
+    $.ajax({
+      url: `/perfil/${id}/modulos`,
+      method: 'GET',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function (html) {
+        $('#modulosContent').html(html);
+        $('#modulosLoading').hide();
+        $('#modulosContent').fadeIn(150);
+        modulos_contar();
+      },
+      error: function (xhr) {
+        $('#modulosLoading').hide();
+        $('#modulosContent').show().html(`<div class="alert alert-danger">Error al cargar módulos (HTTP ${xhr.status})</div>`);
+      }
+    });
+  });
+
+  // Guardar módulos (AJAX)
+  $(document).on('submit', '#formPerfilModulosModal', function (e) {
+    e.preventDefault();
+
+    const id = $(this).data('perfil-id');
+    const $btn = $('#btnGuardarModulos');
+
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
+
+    $.ajax({
+      url: `/perfil/${id}/modulos`,
+      method: 'POST',
+      data: $(this).serialize() + '&_method=PUT',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      success: function () {
+        $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+        $('#modalModulos').modal('hide');
+        Toast.fire({ icon: 'success', title: 'Módulos actualizados' });
+      },
+      error: function (xhr) {
+        $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+        Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
+      }
+    });
+  });
+
+  // =========================
+  // PERMISOS MODAL (sin script en partial)
+  // =========================
+  function permisos_contar_y_pintar(){
+    const $form = $('#formPerfilModuloPermisos');
+    if(!$form.length) return;
+
+    const n = $form.find('.chk-permiso:checked').length;
+    $('#contadorPermisosSel').text(n);
+
+    $form.find('.pp-permiso-item').each(function(){
+      const $item = $(this);
+      const $chk = $item.find('.chk-permiso');
+      const $chip = $item.find('.badge-estado-permiso');
+      const $icon = $chip.find('i');
+      const $txt  = $chip.find('.pp-estado-text');
+
+      if($chk.is(':checked')){
+        $chip.removeClass('pp-chip-off').addClass('pp-chip-on');
+        $icon.removeClass('fa-ban').addClass('fa-check');
+        $txt.text('Permitido');
+      } else {
+        $chip.removeClass('pp-chip-on').addClass('pp-chip-off');
+        $icon.removeClass('fa-check').addClass('fa-ban');
+        $txt.text('No permitido');
+      }
+    });
+  }
+
+  $(document).on('change', '#permisosContent .chk-permiso', permisos_contar_y_pintar);
+
+  $(document).on('click', '#btnMarcarTodoPermisos', function(){
+    $('#permisosContent .chk-permiso').prop('checked', true).trigger('change');
+  });
+
+  $(document).on('click', '#btnDesmarcarTodoPermisos', function(){
+    $('#permisosContent .chk-permiso').prop('checked', false).trigger('change');
+  });
+
+  $(document).on('click', '#btnLimpiarFiltroPermisos', function(){
+    $('#filtroPermisos').val('').trigger('keyup').focus();
+  });
+
+  $(document).on('keyup', '#filtroPermisos', function(){
+    const q = ($(this).val() || '').toLowerCase().trim();
+    const $items = $('#permisosContent .pp-permiso-item');
+    if(!q){ $items.show(); return; }
+    $items.each(function(){
+      $(this).toggle(($(this).data('text') || '').includes(q));
+    });
+  });
+
+  // Abrir modal permisos
+  $(document).on('click', '.btn-permisos', function (e) {
+    e.preventDefault();
+
+    const idperfilmodulo = $(this).data('perfilmodulo-id');
+    const nomModulo = $(this).data('modulo') || '';
+
+    if (!idperfilmodulo) {
+      Toast.fire({ icon: 'error', title: 'Primero guarda el módulo en el perfil' });
+      return;
+    }
+
+    $('#modalPermisosTitle').html(`<i class="fas fa-key mr-1"></i> Permisos: ${nomModulo}`);
+    $('#modalPermisos').modal('show');
+    $('#permisosLoading').show();
+    $('#permisosContent').hide().empty();
+
+    $.ajax({
+      url: `/perfil-modulo/${idperfilmodulo}/permisos`,
+      method: 'GET',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function (html) {
+        $('#permisosContent').html(html);
+        $('#permisosLoading').hide();
+        $('#permisosContent').fadeIn(150);
+        permisos_contar_y_pintar();
+      },
+      error: function (xhr) {
+        $('#permisosLoading').hide();
+        $('#permisosContent').show().html(`<div class="alert alert-danger">Error al cargar permisos (HTTP ${xhr.status})</div>`);
+      }
+    });
+  });
+
+  // Guardar permisos (AJAX)
+  $(document).on('submit', '#formPerfilModuloPermisos', function (e) {
+    e.preventDefault();
+
+    const idperfilmodulo = $(this).data('perfilmodulo-id');
+    const $btn = $('#btnGuardarPermisos');
+
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
+
+    $.ajax({
+      url: `/perfil-modulo/${idperfilmodulo}/permisos`,
+      method: 'POST',
+      data: $(this).serialize() + '&_method=PUT',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      success: function () {
+        $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+        $('#modalPermisos').modal('hide');
+        Toast.fire({ icon: 'success', title: 'Permisos actualizados' });
+      },
+      error: function (xhr) {
+        $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Guardar cambios');
+        Toast.fire({ icon: 'error', title: 'No se pudo guardar', text: `HTTP ${xhr.status}` });
+      }
+    });
+  });
+
+  // Init
+  buscar('', 1);
 });
 </script>
 @stop
+

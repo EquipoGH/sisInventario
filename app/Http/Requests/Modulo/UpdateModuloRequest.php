@@ -16,14 +16,23 @@ class UpdateModuloRequest extends FormRequest
     {
         $nom = trim(preg_replace('/\s+/', ' ', (string) $this->input('nommodulo', '')));
         $est = strtoupper(trim((string) $this->input('estadomodulo', 'A')));
+
         $eti = trim((string) $this->input('etiqueta', ''));
         $col = trim((string) $this->input('color', ''));
+
+        $ico = trim((string) $this->input('icono', ''));
+        $ico = preg_replace('/\s+/', ' ', $ico);
+
+        $rp = trim((string) $this->input('route_prefix', ''));
+        $rp = preg_replace('/\s+/', '', $rp);
 
         $this->merge([
             'nommodulo' => $nom,
             'estadomodulo' => $est,
             'etiqueta' => $eti === '' ? null : $eti,
             'color' => $col === '' ? null : $col,
+            'icono' => $ico === '' ? null : $ico,
+            'route_prefix' => $rp === '' ? null : $rp,
         ]);
     }
 
@@ -34,11 +43,13 @@ class UpdateModuloRequest extends FormRequest
         return [
             'nommodulo' => [
                 'required', 'string', 'max:150',
-                Rule::unique('modulos', 'nommodulo')->ignore($id, 'idmodulo'), // [web:155]
+                Rule::unique('modulos', 'nommodulo')->ignore($id, 'idmodulo'),
             ],
-            'estadomodulo' => ['required', Rule::in(['A', 'I'])], // [web:155]
+            'estadomodulo' => ['required', Rule::in(['A', 'I'])],
             'etiqueta' => ['nullable', 'string', 'max:30'],
             'color' => ['nullable', 'string', 'max:12'],
+            'icono' => ['nullable', 'string', 'max:80'],
+            'route_prefix' => ['nullable', 'string', 'max:2000', 'regex:/^[A-Za-z0-9\-\.\,\*]+$/'],
         ];
     }
 
@@ -49,6 +60,8 @@ class UpdateModuloRequest extends FormRequest
             'estadomodulo' => 'estado',
             'etiqueta' => 'etiqueta',
             'color' => 'color',
+            'icono' => 'ícono',
+            'route_prefix' => 'prefijo de ruta',
         ];
     }
 
@@ -57,6 +70,7 @@ class UpdateModuloRequest extends FormRequest
         return [
             'nommodulo.unique' => 'Ese módulo ya está registrado.',
             'estadomodulo.in' => 'El estado debe ser A (Activo) o I (Inactivo).',
+            'route_prefix.regex' => 'El prefijo solo acepta letras, números, guiones, puntos, comas y * (ej: user.*,permiso.*).',
         ];
     }
 }

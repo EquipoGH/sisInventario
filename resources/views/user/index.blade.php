@@ -7,8 +7,8 @@
     <h1 class="mb-0"><i class="fas fa-users"></i> Usuarios</h1>
 
     <div class="mt-2 mt-md-0 d-flex align-items-center">
-      <button type="button" class="btn btn-danger mr-2" id="btnEliminarSeleccionados" style="display:none;">
-        <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
+      <button type="button" class="btn btn-danger mr-2" id="btnAccionSeleccionados" style="display:none;">
+        <i class="fas fa-ban"></i> Desactivar seleccionados (<span id="contadorSeleccionados">0</span>)
       </button>
 
       <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
@@ -24,48 +24,47 @@
 
     {{-- FILTROS --}}
     <div class="p-2 mb-3" style="background:#f8f9fa;border:1px solid rgba(0,0,0,.08);border-radius:.35rem;">
-        <div class="form-row align-items-end">
-            <div class="col-md-3 col-12 mb-2">
-            <label class="text-muted mb-1">Rol</label>
-            <select id="filterRol" class="form-control form-control-sm">
-                <option value="">Todos</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="INFORMATICA">INFORMÁTICA</option>
-                <option value="INVITADO">INVITADO</option>
-            </select>
-            </div>
-
-            <div class="col-md-3 col-12 mb-2">
-            <label class="text-muted mb-1">Estado</label>
-            <select id="filterEstado" class="form-control form-control-sm">
-                <option value="">Todos</option>
-                <option value="A">Activo</option>
-                <option value="I">Inactivo</option>
-            </select>
-            </div>
-
-            <div class="col-md-3 col-12 mb-2">
-            <label class="text-muted mb-1">Último acceso</label>
-            <select id="filterUltimo" class="form-control form-control-sm">
-                <option value="">Todos</option>
-                <option value="hoy">Hoy</option>
-                <option value="7d">Últimos 7 días</option>
-                <option value="30d">Últimos 30 días</option>
-                <option value="nunca">Nunca (sin login)</option>
-            </select>
-            </div>
-
-            <div class="col-md-3 col-12 mb-2 d-flex">
-            <button type="button" class="btn btn-sm btn-primary mr-2 flex-fill" id="btnAplicarFiltros">
-                <i class="fas fa-filter"></i> Aplicar
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="btnLimpiarFiltros">
-                <i class="fas fa-undo"></i> Limpiar
-            </button>
-            </div>
+      <div class="form-row align-items-end">
+        <div class="col-md-3 col-12 mb-2">
+          <label class="text-muted mb-1">Rol</label>
+          <select id="filterRol" class="form-control form-control-sm">
+            <option value="">Todos</option>
+            <option value="ADMIN">ADMIN</option>
+            <option value="INFORMATICA">INFORMÁTICA</option>
+            <option value="INVITADO">INVITADO</option>
+          </select>
         </div>
-    </div>
 
+        <div class="col-md-3 col-12 mb-2">
+          <label class="text-muted mb-1">Estado</label>
+          <select id="filterEstado" class="form-control form-control-sm">
+            <option value="A">Activos</option>
+            <option value="I">Inactivos</option>
+            <option value="ALL">Todos</option>
+          </select>
+        </div>
+
+        <div class="col-md-3 col-12 mb-2">
+          <label class="text-muted mb-1">Último acceso</label>
+          <select id="filterUltimo" class="form-control form-control-sm">
+            <option value="">Todos</option>
+            <option value="hoy">Hoy</option>
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
+            <option value="nunca">Nunca (sin login)</option>
+          </select>
+        </div>
+
+        <div class="col-md-3 col-12 mb-2 d-flex">
+          <button type="button" class="btn btn-sm btn-primary mr-2 flex-fill" id="btnAplicarFiltros">
+            <i class="fas fa-filter"></i> Aplicar
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="btnLimpiarFiltros">
+            <i class="fas fa-undo"></i> Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div class="row mb-3 align-items-start">
       {{-- Mostrar --}}
@@ -97,7 +96,7 @@
                    placeholder="Buscar por nombre, email, DNI, rol o ID..." autocomplete="off">
 
             <div class="input-group-append">
-              <button class="btn btn-outline-secondary" type="button" id="btnLimpiar">
+              <button class="btn btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar">
                 <i class="fas fa-times"></i>
               </button>
             </div>
@@ -153,8 +152,8 @@
             <th width="14%" class="text-center sortable" data-column="ultimo">
               Último acceso <i class="fas fa-sort sort-icon"></i>
             </th>
-            <th width="6%" class="text-center">ACCIONES</th>
 
+            <th width="6%" class="text-center">ACCIONES</th>
           </tr>
         </thead>
 
@@ -208,6 +207,7 @@
         @csrf
         <div class="modal-body">
           <div class="row">
+
             <div class="col-md-6">
               <div class="form-group">
                 <label>Nombre <span class="text-danger">*</span></label>
@@ -227,18 +227,9 @@
             <div class="col-md-4">
               <div class="form-group">
                 <label>DNI</label>
-                <input
-                  type="text"
-                  name="dni_usuario"
-                  id="dni_usuario"
-                  class="form-control dni-only"
-                  inputmode="numeric"
-                  maxlength="8"
-                  pattern="\d{8}"
-                  title="Debe contener exactamente 8 dígitos numéricos"
-                  placeholder="12345678"
-                  autocomplete="off"
-                >
+                <input type="text" name="dni_usuario" id="dni_usuario" class="form-control dni-only"
+                       inputmode="numeric" maxlength="8" pattern="\d{8}" title="Debe contener exactamente 8 dígitos numéricos"
+                       placeholder="12345678" autocomplete="off">
                 <small class="text-muted">Solo números, 8 dígitos.</small>
                 <span class="text-danger error-dni_usuario"></span>
               </div>
@@ -267,7 +258,6 @@
               </div>
             </div>
 
-            {{-- ⭐⭐⭐ NUEVO: SELECT DE RESPONSABLES ⭐⭐⭐ --}}
             <div class="col-md-12">
               <div class="form-group">
                 <label>Responsable (Opcional)</label>
@@ -313,7 +303,6 @@
   </div>
 </div>
 
-
 {{-- MODAL EDIT --}}
 <div class="modal fade" id="modalEdit" tabindex="-1">
   <div class="modal-dialog modal-lg">
@@ -330,6 +319,7 @@
 
         <div class="modal-body">
           <div class="row">
+
             <div class="col-md-6">
               <div class="form-group">
                 <label>Nombre <span class="text-danger">*</span></label>
@@ -349,18 +339,9 @@
             <div class="col-md-4">
               <div class="form-group">
                 <label>DNI</label>
-                <input
-                  type="text"
-                  name="dni_usuario"
-                  id="edit_dni_usuario"
-                  class="form-control dni-only"
-                  inputmode="numeric"
-                  maxlength="8"
-                  pattern="\d{8}"
-                  title="Debe contener exactamente 8 dígitos numéricos"
-                  placeholder="12345678"
-                  autocomplete="off"
-                >
+                <input type="text" name="dni_usuario" id="edit_dni_usuario" class="form-control dni-only"
+                       inputmode="numeric" maxlength="8" pattern="\d{8}" title="Debe contener exactamente 8 dígitos numéricos"
+                       placeholder="12345678" autocomplete="off">
                 <small class="text-muted">Solo números, 8 dígitos.</small>
                 <span class="text-danger error-edit-dni_usuario"></span>
               </div>
@@ -389,7 +370,6 @@
               </div>
             </div>
 
-            {{-- ⭐⭐⭐ NUEVO: SELECT DE RESPONSABLES ⭐⭐⭐ --}}
             <div class="col-md-12">
               <div class="form-group">
                 <label>Responsable (Opcional)</label>
@@ -442,8 +422,8 @@
 
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title" id="modalPerfilesTitle">
-  <i class="fas fa-id-card mr-1"></i> Perfiles
-</h5>
+          <i class="fas fa-id-card mr-1"></i> Perfiles
+        </h5>
 
         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
@@ -451,20 +431,17 @@
       </div>
 
       <div class="modal-body">
-        {{-- Loading --}}
         <div id="perfilesLoading" class="text-center py-5">
           <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
           <div class="text-muted mt-2">Cargando perfiles...</div>
         </div>
 
-        {{-- Aquí se inyecta el formulario --}}
         <div id="perfilesContent" style="display:none;"></div>
       </div>
 
     </div>
   </div>
 </div>
-
 @stop
 
 @section('css')
@@ -488,7 +465,7 @@ $(document).ready(function() {
     didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
   });
 
-  // DNI: solo números y máximo 8 (al escribir/pegar)
+  // DNI: solo números y máximo 8
   function aplicarDniRules(selector) {
     $(document).on('input', selector, function() {
       let v = $(this).val() || '';
@@ -512,10 +489,11 @@ $(document).ready(function() {
 
   // filtros
   let filtroRol = '';
-  let filtroEstado = '';
+  let filtroEstado = ($('#filterEstado').val() || 'A').toUpperCase(); // A|I|ALL
   let filtroUltimo = '';
 
   actualizarIconosOrdenamiento();
+  actualizarBotonAccionMasiva();
 
   $('#perPage').on('change', function(){
     perPage = parseInt($(this).val() || '10', 10);
@@ -523,29 +501,33 @@ $(document).ready(function() {
     buscar(terminoBusqueda, paginaActual);
   });
 
-  // filtros
   function syncFiltrosFromUI() {
     filtroRol = ($('#filterRol').val() || '').trim();
-    filtroEstado = ($('#filterEstado').val() || '').trim();
+    filtroEstado = ($('#filterEstado').val() || 'A').toUpperCase();
     filtroUltimo = ($('#filterUltimo').val() || '').trim();
   }
 
   $('#btnAplicarFiltros').on('click', function(){
     syncFiltrosFromUI();
     paginaActual = 1;
+    $('#checkAll').prop('checked', false);
+    $('.checkbox-item').prop('checked', false);
+    actualizarBotonAccionMasiva();
     buscar(terminoBusqueda, paginaActual);
   });
 
   $('#btnLimpiarFiltros').on('click', function(){
     $('#filterRol').val('');
-    $('#filterEstado').val('');
+    $('#filterEstado').val('A');
     $('#filterUltimo').val('');
     syncFiltrosFromUI();
     paginaActual = 1;
+    $('#checkAll').prop('checked', false);
+    $('.checkbox-item').prop('checked', false);
+    actualizarBotonAccionMasiva();
     buscar(terminoBusqueda, paginaActual);
   });
 
-  // si quieres que sea automático al cambiar:
   $('#filterRol, #filterEstado, #filterUltimo').on('change', function(){
     $('#btnAplicarFiltros').trigger('click');
   });
@@ -559,6 +541,33 @@ $(document).ready(function() {
     if (terminoBusqueda.length === 0 || terminoBusqueda.length >= 2) {
       searchTimeout = setTimeout(() => buscar(terminoBusqueda, paginaActual), 400);
     }
+  });
+
+  function mostrarCargando(mostrar) {
+    if (mostrar) { $('#loadingSearch').show(); $('#infoResultados').hide(); }
+    else { $('#loadingSearch').hide(); $('#infoResultados').show(); }
+  }
+
+  function mostrarSinResultados(termino) {
+    $('#tablaUsers').hide();
+    $('#paginacionContainer').hide();
+    $('#terminoBuscado').text(termino);
+    $('#noResultados').fadeIn();
+  }
+
+  function ocultarSinResultados() {
+    $('#noResultados').hide();
+    $('#tablaUsers').show();
+    $('#paginacionContainer').show();
+  }
+
+  $('#btnLimpiar, #btnMostrarTodo').on('click', function() {
+    $('#searchInput').val('');
+    terminoBusqueda = '';
+    paginaActual = 1;
+    ordenActual = { columna: 'id', direccion: 'asc' };
+    actualizarIconosOrdenamiento();
+    buscar('', 1);
   });
 
   function buscar(termino, page = 1) {
@@ -597,25 +606,30 @@ $(document).ready(function() {
   }
 
   function badgeEstado(valor) {
-    const v = String(valor).toUpperCase();
+    const v = String(valor || '').toUpperCase();
     if (v === 'A') return '<span class="badge badge-success">Activo</span>';
     return '<span class="badge badge-secondary">Inactivo</span>';
   }
 
+  function escapeHtml(text) {
+    return String(text ?? '').replace(/[&<>"']/g, function(m) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]);
+    });
+  }
+
   function safeText(v) {
-    return (v === null || v === undefined || String(v).trim() === '') ? '-' : String(v);
+    return (v === null || v === undefined || String(v).trim() === '') ? '-' : escapeHtml(String(v));
   }
 
   function formatUltimoAcceso(val) {
     if (!val) return '<span class="text-muted">-</span>';
-    return `<span class="badge badge-light" style="border:1px solid rgba(0,0,0,.15);">${val}</span>`;
+    return `<span class="badge badge-light" style="border:1px solid rgba(0,0,0,.15);">${escapeHtml(val)}</span>`;
   }
 
   function actualizarTabla(items) {
     const tbody = $('#tablaBody');
     tbody.empty();
 
-    // 1) Sin registros
     if (!items || items.length === 0) {
       tbody.append(`
         <tr id="filaVacia">
@@ -626,24 +640,23 @@ $(document).ready(function() {
         </tr>
       `);
       $('#checkAll').prop('checked', false).prop('disabled', true);
-      actualizarBotonEliminar();
+      actualizarBotonAccionMasiva();
       return;
     }
 
-    // 2) Hay registros
     $('#checkAll').prop('disabled', false);
 
     items.forEach(u => {
       tbody.append(`
-        <tr id="row-${u.id}">
+        <tr id="row-${escapeHtml(u.id)}">
           <td class="text-center">
-            <input type="checkbox" class="checkbox-item" value="${u.id}">
+            <input type="checkbox" class="checkbox-item" value="${escapeHtml(u.id)}">
           </td>
 
-          <td class="text-center"><strong>${u.id}</strong></td>
+          <td class="text-center"><strong>${escapeHtml(u.id)}</strong></td>
 
-          <td class="editable-cell" data-id="${u.id}" title="Doble click para editar">
-            <strong>${(u.name || '').toUpperCase()}</strong>
+          <td class="editable-cell" data-id="${escapeHtml(u.id)}" title="Doble click para editar">
+            <strong>${escapeHtml((u.name || '').toUpperCase())}</strong>
           </td>
 
           <td>${safeText(u.email)}</td>
@@ -665,8 +678,8 @@ $(document).ready(function() {
 
               <div class="dropdown-menu dropdown-menu-right">
                 <a class="dropdown-item btn-perfiles" href="#"
-                   data-id="${u.id}"
-                   data-name="${(u.name || '').replace(/"/g,'&quot;')}">
+                   data-id="${escapeHtml(u.id)}"
+                   data-name="${escapeHtml(u.name || '')}">
                   <i class="fas fa-id-card mr-2"></i> Perfiles
                 </a>
               </div>
@@ -676,9 +689,8 @@ $(document).ready(function() {
       `);
     });
 
-    // 3) Eventos de checks
     $('#checkAll').prop('checked', false);
-    actualizarBotonEliminar();
+    actualizarBotonAccionMasiva();
   }
 
   function actualizarContadores(res) {
@@ -688,6 +700,11 @@ $(document).ready(function() {
     $('#totalCount').text(res.total || 0);
     $('#totalFooter').text(res.total || 0);
     $('#paginaInfo').text((res.from || 0) + ' - ' + (res.to || 0));
+  }
+
+  function generarBtn(activo, pagina, contenido) {
+    if (activo) return `<li class="page-item"><a class="page-link paginar" href="#" data-page="${pagina}">${contenido}</a></li>`;
+    return `<li class="page-item disabled"><span class="page-link">${contenido}</span></li>`;
   }
 
   function actualizarPaginacion(res) {
@@ -722,11 +739,6 @@ $(document).ready(function() {
     });
   }
 
-  function generarBtn(activo, pagina, contenido) {
-    if (activo) return `<li class="page-item"><a class="page-link paginar" href="#" data-page="${pagina}">${contenido}</a></li>`;
-    return `<li class="page-item disabled"><span class="page-link">${contenido}</span></li>`;
-  }
-
   $('.sortable').on('click', function() {
     const columna = $(this).data('column');
 
@@ -744,104 +756,110 @@ $(document).ready(function() {
     icono.removeClass('fa-sort').addClass(ordenActual.direccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
   }
 
-  function mostrarCargando(mostrar) {
-    if (mostrar) { $('#loadingSearch').show(); $('#infoResultados').hide(); }
-    else { $('#loadingSearch').hide(); $('#infoResultados').show(); }
-  }
-
-  function mostrarSinResultados(termino) {
-    $('#tablaUsers').hide();
-    $('#paginacionContainer').hide();
-    $('#terminoBuscado').text(termino);
-    $('#noResultados').fadeIn();
-  }
-
-  function ocultarSinResultados() {
-    $('#noResultados').hide();
-    $('#tablaUsers').show();
-    $('#paginacionContainer').show();
-  }
-
-  $('#btnLimpiar, #btnMostrarTodo').on('click', function() {
-    $('#searchInput').val('');
-    terminoBusqueda = '';
-    paginaActual = 1;
-    ordenActual = { columna: 'id', direccion: 'asc' };
-    actualizarIconosOrdenamiento();
-    buscar('', 1);
-  });
-
   // Checkboxes
   $('#checkAll').on('change', function() {
     $('.checkbox-item').prop('checked', $(this).is(':checked'));
-    actualizarBotonEliminar();
+    actualizarBotonAccionMasiva();
   });
 
   $(document).on('change', '.checkbox-item', function() {
-    actualizarBotonEliminar();
+    actualizarBotonAccionMasiva();
     const total = $('.checkbox-item').length;
     const checked = $('.checkbox-item:checked').length;
     $('#checkAll').prop('checked', total > 0 && total === checked);
   });
 
-  function actualizarBotonEliminar() {
+  function actualizarBotonAccionMasiva() {
     const seleccionados = $('.checkbox-item:checked').length;
+    const esInactivos = (filtroEstado === 'I');
+
     $('#contadorSeleccionados').text(seleccionados);
 
-    if (seleccionados > 0) $('#btnEliminarSeleccionados').fadeIn(200);
-    else $('#btnEliminarSeleccionados').fadeOut(200);
+    // En ALL lo ocultamos (recomendado)
+    if (filtroEstado === 'ALL') {
+      $('#btnAccionSeleccionados').hide();
+      return;
+    }
+
+    if (seleccionados > 0) $('#btnAccionSeleccionados').fadeIn(200);
+    else $('#btnAccionSeleccionados').fadeOut(200);
+
+    $('#btnAccionSeleccionados')
+      .toggleClass('btn-danger', !esInactivos)
+      .toggleClass('btn-success', esInactivos)
+      .html(esInactivos
+        ? `<i class="fas fa-check"></i> Activar seleccionados (<span id="contadorSeleccionados">${seleccionados}</span>)`
+        : `<i class="fas fa-ban"></i> Desactivar seleccionados (<span id="contadorSeleccionados">${seleccionados}</span>)`
+      );
   }
 
-  // Eliminar múltiple
-  $('#btnEliminarSeleccionados').on('click', function() {
+  $('#btnAccionSeleccionados').on('click', function() {
     const ids = $('.checkbox-item:checked').map(function(){ return $(this).val(); }).get();
     if (!ids.length) return;
 
+    if (filtroEstado === 'ALL') return;
+
+    const esRestore = (filtroEstado === 'I');
+
     Swal.fire({
-      title: `¿Eliminar ${ids.length} usuario(s)?`,
-      text: "Esta acción no se puede revertir",
+      title: esRestore ? `¿Activar ${ids.length} usuario(s)?` : `¿Desactivar ${ids.length} usuario(s)?`,
+      html: esRestore ? 'Los usuarios quedarán <b>Activos</b>.' : 'Los usuarios quedarán <b>Inactivos</b> (no se borran).',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
+      confirmButtonColor: esRestore ? '#28a745' : '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: '<i class="fas fa-trash"></i> Sí, eliminar',
+      confirmButtonText: esRestore ? '<i class="fas fa-check"></i> Sí, activar' : '<i class="fas fa-ban"></i> Sí, desactivar',
       cancelButtonText: '<i class="fas fa-times"></i> Cancelar'
-    }).then((result) => { if (result.isConfirmed) eliminarMultiples(ids); });
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+      if (esRestore) bulkActivar(ids);
+      else bulkDesactivar(ids);
+    });
   });
 
-  function eliminarMultiples(ids) {
-    let eliminados = 0, errores = 0;
-
-    Swal.fire({
-      title: 'Eliminando...',
-      html: `Procesando <b>${eliminados}</b> de <b>${ids.length}</b>`,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    Promise.allSettled(
-      ids.map(id =>
-        $.ajax({
-          url: `/user/${id}`,
-          method: 'POST',
-          data: { _method: 'DELETE' }
-        }).then(() => eliminados++)
-          .catch(() => errores++)
-      )
-    ).then(() => {
-      Swal.close();
-
-      if (eliminados > 0) {
-        Toast.fire({ icon: 'success', title: `${eliminados} eliminado(s)`, text: errores ? `${errores} error(es)` : '' });
+  function bulkDesactivar(ids){
+    $.ajax({
+      url: '{{ route("user.bulk-destroy") }}',
+      type: 'POST',
+      dataType: 'json',
+      processData: false,
+      contentType: 'application/json; charset=utf-8',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      data: JSON.stringify({ _method: 'DELETE', ids: ids.map(Number) }),
+      success: function(res){
+        Toast.fire({ icon: 'success', title: res.message || 'Registros desactivados' });
         $('#checkAll').prop('checked', false);
         buscar(terminoBusqueda, paginaActual);
-      } else {
-        Toast.fire({ icon: 'error', title: 'No se pudo eliminar ninguno' });
+      },
+      error: function(xhr){
+        console.log('BULK DESACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
+        Toast.fire({ icon: 'error', title: 'Error al desactivar', text: `HTTP ${xhr.status}` });
       }
     });
   }
 
-  // ⭐⭐⭐ CARGAR RESPONSABLES AL INICIAR ⭐⭐⭐
+  function bulkActivar(ids){
+    $.ajax({
+      url: '{{ route("user.bulk-restore") }}',
+      type: 'POST',
+      dataType: 'json',
+      processData: false,
+      contentType: 'application/json; charset=utf-8',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      data: JSON.stringify({ ids: ids.map(Number) }),
+      success: function(res){
+        Toast.fire({ icon: 'success', title: res.message || 'Registros activados' });
+        $('#checkAll').prop('checked', false);
+        buscar(terminoBusqueda, paginaActual);
+      },
+      error: function(xhr){
+        console.log('BULK ACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
+        Toast.fire({ icon: 'error', title: 'Error al activar', text: `HTTP ${xhr.status}` });
+      }
+    });
+  }
+
+  // Cargar responsables
   function cargarResponsables() {
     $.ajax({
       url: '{{ route("user.responsables") }}',
@@ -855,8 +873,8 @@ $(document).ready(function() {
         optionEdit.find('option:not(:first)').remove();
 
         responsables.forEach(resp => {
-          optionCreate.append(`<option value="${resp.id}">${resp.text}</option>`);
-          optionEdit.append(`<option value="${resp.id}">${resp.text}</option>`);
+          optionCreate.append(`<option value="${escapeHtml(resp.id)}">${escapeHtml(resp.text)}</option>`);
+          optionEdit.append(`<option value="${escapeHtml(resp.id)}">${escapeHtml(resp.text)}</option>`);
         });
       },
       error: function(xhr) {
@@ -875,9 +893,9 @@ $(document).ready(function() {
       $('#edit_name').val(data.name || '');
       $('#edit_email').val(data.email || '');
       $('#edit_dni_usuario').val(data.dni_usuario || '');
-      $('#edit_rol_usuario').val(data.rol_usuario || 'INFORMATICA'); // ⭐ CAMBIADO
+      $('#edit_rol_usuario').val(data.rol_usuario || 'INFORMATICA');
       $('#edit_estado_usuario').val(String(data.estado_usuario || 'A'));
-      $('#edit_id_responsable').val(data.id_responsable || ''); // ⭐ NUEVO
+      $('#edit_id_responsable').val(data.id_responsable || '');
 
       $('#edit_password').val('');
       $('#edit_password_confirmation').val('');
@@ -963,27 +981,21 @@ $(document).ready(function() {
   $('#modalCreate').on('hidden.bs.modal', function(){
     $('#formCreate')[0].reset();
     $('.text-danger').text('');
-    $('#id_responsable').val(''); // ⭐ NUEVO
+    $('#id_responsable').val('');
   });
 
   $('#modalEdit').on('hidden.bs.modal', function(){
     $('#formEdit')[0].reset();
     $('.text-danger').text('');
-    $('#edit_id_responsable').val(''); // ⭐ NUEVO
+    $('#edit_id_responsable').val('');
   });
 
-  // ⭐⭐⭐ CARGAR RESPONSABLES AL INICIAR ⭐⭐⭐
-  cargarResponsables();
-
-  // Inicial
-  buscar('', 1);
-
-  // Abrir modal y cargar formulario
+  // Modal perfiles (tu lógica intacta)
   $(document).on('click', '.btn-perfiles', function(e){
     e.preventDefault();
     const id = $(this).data('id');
     const name = $(this).data('name') || '';
-    $('#modalPerfilesTitle').html(`<i class="fas fa-id-card mr-1"></i> Perfiles de: ${name}`);
+    $('#modalPerfilesTitle').html(`<i class="fas fa-id-card mr-1"></i> Perfiles de: ${escapeHtml(name)}`);
 
     $('#modalPerfiles').modal('show');
     $('#perfilesLoading').show();
@@ -1006,7 +1018,6 @@ $(document).ready(function() {
     });
   });
 
-  // Guardar perfiles (AJAX)
   $(document).on('submit', '#formPerfilesModal', function(e){
     e.preventDefault();
     const id = $(this).data('user-id');
@@ -1079,6 +1090,11 @@ $(document).ready(function() {
 
     applyFilter();
   }
+
+  // Inicial
+  cargarResponsables();
+  syncFiltrosFromUI();
+  buscar('', 1);
 
 });
 </script>

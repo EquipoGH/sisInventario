@@ -24,6 +24,13 @@ class ModuloPermiso extends Model
         'idperfilmodulo'  => 'integer',
         'idpermiso'       => 'integer',
     ];
+    protected function color(): \Illuminate\Database\Eloquent\Casts\Attribute
+{
+    return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+        get: fn ($value) => trim((string) $value),
+        set: fn ($value) => trim((string) $value),
+    );
+}
 
     // Relaciones
     public function perfilModulo(): BelongsTo
