@@ -18,7 +18,7 @@ class UsuarioAdminSeeder extends Seeder
                 'dni_usuario' => '12345678',
                 'name' => 'Administrador',
                 'password' => Hash::make('admin123'),
-                'rol_usuario' => 'Administrador',
+                'rol_usuario' => 'ADMIN',
                 'estado_usuario' => 'A',
                 'email_verified_at' => now(),
             ]

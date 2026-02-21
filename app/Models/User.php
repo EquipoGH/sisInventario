@@ -40,16 +40,15 @@ class User extends Authenticatable
     }
 
     public function perfiles()
-    {
-        return $this->belongsToMany(
-            Perfil::class,
-            'usuario_perfil',
-            'idusuario',
-            'idperfil',
-            'id',
-            'idperfil'
-        )->withTimestamps();
-    }
+{
+    return $this->belongsToMany(
+        Perfil::class,
+        'usuario_perfil',
+        'idusuario',
+        'idperfil'
+    )->withTimestamps();
+}
+
 
     public function historial()
     {

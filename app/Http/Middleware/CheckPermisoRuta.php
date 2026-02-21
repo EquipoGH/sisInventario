@@ -14,28 +14,34 @@ class CheckPermisoRuta
             return redirect()->route('login');
         }
 
-        // nombre de ruta actual, ej: modulo.index
         $routeName = $request->route()->getName();
-
-        // si la ruta no tiene nombre, la dejamos pasar (o bloquea, tú decides)
         if (!$routeName) {
             return $next($request);
         }
 
-        // obtener IDs de perfil del usuario (ya lo usas en AppServiceProvider)
         $perfilIds = $user->perfiles()->pluck('perfil.idperfil');
-
         if ($perfilIds->isEmpty()) {
-            return response()->view('errors.forbidden', [], 403);
+            return response()->view('errors.403', [], 403);
         }
 
-        // verificar si existe algún permiso asociado a esos perfiles
-        // cuyo route_name coincida con la ruta actual
+        // ⭐ PostgreSQL: usa ~* en lugar de REGEXP
         $tienePermiso = \App\Models\PerfilModulo::query()
             ->whereIn('idperfil', $perfilIds->all())
-            ->whereHas('permisos', function ($q) use ($routeName) {
-                $q->where('route_name', $routeName)
-                  ->where('estadopermiso', 'A');
+            ->where(function($query) use ($routeName) {
+                // 1️⃣ Permiso directo: route_name exacto
+                $query->whereHas('permisos', function($p) use ($routeName) {
+                    $p->where('route_name', $routeName)
+                      ->where('estadopermiso', 'A');
+                })
+                // 2️⃣ O módulo padre con route_prefix que coincida (user.*, users.*, etc.)
+                ->orWhereHas('modulo', function($m) use ($routeName) {
+                    $m->where(function($mm) use ($routeName) {
+                        // PostgreSQL: ~* para regex case-insensitive
+                        $mm->whereRaw("route_prefix ~* ?", ['.*' . str_replace('*', '.*', $routeName)])
+                           ->orWhere('route_prefix', $routeName)
+                           ->orWhereRaw("'$routeName' ~* ?", [str_replace('*', '.*', $routeName)]);
+                    });
+                });
             })
             ->exists();
 
