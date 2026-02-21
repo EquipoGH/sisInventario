@@ -226,6 +226,7 @@
         </div>
     </div>
 
+    {{-- Mensajes tipo Breeze/Jetstream --}}
     @if (session('status') === 'profile-updated')
         <div class="gi-alert gi-alert-success mb-3">
             <i class="fas fa-check-circle mr-2"></i> Perfil actualizado correctamente.
@@ -244,8 +245,33 @@
         </div>
     @endif
 
+    {{-- Mensajes de tu ProfilePhotoController --}}
+    @if (session('success'))
+        <div class="gi-alert gi-alert-success mb-3">
+            <i class="fas fa-check-circle mr-2"></i> {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="gi-alert gi-alert-danger mb-3">
+            <i class="fas fa-times-circle mr-2"></i> {{ session('error') }}
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-lg-7">
+
+            {{-- ✅ Foto de perfil (mejor aquí para que alinee con el layout) --}}
+            <div class="gi-card mb-4">
+                <div class="gi-card-header">
+                    <h3 class="gi-title"><i class="fas fa-camera text-primary"></i> Foto de perfil</h3>
+                    <p class="gi-subtitle">Esta foto se verá en el sidebar.</p>
+                </div>
+                <div class="gi-section">
+                    @include('profile.partials.update-photo-form')
+                </div>
+            </div>
+
             <div class="gi-card mb-4">
                 <div class="gi-card-header">
                     <h3 class="gi-title"><i class="fas fa-id-card text-primary"></i> Información del perfil</h3>
@@ -265,6 +291,7 @@
                     @include('profile.partials.update-password-form')
                 </div>
             </div>
+
         </div>
 
         <div class="col-lg-5">

@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ==================== PROFILE (Breeze) ====================
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/photo', [\App\Http\Controllers\ProfilePhotoController::class, 'update'])
+    ->name('profile.photo.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // ==================== CONFIGURACIÓN ====================

@@ -99,6 +99,14 @@
     $segOpen = request()->routeIs('user.*','perfil.*','permiso.*','modulo.*');
     $confOpen = request()->routeIs('configuracion.*', 'configuracion.institucion*');
 @endphp
+@php
+    $user = Auth::user();
+    $photoUrl = null;
+
+    if ($user && $user->profile_photo_path) {
+        $photoUrl = Storage::url($user->profile_photo_path);
+    }
+@endphp
 
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -124,38 +132,48 @@
             </li>
 
             <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#" style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-user"></i>
-                    <span>{{ Auth::user()->name }}</span>
+    <a class="nav-link" data-toggle="dropdown" href="#" style="display:flex; align-items:center; gap:8px;">
+        @if($photoUrl)
+            <img src="{{ $photoUrl }}"
+                 alt="Foto de {{ $user->name }}"
+                 class="img-circle elevation-2"
+                 style="width:28px; height:28px; object-fit:cover;">
+        @else
+            <i class="fas fa-user"></i>
+        @endif
 
-                    {{-- ⭐ BADGE DEL ROL (Usando rol_usuario) --}}
-                    @php
-                        $rol = Auth::user()->rol_usuario ?? 'USUARIO';
-                        $colorRol = match(strtoupper($rol)) {
-                            'ADMIN', 'ADMINISTRADOR' => 'badge-danger',
-                            'ENCARGADO', 'SUPERVISOR' => 'badge-warning',
-                            'USUARIO' => 'badge-info',
-                            default => 'badge-secondary'
-                        };
-                    @endphp
+        <span>{{ $user->name }}</span>
 
-                    <span class="badge {{ $colorRol }}" style="font-size: 9px; padding: 3px 8px; border-radius: 10px;">
-                        {{ strtoupper($rol) }}
-                    </span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right">
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
-                        <i class="fas fa-user mr-2"></i> Mi Perfil
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
-                        </button>
-                    </form>
-                </div>
-            </li>
+        {{-- BADGE DEL ROL --}}
+        @php
+            $rol = $user->rol_usuario ?? 'USUARIO';
+            $colorRol = match(strtoupper($rol)) {
+                'ADMIN', 'ADMINISTRADOR' => 'badge-danger',
+                'ENCARGADO', 'SUPERVISOR' => 'badge-warning',
+                'USUARIO' => 'badge-info',
+                default => 'badge-secondary'
+            };
+        @endphp
+
+        <span class="badge {{ $colorRol }}" style="font-size: 9px; padding: 3px 8px; border-radius: 10px;">
+            {{ strtoupper($rol) }}
+        </span>
+    </a>
+
+    <div class="dropdown-menu dropdown-menu-right">
+        <a href="{{ route('profile.edit') }}" class="dropdown-item">
+            <i class="fas fa-user mr-2"></i> Mi Perfil
+        </a>
+        <div class="dropdown-divider"></div>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="dropdown-item">
+                <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+            </button>
+        </form>
+    </div>
+</li>
+
 
         </ul>
     </nav>
@@ -187,8 +205,16 @@
             <!-- Sidebar user panel -->
             <div class="user-panel mt-3 pb-3 mb-3 d-flex">
                 <div class="image">
-                    <i class="fas fa-user-circle fa-2x text-white"></i>
-                </div>
+    @if($photoUrl)
+        <img src="{{ $photoUrl }}"
+             alt="Foto de {{ $user->name }}"
+             class="img-circle elevation-2"
+             style="width:34px; height:34px; object-fit:cover;">
+    @else
+        <i class="fas fa-user-circle fa-2x text-white"></i>
+    @endif
+</div>
+
                 <div class="info">
                     <a href="{{ route('profile.edit') }}" class="d-block">{{ Auth::user()->name }}</a>
                 </div>
