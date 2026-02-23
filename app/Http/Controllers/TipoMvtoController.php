@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\TipoMvto;
 use App\Http\Requests\TipoMvtoRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class TipoMvtoController extends Controller
 {
@@ -75,25 +77,14 @@ class TipoMvtoController extends Controller
 
     public function store(TipoMvtoRequest $request)
     {
-        \Log::info('Datos recibidos en store:', $request->all());
-
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $tipoMvto = TipoMvto::create($request->validated());
-
-            \Log::info('TipoMvto creado:', $tipoMvto->toArray());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tipo de movimiento creado exitosamente',
-                'data' => $tipoMvto
-            ]);
+            return response()->json(['success' => true, 'message' => 'Tipo de movimiento creado exitosamente', 'data' => $tipoMvto]);
         } catch (\Exception $e) {
-            \Log::error('Error al crear TipoMvto:', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear el tipo de movimiento: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al crear el tipo de movimiento: ' . $e->getMessage()], 500);
         }
     }
 
@@ -104,33 +95,27 @@ class TipoMvtoController extends Controller
 
     public function update(TipoMvtoRequest $request, TipoMvto $tipoMvto)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $tipoMvto->update($request->validated());
-            return response()->json([
-                'success' => true,
-                'message' => 'Tipo de movimiento actualizado exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Tipo de movimiento actualizado exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()], 500);
         }
     }
 
     public function destroy(TipoMvto $tipoMvto)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $tipoMvto->delete();
-            return response()->json([
-                'success' => true,
-                'message' => 'Tipo de movimiento eliminado exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Tipo de movimiento eliminado exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al eliminar: ' . $e->getMessage()], 500);
         }
     }
 }

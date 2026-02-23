@@ -12,13 +12,14 @@
         {{-- BARRA DE ACCIONES --}}
         <div class="row mb-3">
             <div class="col-md-4">
+            @if(Auth::user()->esAdmin())
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
                     <i class="fas fa-plus"></i> Nueva Ubicación
                 </button>
                 <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
                     <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
                 </button>
-            </div>
+            @endif
             <div class="col-md-8">
                 <div class="row">
                     {{-- FILTRO POR ÁREA --}}
@@ -66,21 +67,25 @@
             </div>
         </div>
 
-        {{-- INFO: DOBLE CLICK --}}
+        {{-- INFO: DOBLE CLICK (solo ADMIN) --}}
+        @if(Auth::user()->esAdmin())
         <div class="mb-2 text-right">
             <small class="text-muted">
                 <i class="fas fa-info-circle"></i> Doble click en una fila para editar
             </small>
         </div>
+        @endif
 
         {{-- TABLA --}}
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover" id="tablaUbicaciones">
                 <thead class="thead-dark">
                     <tr>
+                        @if(Auth::user()->esAdmin())
                         <th width="4%" class="text-center">
                             <input type="checkbox" id="checkAll">
                         </th>
+                        @endif
                         <th width="6%" class="text-center sortable" data-column="id">
                             ID <i class="fas fa-sort sort-icon"></i>
                         </th>
@@ -110,10 +115,14 @@
                 </thead>
                 <tbody id="tablaBody">
                     @forelse($ubicaciones as $ubicacion)
-                    <tr id="row-{{ $ubicacion->id_ubicacion }}" class="editable-row" data-id="{{ $ubicacion->id_ubicacion }}">
+                    <tr id="row-{{ $ubicacion->id_ubicacion }}"
+                        class="{{ Auth::user()->esAdmin() ? 'editable-row' : '' }}"
+                        data-id="{{ $ubicacion->id_ubicacion }}">
+                        @if(Auth::user()->esAdmin())
                         <td class="text-center">
                             <input type="checkbox" class="checkbox-item" value="{{ $ubicacion->id_ubicacion }}">
                         </td>
+                        @endif
                         <td class="text-center"><strong>{{ $ubicacion->id_ubicacion }}</strong></td>
                         <td><strong>{{ strtoupper($ubicacion->nombre_sede) }}</strong></td>
                         <td>{{ strtoupper($ubicacion->ambiente) }}</td>
@@ -123,25 +132,35 @@
                                 {{ strtoupper($ubicacion->area->nombre_area ?? 'N/A') }}
                             </span>
                         </td>
-                        {{-- ⭐⭐⭐ NUEVA CELDA CON BOTONES ⭐⭐⭐ --}}
+                        {{-- Columna Recepción: solo ADMIN puede marcar/desmarcar --}}
                         <td class="text-center">
-                            @if($ubicacion->es_recepcion_inicial)
-                                <span class="badge badge-success mb-1 d-block">
-                                    <i class="fas fa-check-circle"></i> ACTIVA
-                                </span>
-                                <button class="btn btn-xs btn-warning btn-desmarcar"
-                                        data-id="{{ $ubicacion->id_ubicacion }}"
-                                        data-nombre="{{ $ubicacion->nombre_sede }}"
-                                        title="Desmarcar">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                            @if(Auth::user()->esAdmin())
+                                @if($ubicacion->es_recepcion_inicial)
+                                    <span class="badge badge-success mb-1 d-block">
+                                        <i class="fas fa-check-circle"></i> ACTIVA
+                                    </span>
+                                    <button class="btn btn-xs btn-warning btn-desmarcar"
+                                            data-id="{{ $ubicacion->id_ubicacion }}"
+                                            data-nombre="{{ $ubicacion->nombre_sede }}"
+                                            title="Desmarcar">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                @else
+                                    <button class="btn btn-xs btn-success btn-marcar"
+                                            data-id="{{ $ubicacion->id_ubicacion }}"
+                                            data-nombre="{{ $ubicacion->nombre_sede }}"
+                                            title="Marcar como recepción">
+                                        <i class="fas fa-check"></i> Marcar
+                                    </button>
+                                @endif
                             @else
-                                <button class="btn btn-xs btn-success btn-marcar"
-                                        data-id="{{ $ubicacion->id_ubicacion }}"
-                                        data-nombre="{{ $ubicacion->nombre_sede }}"
-                                        title="Marcar como recepción">
-                                    <i class="fas fa-check"></i> Marcar
-                                </button>
+                                @if($ubicacion->es_recepcion_inicial)
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-check-circle"></i> ACTIVA
+                                    </span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
                             @endif
                         </td>
                         <td class="text-center">{{ $ubicacion->created_at->format('d/m/Y') }}</td>
@@ -396,6 +415,9 @@
 @stop
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+const esAdmin = {{ Auth::user()->esAdmin() ? 'true' : 'false' }};
+</script>
 <script>
 $(document).ready(function() {
     $.ajaxSetup({
@@ -877,29 +899,28 @@ $(document).ready(function() {
         });
     }
 
-    // ==================== EDITAR (DOBLE CLICK) ====================
-    $(document).on('dblclick', '.editable-row', function() {
-        const id = $(this).data('id');
+    // ==================== EDITAR (DOBLE CLICK) — Solo ADMIN ====================
+    if (esAdmin) {
+        $(document).on('dblclick', '.editable-row', function() {
+            const id = $(this).data('id');
 
-        $.get(`/ubicacion/${id}/edit`, function(data) {
-            $('#edit_id').val(data.id_ubicacion);
-            $('#edit_nombre_sede').val(data.nombre_sede);
-            $('#edit_ambiente').val(data.ambiente);
-            $('#edit_piso_ubicacion').val(data.piso_ubicacion);
-            $('#edit_idarea').val(data.idarea);
-
-            // ⭐ Marcar checkbox
-            $('#edit_es_recepcion_inicial').prop('checked', data.es_recepcion_inicial === true || data.es_recepcion_inicial === 1);
-
-            $('#modalEdit').modal('show');
-        }).fail(function(xhr) {
-            Toast.fire({
-                icon: 'error',
-                title: 'Error al cargar datos',
-                text: xhr.status === 404 ? 'Ubicación no encontrada' : 'Error del servidor'
+            $.get(`/ubicacion/${id}/edit`, function(data) {
+                $('#edit_id').val(data.id_ubicacion);
+                $('#edit_nombre_sede').val(data.nombre_sede);
+                $('#edit_ambiente').val(data.ambiente);
+                $('#edit_piso_ubicacion').val(data.piso_ubicacion);
+                $('#edit_idarea').val(data.idarea);
+                $('#edit_es_recepcion_inicial').prop('checked', data.es_recepcion_inicial === true || data.es_recepcion_inicial === 1);
+                $('#modalEdit').modal('show');
+            }).fail(function(xhr) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error al cargar datos',
+                    text: xhr.status === 404 ? 'Ubicación no encontrada' : 'Error del servidor'
+                });
             });
         });
-    });
+    }
 
     // ==================== CREAR ====================
     $('#formCreate').on('submit', function(e) {

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\EstadoBien;
 use App\Http\Requests\EstadoBienRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class EstadoBienController extends Controller
 {
@@ -75,25 +77,15 @@ class EstadoBienController extends Controller
 
     public function store(EstadoBienRequest $request)
     {
-        \Log::info('Datos recibidos en store:', $request->all());
-
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
+        Log::info('Datos recibidos en store:', $request->all());
         try {
             $estado = EstadoBien::create($request->validated());
-
-            \Log::info('EstadoBien creado:', $estado->toArray());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Estado del bien creado exitosamente',
-                'data' => $estado
-            ]);
+            return response()->json(['success' => true, 'message' => 'Estado del bien creado exitosamente', 'data' => $estado]);
         } catch (\Exception $e) {
-            \Log::error('Error al crear EstadoBien:', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear el estado: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al crear el estado: ' . $e->getMessage()], 500);
         }
     }
 
@@ -104,33 +96,27 @@ class EstadoBienController extends Controller
 
     public function update(EstadoBienRequest $request, EstadoBien $estadoBien)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $estadoBien->update($request->validated());
-            return response()->json([
-                'success' => true,
-                'message' => 'Estado del bien actualizado exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Estado del bien actualizado exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()], 500);
         }
     }
 
     public function destroy(EstadoBien $estadoBien)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $estadoBien->delete();
-            return response()->json([
-                'success' => true,
-                'message' => 'Estado del bien eliminado exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Estado del bien eliminado exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al eliminar: ' . $e->getMessage()], 500);
         }
     }
 }

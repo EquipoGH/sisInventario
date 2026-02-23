@@ -7,7 +7,18 @@
         <h1 class="m-0">
             <i class="fas fa-chart-line text-primary"></i> Dashboard - Gestión de Inventario
         </h1>
-        <div>
+        <div class="d-flex align-items-center gap-2">
+            @if($esAdmin)
+                <span class="badge badge-danger mr-2" style="font-size:0.85rem; padding:6px 12px;">
+                    <i class="fas fa-globe"></i> Vista Global
+                </span>
+            @else
+                @foreach($areasDelUsuario as $area)
+                    <span class="badge badge-info mr-1" style="font-size:0.85rem; padding:6px 12px;">
+                        <i class="fas fa-building"></i> {{ strtoupper($area->nombre_area) }}
+                    </span>
+                @endforeach
+            @endif
             <span class="badge badge-info badge-pulse" id="lastUpdate">
                 <i class="fas fa-sync-alt"></i> Actualizado: {{ now()->format('H:i:s') }}
             </span>
@@ -42,7 +53,7 @@
         <div class="small-box bg-gradient-success elevation-3 card-animate" style="animation-delay: 0.2s">
             <div class="inner">
                 <h3>{{ $totalAreas }}</h3>
-                <p>Áreas Activas</p>
+                <p>{{ $esAdmin ? 'Áreas Activas' : 'Mis Áreas' }}</p>
             </div>
             <div class="icon">
                 <i class="fas fa-building"></i>

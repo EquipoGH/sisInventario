@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Http\Requests\AreaRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AreaController extends Controller
 {   
@@ -83,19 +84,14 @@ class AreaController extends Controller
      */
     public function store(AreaRequest $request)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $area = Area::create($request->validated());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Área registrada exitosamente',
-                'data' => $area
-            ]);
+            return response()->json(['success' => true, 'message' => 'Área registrada exitosamente', 'data' => $area]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al crear: ' . $e->getMessage()], 500);
         }
     }
 
@@ -112,19 +108,14 @@ class AreaController extends Controller
      */
     public function update(AreaRequest $request, Area $area)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $area->update($request->validated());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Área actualizada exitosamente',
-                'data' => $area
-            ]);
+            return response()->json(['success' => true, 'message' => 'Área actualizada exitosamente', 'data' => $area]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()], 500);
         }
     }
 
@@ -133,27 +124,14 @@ class AreaController extends Controller
      */
     public function destroy(Area $area)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
-            // Verificar si tiene relaciones antes de eliminar
-            // Descomentar si tienes relaciones:
-            // if ($area->bienes()->count() > 0) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'No se puede eliminar. El área tiene bienes asociados.'
-            //     ], 400);
-            // }
-
             $area->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Área eliminada exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Área eliminada exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede eliminar. Puede estar en uso.'
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'No se puede eliminar. Puede estar en uso.'], 500);
         }
     }
 }

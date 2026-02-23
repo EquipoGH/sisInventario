@@ -10,14 +10,14 @@
 <div class="card">
     <div class="card-header">
         <div class="row mb-3">
-            <div class="col-md-4">
+            @if(Auth::user()->esAdmin())
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
                     <i class="fas fa-plus"></i> Nuevo Tipo de Bien
                 </button>
                 <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
                     <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
                 </button>
-            </div>
+            @endif
             <div class="col-md-8">
                 <div class="float-right" style="width: 100%; max-width: 500px;">
                     <div class="input-group">
@@ -52,21 +52,25 @@
             </div>
         </div>
 
+        @if(Auth::user()->esAdmin())
         <div class="text-right">
             <small class="text-muted"><i class="fas fa-info-circle"></i> Doble click en el nombre para editar</small>
         </div>
+        @endif
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
                 <thead class="thead-dark">
                     <tr>
+                        @if(Auth::user()->esAdmin())
                         <th width="8%">
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input" id="checkAll">
                                 <label class="custom-control-label" for="checkAll"></label>
                             </div>
                         </th>
+                        @endif
                         <th width="12%" class="sortable" data-column="id" style="cursor:pointer;">
                             ID <i class="fas fa-sort sort-icon"></i>
                         </th>
@@ -81,6 +85,7 @@
                 <tbody id="tablaTipoBien">
                     @forelse($tipoBienes as $tipo)
                     <tr id="row-{{ $tipo->id_tipo_bien }}">
+                        @if(Auth::user()->esAdmin())
                         <td class="text-center">
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input checkbox-item"
@@ -89,12 +94,13 @@
                                 <label class="custom-control-label" for="check-{{ $tipo->id_tipo_bien }}"></label>
                             </div>
                         </td>
+                        @endif
                         <td>{{ $tipo->id_tipo_bien }}</td>
-                        <td class="editable-cell"
+                        <td class="{{ Auth::user()->esAdmin() ? 'editable-cell' : '' }}"
                             data-id="{{ $tipo->id_tipo_bien }}"
                             data-nombre="{{ $tipo->nombre_tipo }}"
-                            style="cursor: pointer;"
-                            title="Doble click para editar">
+                            style="{{ Auth::user()->esAdmin() ? 'cursor: pointer;' : '' }}"
+                            title="{{ Auth::user()->esAdmin() ? 'Doble click para editar' : '' }}">
                             <strong>{{ $tipo->nombre_tipo }}</strong>
                         </td>
                         <td>{{ $tipo->created_at->format('d/m/Y H:i') }}</td>
@@ -223,6 +229,9 @@
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+const esAdmin = {{ Auth::user()->esAdmin() ? 'true' : 'false' }};
+</script>
 <script>
 $(document).ready(function() {
     $.ajaxSetup({
@@ -543,22 +552,22 @@ $(document).ready(function() {
         });
     }
 
-    // ===============================
-    // DOBLE CLICK PARA EDITAR
-    // ===============================
-    $(document).on('dblclick', '.editable-cell', function() {
-        let id = $(this).data('id');
-        let nombre = $(this).data('nombre');
+    // DOBLE CLICK PARA EDITAR — Solo ADMIN
+    if (esAdmin) {
+        $(document).on('dblclick', '.editable-cell', function() {
+            let id = $(this).data('id');
+            let nombre = $(this).data('nombre');
 
-        $('.error-edit-nombre_tipo').text('');
-        $('#edit_id').val(id);
-        $('#edit_nombre_tipo').val(nombre);
-        $('#modalEdit').modal('show');
+            $('.error-edit-nombre_tipo').text('');
+            $('#edit_id').val(id);
+            $('#edit_nombre_tipo').val(nombre);
+            $('#modalEdit').modal('show');
 
-        $('#modalEdit').on('shown.bs.modal', function() {
-            $('#edit_nombre_tipo').focus().select();
+            $('#modalEdit').on('shown.bs.modal', function() {
+                $('#edit_nombre_tipo').focus().select();
+            });
         });
-    });
+    }
 
     // ===============================
     // CREAR

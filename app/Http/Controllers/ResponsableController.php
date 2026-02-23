@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Responsable;
 use App\Http\Requests\ResponsableRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ResponsableController extends Controller
 {
@@ -86,19 +87,14 @@ class ResponsableController extends Controller
      */
     public function store(ResponsableRequest $request)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $responsable = Responsable::create($request->validated());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Responsable registrado exitosamente',
-                'data' => $responsable
-            ]);
+            return response()->json(['success' => true, 'message' => 'Responsable registrado exitosamente', 'data' => $responsable]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al crear: ' . $e->getMessage()], 500);
         }
     }
 
@@ -115,19 +111,14 @@ class ResponsableController extends Controller
      */
     public function update(ResponsableRequest $request, Responsable $responsable)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $responsable->update($request->validated());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Responsable actualizado exitosamente',
-                'data' => $responsable
-            ]);
+            return response()->json(['success' => true, 'message' => 'Responsable actualizado exitosamente', 'data' => $responsable]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()], 500);
         }
     }
 
@@ -136,26 +127,17 @@ class ResponsableController extends Controller
      */
     public function destroy(Responsable $responsable)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
-            // Verificar si tiene áreas asignadas
             if ($responsable->responsableAreas()->count() > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede eliminar. El responsable tiene áreas asignadas.'
-                ], 400);
+                return response()->json(['success' => false, 'message' => 'No se puede eliminar. El responsable tiene áreas asignadas.'], 400);
             }
-
             $responsable->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Responsable eliminado exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Responsable eliminado exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede eliminar. Puede estar en uso.'
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'No se puede eliminar. Puede estar en uso.'], 500);
         }
     }
 }

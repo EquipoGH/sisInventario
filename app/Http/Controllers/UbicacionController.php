@@ -6,6 +6,7 @@ use App\Models\Ubicacion;
 use App\Models\Area;
 use App\Http\Requests\UbicacionRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -102,6 +103,9 @@ class UbicacionController extends Controller
      */
     public function store(UbicacionRequest $request)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             DB::beginTransaction();
 
@@ -148,6 +152,9 @@ class UbicacionController extends Controller
      */
     public function update(UbicacionRequest $request, Ubicacion $ubicacion)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             DB::beginTransaction();
 
@@ -186,6 +193,9 @@ class UbicacionController extends Controller
      */
     public function destroy(Ubicacion $ubicacion)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             // Verificar si tiene movimientos asociados
             if ($ubicacion->tieneMovimientos()) {
@@ -231,6 +241,9 @@ class UbicacionController extends Controller
      */
     public function marcarRecepcion(Ubicacion $ubicacion)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             DB::beginTransaction();
 
@@ -266,6 +279,9 @@ class UbicacionController extends Controller
      */
     public function desmarcarRecepcion(Ubicacion $ubicacion)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $ubicacion->es_recepcion_inicial = false;
             $ubicacion->save();

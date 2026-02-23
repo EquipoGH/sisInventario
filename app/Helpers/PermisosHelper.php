@@ -52,12 +52,16 @@ class PermisosHelper
             return Bien::whereRaw('1 = 0'); // Query vacía
         }
 
-        // ⭐⭐⭐ USUARIOS: Solo ven bienes con último movimiento en sus áreas ⭐⭐⭐
-        return Bien::whereHas('latestMovimiento', function($q) use ($areasPermitidas) {
-            $q->where('anulado', false)
-              ->whereHas('ubicacion', function($qq) use ($areasPermitidas) {
-                  $qq->whereIn('idarea', $areasPermitidas);
-              });
+        // ⭐⭐⭐ USUARIOS: Ven bienes con último movimiento en sus áreas ⭐⭐⭐
+        // ⭐⭐⭐ O bienes que ellos mismos registraron (aunque estén en ABASTECIMIENTO) ⭐⭐⭐
+        return Bien::where(function($q) use ($areasPermitidas, $user) {
+            $q->whereHas('latestMovimiento', function($q2) use ($areasPermitidas) {
+                $q2->where('anulado', false)
+                   ->whereHas('ubicacion', function($q3) use ($areasPermitidas) {
+                       $q3->whereIn('idarea', $areasPermitidas);
+                   });
+            })
+            ->orWhere('registrado_por', $user->id); // ⭐ También ver los que registró
         });
     }
 
@@ -73,7 +77,11 @@ class PermisosHelper
             return true;
         }
 
-        // ⭐⭐⭐ INFORMATICA también filtra por área (YA NO VE TODO) ⭐⭐⭐
+        // ⭐ Si el usuario registró este bien, siempre puede verlo
+        if ($bien->registrado_por == $user->id) {
+            return true;
+        }
+
         // Obtener último movimiento del bien
         $ultimoMov = $bien->movimientos()
             ->with('ubicacion')
@@ -81,7 +89,6 @@ class PermisosHelper
             ->orderBy('fecha_mvto', 'desc')
             ->first();
 
-        // ⭐⭐⭐ Si no tiene movimientos, SOLO ADMIN puede verlo ⭐⭐⭐
         if (!$ultimoMov) {
             return false;
         }
@@ -103,9 +110,14 @@ class PermisosHelper
             return true;
         }
 
-        // ⭐⭐⭐ INFORMÁTICA solo puede editar bienes de su área ⭐⭐⭐
+        // ⭐ Si el usuario registró este bien, puede editarlo
+        if ($bien->registrado_por == $user->id) {
+            return true;
+        }
+
+        // INFORMÁTICA puede editar bienes de su área
         if (self::esInformatica()) {
-            return self::puedeVerBien($bien); // Solo si pertenece a su área
+            return self::puedeVerBien($bien);
         }
 
         return false;
@@ -172,18 +184,17 @@ class PermisosHelper
                 $q->whereIn('idarea', $areasPermitidas);
             });
 
-            // 2️⃣ O movimientos SIN ASIGNAR creados por el usuario actual (solo INFORMATICA)
+            // 2️⃣ O TODOS los movimientos de bienes que el usuario registró (solo INFORMATICA)
             if (self::esInformatica()) {
                 $query->orWhere(function($q) use ($user) {
-                    $q->where('idusuario', $user->id) // ⭐ CLAVE: Solo los que creó el usuario
-                      ->where(function($qq) {
-                          // Sin ubicación O tipo "SIN ASIGNAR" o "REGISTRO"
-                          $qq->whereNull('idubicacion')
-                             ->orWhereHas('tipoMovimiento', function($qqq) {
-                                 $qqq->where('tipo_mvto', 'ILIKE', '%sin asignar%')
-                                     ->orWhere('tipo_mvto', 'ILIKE', '%registro%');
-                             });
-                      });
+                    // Ver todos los movimientos de los bienes que el usuario registró
+                    $bienesDelUsuario = \App\Models\Bien::where('registrado_por', $user->id)
+                        ->pluck('id_bien');
+                    if ($bienesDelUsuario->isNotEmpty()) {
+                        $q->whereIn('idbien', $bienesDelUsuario);
+                    } else {
+                        $q->whereRaw('1 = 0'); // nada si no tiene bienes
+                    }
                 });
             }
         });

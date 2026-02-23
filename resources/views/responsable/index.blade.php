@@ -11,14 +11,14 @@
     <div class="card-body">
         {{-- BARRA DE ACCIONES --}}
         <div class="row mb-3">
-            <div class="col-md-4">
+            @if(Auth::user()->esAdmin())
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
                     <i class="fas fa-plus"></i> Nuevo Responsable
                 </button>
                 <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
                     <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
                 </button>
-            </div>
+            @endif
             <div class="col-md-8">
                 <div class="float-right" style="width: 100%; max-width: 500px;">
                     <div class="input-group">
@@ -53,21 +53,25 @@
             </div>
         </div>
 
-        {{-- INFO: DOBLE CLICK --}}
+        {{-- INFO: DOBLE CLICK (solo ADMIN) --}}
+        @if(Auth::user()->esAdmin())
         <div class="mb-2 text-right">
             <small class="text-muted">
                 <i class="fas fa-info-circle"></i> Doble click en una fila para editar
             </small>
         </div>
+        @endif
 
         {{-- TABLA --}}
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover" id="tablaResponsables">
                 <thead class="thead-dark">
                     <tr>
+                        @if(Auth::user()->esAdmin())
                         <th width="5%" class="text-center">
                             <input type="checkbox" id="checkAll">
                         </th>
+                        @endif
                         <th width="10%" class="text-center sortable" data-column="dni">
                             DNI <i class="fas fa-sort sort-icon"></i>
                         </th>
@@ -87,10 +91,14 @@
                 </thead>
                 <tbody id="tablaBody">
                     @forelse($responsables as $responsable)
-                    <tr id="row-{{ $responsable->dni_responsable }}" class="editable-row" data-dni="{{ $responsable->dni_responsable }}">
+                    <tr id="row-{{ $responsable->dni_responsable }}"
+                        class="{{ Auth::user()->esAdmin() ? 'editable-row' : '' }}"
+                        data-dni="{{ $responsable->dni_responsable }}">
+                        @if(Auth::user()->esAdmin())
                         <td class="text-center">
                             <input type="checkbox" class="checkbox-item" value="{{ $responsable->dni_responsable }}">
                         </td>
+                        @endif
                         <td class="text-center"><strong>{{ $responsable->dni_responsable }}</strong></td>
                         <td><strong>{{ strtoupper($responsable->nombre_responsable) }}</strong></td>
                         <td><strong>{{ strtoupper($responsable->apellidos_responsable) }}</strong></td>
@@ -287,6 +295,9 @@
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+const esAdmin = {{ Auth::user()->esAdmin() ? 'true' : 'false' }};
+</script>
 <script>
 $(document).ready(function() {
     $.ajaxSetup({
@@ -625,25 +636,27 @@ $(document).ready(function() {
         });
     }
 
-    // ==================== EDITAR (DOBLE CLICK) ====================
-    $(document).on('dblclick', '.editable-row', function() {
-        const dni = $(this).data('dni');
+    // ==================== EDITAR (DOBLE CLICK) — Solo ADMIN ====================
+    if (esAdmin) {
+        $(document).on('dblclick', '.editable-row', function() {
+            const dni = $(this).data('dni');
 
-        $.get(`/responsable/${dni}/edit`, function(data) {
-            $('#edit_dni_original').val(data.dni_responsable);
-            $('#edit_dni_responsable').val(data.dni_responsable);
-            $('#edit_nombre_responsable').val(data.nombre_responsable);
-            $('#edit_apellidos_responsable').val(data.apellidos_responsable);
-            $('#edit_cargo_responsable').val(data.cargo_responsable);
-            $('#modalEdit').modal('show');
-        }).fail(function(xhr) {
-            Toast.fire({
-                icon: 'error',
-                title: 'Error al cargar datos',
-                text: xhr.status === 404 ? 'Responsable no encontrado' : 'Error del servidor'
+            $.get(`/responsable/${dni}/edit`, function(data) {
+                $('#edit_dni_original').val(data.dni_responsable);
+                $('#edit_dni_responsable').val(data.dni_responsable);
+                $('#edit_nombre_responsable').val(data.nombre_responsable);
+                $('#edit_apellidos_responsable').val(data.apellidos_responsable);
+                $('#edit_cargo_responsable').val(data.cargo_responsable);
+                $('#modalEdit').modal('show');
+            }).fail(function(xhr) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error al cargar datos',
+                    text: xhr.status === 404 ? 'Responsable no encontrado' : 'Error del servidor'
+                });
             });
         });
-    });
+    }
 
     // ==================== CREAR ====================
     $('#formCreate').on('submit', function(e) {

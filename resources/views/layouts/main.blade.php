@@ -108,7 +108,7 @@
     }
 @endphp
 
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed layout-footer-fixed">
 <div class="wrapper">
 
     <!-- Navbar -->

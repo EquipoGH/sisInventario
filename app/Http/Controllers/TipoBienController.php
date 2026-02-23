@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\TipoBien;
 use App\Http\Requests\TipoBienRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class TipoBienController extends Controller
 {
@@ -75,25 +77,14 @@ class TipoBienController extends Controller
 
     public function store(TipoBienRequest $request)
     {
-        \Log::info('Datos recibidos en store:', $request->all());
-
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $tipoBien = TipoBien::create($request->validated());
-
-            \Log::info('TipoBien creado:', $tipoBien->toArray());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tipo de bien creado exitosamente',
-                'data' => $tipoBien
-            ]);
+            return response()->json(['success' => true, 'message' => 'Tipo de bien creado exitosamente', 'data' => $tipoBien]);
         } catch (\Exception $e) {
-            \Log::error('Error al crear TipoBien:', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear el tipo de bien: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al crear el tipo de bien: ' . $e->getMessage()], 500);
         }
     }
 
@@ -104,33 +95,27 @@ class TipoBienController extends Controller
 
     public function update(TipoBienRequest $request, TipoBien $tipoBien)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $tipoBien->update($request->validated());
-            return response()->json([
-                'success' => true,
-                'message' => 'Tipo de bien actualizado exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Tipo de bien actualizado exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()], 500);
         }
     }
 
     public function destroy(TipoBien $tipoBien)
     {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
         try {
             $tipoBien->delete();
-            return response()->json([
-                'success' => true,
-                'message' => 'Tipo de bien eliminado exitosamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Tipo de bien eliminado exitosamente']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error al eliminar: ' . $e->getMessage()], 500);
         }
     }
 }

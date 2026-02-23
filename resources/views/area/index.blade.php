@@ -11,14 +11,14 @@
     <div class="card-body">
         {{-- BARRA DE ACCIONES --}}
         <div class="row mb-3">
-            <div class="col-md-4">
+            @if(Auth::user()->esAdmin())
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
                     <i class="fas fa-plus"></i> Nueva Área
                 </button>
                 <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
                     <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
                 </button>
-            </div>
+            @endif
             <div class="col-md-8">
                 <div class="float-right" style="width: 100%; max-width: 500px;">
                     <div class="input-group">
@@ -53,21 +53,25 @@
             </div>
         </div>
 
-        {{-- INFO: DOBLE CLICK --}}
+        {{-- INFO: DOBLE CLICK (solo ADMIN) --}}
+        @if(Auth::user()->esAdmin())
         <div class="mb-2 text-right">
             <small class="text-muted">
                 <i class="fas fa-info-circle"></i> Doble click en el nombre para editar
             </small>
         </div>
+        @endif
 
         {{-- TABLA --}}
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover" id="tablaAreas">
                 <thead class="thead-dark">
                     <tr>
+                        @if(Auth::user()->esAdmin())
                         <th width="5%" class="text-center">
                             <input type="checkbox" id="checkAll">
                         </th>
+                        @endif
                         <th width="10%" class="text-center sortable" data-column="id">
                             ID <i class="fas fa-sort sort-icon"></i>
                         </th>
@@ -82,13 +86,15 @@
                 <tbody id="tablaBody">
                     @forelse($areas as $area)
                     <tr id="row-{{ $area->id_area }}">
+                        @if(Auth::user()->esAdmin())
                         <td class="text-center">
                             <input type="checkbox" class="checkbox-item" value="{{ $area->id_area }}">
                         </td>
+                        @endif
                         <td class="text-center"><strong>{{ $area->id_area }}</strong></td>
-                        <td class="editable-cell"
+                        <td class="{{ Auth::user()->esAdmin() ? 'editable-cell' : '' }}"
                             data-id="{{ $area->id_area }}"
-                            title="Doble click para editar">
+                            title="{{ Auth::user()->esAdmin() ? 'Doble click para editar' : '' }}">
                             <strong>{{ strtoupper($area->nombre_area) }}</strong>
                         </td>
                         <td>{{ $area->created_at->format('d/m/Y H:i') }}</td>
@@ -212,6 +218,10 @@
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Variable que indica si el usuario es admin (viene del servidor)
+const esAdmin = {{ Auth::user()->esAdmin() ? 'true' : 'false' }};
+</script>
 <script>
 $(document).ready(function() {
     $.ajaxSetup({
@@ -550,22 +560,24 @@ $(document).ready(function() {
         });
     }
 
-    // ==================== EDITAR (DOBLE CLICK) ====================
-    $(document).on('dblclick', '.editable-cell', function() {
-        const id = $(this).data('id');
+    // ==================== EDITAR (DOBLE CLICK) — Solo ADMIN ====================
+    if (esAdmin) {
+        $(document).on('dblclick', '.editable-cell', function() {
+            const id = $(this).data('id');
 
-        $.get(`/area/${id}/edit`, function(data) {
-            $('#edit_id').val(data.id_area);
-            $('#edit_nombre_area').val(data.nombre_area);
-            $('#modalEdit').modal('show');
-        }).fail(function(xhr) {
-            Toast.fire({
-                icon: 'error',
-                title: 'Error al cargar datos',
-                text: xhr.status === 404 ? 'Área no encontrada' : 'Error del servidor'
+            $.get(`/area/${id}/edit`, function(data) {
+                $('#edit_id').val(data.id_area);
+                $('#edit_nombre_area').val(data.nombre_area);
+                $('#modalEdit').modal('show');
+            }).fail(function(xhr) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error al cargar datos',
+                    text: xhr.status === 404 ? 'Área no encontrada' : 'Error del servidor'
+                });
             });
         });
-    });
+    }
 
     // ==================== CREAR ====================
     $('#formCreate').on('submit', function(e) {

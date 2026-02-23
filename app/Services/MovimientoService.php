@@ -47,13 +47,25 @@ class MovimientoService
                 ->first();
             }
 
-            // ⭐ Obtener estado "BUENO" o "NUEVO"
-            $estadoBueno = EstadoBien::where('nombre_estado', 'ILIKE', '%bueno%')
-                ->orWhere('nombre_estado', 'ILIKE', '%nuevo%')
-                ->first();
+            // ⭐ Obtener estado "BUENO" - Prioridad: exacto → patrón → primer disponible
+            $estadoBueno = EstadoBien::whereRaw("UPPER(TRIM(nombre_estado)) = 'BUENO'")->first();
 
             if (!$estadoBueno) {
-                Log::warning('Estado "BUENO/NUEVO" no encontrado, el movimiento se creará sin estado');
+                $estadoBueno = EstadoBien::where('nombre_estado', 'ILIKE', '%bueno%')->first();
+            }
+
+            if (!$estadoBueno) {
+                // Último recurso: usar el primer estado disponible en la BD
+                $estadoBueno = EstadoBien::orderBy('id_estado')->first();
+                if ($estadoBueno) {
+                    Log::warning("⚠️ Estado 'BUENO' no encontrado. Usando estado disponible: {$estadoBueno->nombre_estado}");
+                }
+            }
+
+            if (!$estadoBueno) {
+                Log::error('❌ No existe ningún estado de conservación en la BD. El movimiento se creará sin estado.');
+            } else {
+                Log::info("✅ Estado asignado automáticamente al registrar: {$estadoBueno->nombre_estado}");
             }
 
             // ⭐ Priorizar ubicación de recepción sobre la del bien
