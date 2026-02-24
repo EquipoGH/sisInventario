@@ -73,7 +73,7 @@ class ReporteBienController extends Controller
 
         $s['logo_reportes_abs'] = null;
         if (!empty($s['logo_reportes_path']) && Storage::disk('public')->exists($s['logo_reportes_path'])) {
-            $s['logo_reportes_abs'] = Storage::disk('public')->path($s['logo_reportes_path']);
+            $s['logo_reportes_abs'] = storage_path('app/public/' . $s['logo_reportes_path']);
         }
 
         return $s;
@@ -329,9 +329,12 @@ class ReporteBienController extends Controller
                 'nserie_bien'        => $b->nserie_bien,
                 'area'               => $area?->nombre_area,
                 'ubicacion'          => $ubic ? trim(($ubic->nombre_sede ?? '') . ' - ' . ($ubic->ambiente ?? '')) : null,
+                'responsable'        => $lm?->responsable
+                                          ? trim(($lm->responsable->apellidos_responsable ?? '') . ' ' . ($lm->responsable->nombre_responsable ?? ''))
+                                          : null,
 
                 // === PARA COLOR EN LA TABLA ===
-                'estado_registro'    => $estadoRegistro, // activo/inactivo o null si no hay columna
+                'estado_registro'    => $estadoRegistro,
                 'estado_bien'        => $estadoBienNombre,
                 'estado_bien_color'  => $this->colorEstadoBien($estadoBienNombre),
             ];
