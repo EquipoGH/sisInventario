@@ -57,7 +57,8 @@ class ReporteMovimientosController extends Controller
 
         $mov = DB::table('movimiento as m')
             ->where(function ($w) {
-                $w->whereNull('m.anulado')->orWhere('m.anulado', 0);
+                // ✅ PostgreSQL usa boolean: false, no 0
+                $w->whereNull('m.anulado')->orWhere('m.anulado', false);
             });
 
         if ($desde) $mov->whereDate('m.fecha_mvto', '>=', $desde);
@@ -184,12 +185,35 @@ class ReporteMovimientosController extends Controller
         $rows = $this->baseQuery($request)->orderBy('b.codigo_patrimonial')->get();
 
         $settings = $this->reportSettings();
+
+        // Obtener nombres para los filtros
+        $tipoMvtoNombre = null;
+        if ($request->filled('tipo_mvto')) {
+            $tm = TipoMvto::find($request->input('tipo_mvto'));
+            $tipoMvtoNombre = $tm ? ($tm->tipo_mvto ?? $tm->nombre ?? $tm->id_tipo_mvto) : $request->input('tipo_mvto');
+        }
+
+        $areaNombre = null;
+        if ($request->filled('area_id')) {
+            $a = Area::find($request->input('area_id'));
+            $areaNombre = $a ? ($a->nombre_area ?? $a->id_area) : $request->input('area_id');
+        }
+
+        $ubicacionNombre = null;
+        if ($request->filled('ubicacion_id')) {
+            $u = Ubicacion::find($request->input('ubicacion_id'));
+            $ubicacionNombre = $u ? trim(($u->nombre_sede ?? '') . ' - ' . ($u->ambiente ?? '')) : $request->input('ubicacion_id');
+        }
+
         $filtros = [
             'desde' => $request->input('desde'),
             'hasta' => $request->input('hasta'),
             'tipo_mvto' => $request->input('tipo_mvto'),
+            'tipo_mvto_nombre' => $tipoMvtoNombre,
             'ubicacion_id' => $request->input('ubicacion_id'),
+            'ubicacion_nombre' => $ubicacionNombre,
             'area_id' => $request->input('area_id'),
+            'area_nombre' => $areaNombre,
             'q' => $request->input('q'),
         ];
 
@@ -206,12 +230,35 @@ class ReporteMovimientosController extends Controller
         $rows = $this->baseQuery($request)->orderBy('b.codigo_patrimonial')->get();
 
         $settings = $this->reportSettings();
+
+        // Obtener nombres para los filtros
+        $tipoMvtoNombre = null;
+        if ($request->filled('tipo_mvto')) {
+            $tm = TipoMvto::find($request->input('tipo_mvto'));
+            $tipoMvtoNombre = $tm ? ($tm->tipo_mvto ?? $tm->nombre ?? $tm->id_tipo_mvto) : $request->input('tipo_mvto');
+        }
+
+        $areaNombre = null;
+        if ($request->filled('area_id')) {
+            $a = Area::find($request->input('area_id'));
+            $areaNombre = $a ? ($a->nombre_area ?? $a->id_area) : $request->input('area_id');
+        }
+
+        $ubicacionNombre = null;
+        if ($request->filled('ubicacion_id')) {
+            $u = Ubicacion::find($request->input('ubicacion_id'));
+            $ubicacionNombre = $u ? trim(($u->nombre_sede ?? '') . ' - ' . ($u->ambiente ?? '')) : $request->input('ubicacion_id');
+        }
+
         $filtros = [
             'desde' => $request->input('desde'),
             'hasta' => $request->input('hasta'),
             'tipo_mvto' => $request->input('tipo_mvto'),
+            'tipo_mvto_nombre' => $tipoMvtoNombre,
             'ubicacion_id' => $request->input('ubicacion_id'),
+            'ubicacion_nombre' => $ubicacionNombre,
             'area_id' => $request->input('area_id'),
+            'area_nombre' => $areaNombre,
             'q' => $request->input('q'),
         ];
 

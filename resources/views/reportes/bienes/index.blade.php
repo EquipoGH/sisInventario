@@ -221,7 +221,6 @@
             <th>Serie</th>
             <th>Área</th>
             <th>Ubicación</th>
-            <th>Responsable</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -350,7 +349,6 @@ $(function () {
       { data:'nserie_bien',        render: (d)=> d || '-' },
       { data:'area',               render: (d)=> d || '-' },
       { data:'ubicacion',          render: (d)=> d ? `<span class="td-clip">${d}</span>` : '-' },
-      { data:'responsable',        render: (d)=> d || '-' },
     ],
 
     language: {

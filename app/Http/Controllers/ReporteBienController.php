@@ -7,6 +7,7 @@ use App\Models\Area;
 use App\Models\Bien;
 use App\Models\EstadoBien;
 use App\Models\Responsable;
+use App\Models\ResponsableArea;
 use App\Models\TipoBien;
 use App\Models\Ubicacion;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -191,8 +192,8 @@ class ReporteBienController extends Controller
                 'documentoSustento',
                 'latestMovimiento.tipoMovimiento',
                 'latestMovimiento.ubicacion.area',
-                'latestMovimiento.responsable',
-                'estadoBien',
+                'latestMovimiento.usuario',             // Usuario del sistema que registró el movimiento
+                'latestMovimiento.estadoConservacion',  // Estado de conservación del bien (viene del último movimiento)
             ]);
 
         // Activos/Inactivos/Todos (robusto)
@@ -236,17 +237,30 @@ class ReporteBienController extends Controller
 
         if ($reporte === 'bienes_responsable') {
             if ($request->filled('responsable_id')) {
-                $q->whereHas('latestMovimiento', function ($m) use ($request) {
-                    $m->where('idresponsable', $request->responsable_id);
-                });
+                // Filtramos los bienes cuyo último movimiento esté en una ubicación
+                // cuya área esté asignada al responsable (vía tabla responsable_area)
+                $dniResp = $request->responsable_id;
+                $areasDelResponsable = \App\Models\ResponsableArea::where('dni_responsable', $dniResp)
+                    ->pluck('idarea');
+
+                if ($areasDelResponsable->isNotEmpty()) {
+                    $q->whereHas('latestMovimiento.ubicacion', function ($u) use ($areasDelResponsable) {
+                        $u->whereIn('idarea', $areasDelResponsable);
+                    });
+                } else {
+                    // Responsable sin áreas asignadas: no mostrar ningún bien
+                    $q->whereRaw('1 = 0');
+                }
             }
             return $q;
         }
 
         if ($reporte === 'inventario_estado_admin') {
             if ($request->filled('estado_bien_id')) {
-                // Ajusta si tu FK real difiere
-                $q->where('id_estado_bien', $request->estado_bien_id);
+                // El estado de conservación del bien está en el último movimiento
+                $q->whereHas('latestMovimiento', function ($m) use ($request) {
+                    $m->where('id_estado_conservacion_bien', $request->estado_bien_id);
+                });
             }
             return $q;
         }
@@ -318,7 +332,8 @@ class ReporteBienController extends Controller
                 $estadoRegistro = ((bool)$b->activo) ? 'activo' : 'inactivo';
             }
 
-            $estadoBienNombre = $b->estadoBien?->nombre_estado;
+            // El estado de conservación del bien viene del último movimiento
+            $estadoBienNombre = $lm?->estadoConservacion?->nombre_estado;
 
             return [
                 'codigo_patrimonial' => $b->codigo_patrimonial,
@@ -329,8 +344,9 @@ class ReporteBienController extends Controller
                 'nserie_bien'        => $b->nserie_bien,
                 'area'               => $area?->nombre_area,
                 'ubicacion'          => $ubic ? trim(($ubic->nombre_sede ?? '') . ' - ' . ($ubic->ambiente ?? '')) : null,
-                'responsable'        => $lm?->responsable
-                                          ? trim(($lm->responsable->apellidos_responsable ?? '') . ' ' . ($lm->responsable->nombre_responsable ?? ''))
+                // El usuario del sistema que registró el último movimiento
+                'responsable'        => $lm?->usuario
+                                          ? trim(($lm->usuario->name ?? ''))
                                           : null,
 
                 // === PARA COLOR EN LA TABLA ===
@@ -361,8 +377,30 @@ class ReporteBienController extends Controller
 
         $settings = $this->reportSettings();
 
+        // Nombres de filtros básicos
+        $areaNombre = null;
+        if ($request->filled('area_id')) {
+            $a = Area::find($request->input('area_id'));
+            $areaNombre = $a ? ($a->nombre_area ?? $a->id_area) : $request->input('area_id');
+        }
+
+        $ubicacionNombre = null;
+        if ($request->filled('ubicacion_id')) {
+            $u = Ubicacion::find($request->input('ubicacion_id'));
+            $ubicacionNombre = $u ? trim(($u->nombre_sede ?? '') . ' - ' . ($u->ambiente ?? '')) : $request->input('ubicacion_id');
+        }
+
+        $tipoBienNombre = null;
+        if ($request->filled('tipo_bien')) {
+            $tb = TipoBien::find($request->input('tipo_bien'));
+            $tipoBienNombre = $tb ? ($tb->nombre_tipo ?? $tb->id_tipo_bien) : $request->input('tipo_bien');
+        }
+
         $filtros = $request->all();
         $filtros['estado'] = $estado;
+        $filtros['area_nombre'] = $areaNombre;
+        $filtros['ubicacion_nombre'] = $ubicacionNombre;
+        $filtros['tipo_bien_nombre'] = $tipoBienNombre;
 
         return Pdf::loadView('reportes.bienes.pdf', [
             'bienes' => $bienes,
@@ -387,8 +425,30 @@ class ReporteBienController extends Controller
 
         $settings = $this->reportSettings();
 
+        // Nombres de filtros básicos
+        $areaNombre = null;
+        if ($request->filled('area_id')) {
+            $a = Area::find($request->input('area_id'));
+            $areaNombre = $a ? ($a->nombre_area ?? $a->id_area) : $request->input('area_id');
+        }
+
+        $ubicacionNombre = null;
+        if ($request->filled('ubicacion_id')) {
+            $u = Ubicacion::find($request->input('ubicacion_id'));
+            $ubicacionNombre = $u ? trim(($u->nombre_sede ?? '') . ' - ' . ($u->ambiente ?? '')) : $request->input('ubicacion_id');
+        }
+
+        $tipoBienNombre = null;
+        if ($request->filled('tipo_bien')) {
+            $tb = TipoBien::find($request->input('tipo_bien'));
+            $tipoBienNombre = $tb ? ($tb->nombre_tipo ?? $tb->id_tipo_bien) : $request->input('tipo_bien');
+        }
+
         $filtros = $request->all();
         $filtros['estado'] = $estado;
+        $filtros['area_nombre'] = $areaNombre;
+        $filtros['ubicacion_nombre'] = $ubicacionNombre;
+        $filtros['tipo_bien_nombre'] = $tipoBienNombre;
 
         return Excel::download(
             new BienesExport($bienes, $settings, $filtros, $reporte),

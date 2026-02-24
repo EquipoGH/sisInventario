@@ -1,65 +1,84 @@
-<table>
-  <thead>
-    <!-- ENCABEZADO INSTITUCIONAL -->
-    <tr>
-      <th colspan="13" style="font-size: 16px; font-weight: bold; text-align: center; background-color: #34495e; color: white;">
-        {{ $settings['nombre_institucion'] ?? 'INSTITUCIÓN' }}
-      </th>
-    </tr>
-    <tr>
-      <th colspan="13" style="font-size: 12px; text-align: center; background-color: #ecf0f1;">
-        REPORTE: MOVIMIENTOS POR FECHA
-      </th>
-    </tr>
-    <tr>
-      <th colspan="13" style="font-size: 10px; text-align: center;">
-        Generado por: {{ $usuario->name ?? 'Sistema' }} | Fecha: {{ $fechaGeneracion }} | Total: {{ $movimientos->count() }} registros
-      </th>
-    </tr>
-    <tr><th colspan="13"></th></tr>
+<table style="width:100%; border-collapse:collapse; font-family:DejaVu Sans, sans-serif; font-size:8px;">
+  {{-- Encabezado institucional --}}
+  <tr>
+    <td colspan="8" style="text-align:center; font-weight:bold; font-size:11px; text-transform:uppercase; padding:4px;">
+      {{ strtoupper($settings['nombre_institucion'] ?? 'INSTITUCIÓN') }}
+    </td>
+  </tr>
+  <tr>
+    <td colspan="8" style="text-align:center; font-weight:bold; padding:2px;">
+      REPORTE DE MOVIMIENTOS (POR BIEN)
+    </td>
+  </tr>
+  <tr>
+    <td colspan="8" style="text-align:center; font-size:7px; padding:2px 2px 6px;">
+      @if(!empty($settings['ruc']))RUC: {{ $settings['ruc'] }} | @endif
+      Fecha: {{ now()->format('d/m/Y H:i') }}
+      @php
+        // ✅ Filtros reales que envía el controlador
+        $desdeRaw = $filtros['desde'] ?? null;
+        $hastaRaw = $filtros['hasta'] ?? null;
+        if (!empty($desdeRaw) && !empty($hastaRaw)) $periodoExcel = "{$desdeRaw} a {$hastaRaw}";
+        elseif (!empty($desdeRaw)) $periodoExcel = "Desde {$desdeRaw}";
+        elseif (!empty($hastaRaw)) $periodoExcel = "Hasta {$hastaRaw}";
+        else $periodoExcel = 'Todas las fechas';
 
-    <!-- ENCABEZADOS DE COLUMNA -->
-    <tr style="background-color: #4472C4; color: white; font-weight: bold;">
-      <th>ID</th>
-      <th>Fecha/Hora</th>
-      <th>Tipo Movimiento</th>
-      <th>Código Patrimonial</th>
-      <th>Denominación Bien</th>
-      <th>Tipo Bien</th>
-      <th>Área</th>
-      <th>Ubicación</th>
-      <th>Estado Conservación</th>
-      <th>Usuario Registró</th>
-      <th>Tipo Documento</th>
-      <th>N° Documento</th>
-      <th>Fecha Documento</th>
-      <th>Detalle Técnico</th>
-      <th>Estado</th>
-      <th>Anulado Por</th>
-      <th>Motivo Anulación</th>
+        $partesFiltros = [];
+        if (!empty($filtros['tipo_mvto_nombre'])) $partesFiltros[] = "Tipo mov.: {$filtros['tipo_mvto_nombre']}";
+        if (!empty($filtros['area_nombre']))      $partesFiltros[] = "Área: {$filtros['area_nombre']}";
+        if (!empty($filtros['ubicacion_nombre'])) $partesFiltros[] = "Ubic.: {$filtros['ubicacion_nombre']}";
+        if (!empty($filtros['q']))                $partesFiltros[] = "Búsqueda: \"{$filtros['q']}\"";
+        
+        $filtrosExtraStr = !empty($partesFiltros) ? ' | ' . implode(' | ', $partesFiltros) : '';
+      @endphp
+      | Período: {{ $periodoExcel }}{{ $filtrosExtraStr }} | Total: {{ $rows->count() }}
+    </td>
+  </tr>
+  <tr><td colspan="8" style="height:6px;"></td></tr>
+
+  {{-- Cabecera de columnas: ✅ 8 columnas, igual que baseQuery() --}}
+  <tr>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:18px;  text-align:center;">#</th>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:85px;  text-align:center;">CÓDIGO</th>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:180px; text-align:center;">DENOMINACIÓN</th>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:80px;  text-align:center;">TIPO BIEN</th>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:55px;  text-align:center;">FECHA</th>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:90px;  text-align:center;">MOVIMIENTO</th>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:80px;  text-align:center;">ÁREA</th>
+    <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:120px; text-align:center;">UBICACIÓN</th>
+  </tr>
+
+  {{-- Datos: ✅ usa $rows (variable correcta del controlador) y aliases correctos del SELECT --}}
+  @forelse($rows as $i => $r)
+    @php
+      // ✅ Aliases correctos según el SELECT en baseQuery()
+      $ubicTxtE = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
+      if ($ubicTxtE === '' || $ubicTxtE === '-') $ubicTxtE = '-';
+
+      $fechaTxtE = '-';
+      if (!empty($r->fecha_mvto)) {
+        try { $fechaTxtE = \Carbon\Carbon::parse($r->fecha_mvto)->format('d/m/Y'); }
+        catch (\Throwable $e) { $fechaTxtE = (string)$r->fecha_mvto; }
+      }
+    @endphp
+    <tr>
+      <td style="border:1px solid #000; padding:2px 3px; text-align:center;">{{ $i + 1 }}</td>
+      {{-- ✅ codigo_patrimonial (con underscore, alias del SELECT: 'b.codigo_patrimonial') --}}
+      <td style="border:1px solid #000; padding:2px 3px;">{{ $r->codigo_patrimonial ?? '-' }}</td>
+      {{-- ✅ denominacion_bien (con underscore, alias del SELECT: 'b.denominacion_bien') --}}
+      <td style="border:1px solid #000; padding:2px 3px;">{{ mb_strtoupper($r->denominacion_bien ?? '') }}</td>
+      {{-- ✅ tipo_bien (alias del SELECT: 'tb.nombre_tipo as tipo_bien') --}}
+      <td style="border:1px solid #000; padding:2px 3px;">{{ $r->tipo_bien ?? '-' }}</td>
+      <td style="border:1px solid #000; padding:2px 3px; text-align:center;">{{ $fechaTxtE }}</td>
+      {{-- ✅ tipo_mov (alias del SELECT: 'tm.tipo_mvto as tipo_mov') --}}
+      <td style="border:1px solid #000; padding:2px 3px;">{{ $r->tipo_mov ?? '-' }}</td>
+      {{-- ✅ area (alias del SELECT: 'a.nombre_area as area') --}}
+      <td style="border:1px solid #000; padding:2px 3px;">{{ $r->area ?? '-' }}</td>
+      <td style="border:1px solid #000; padding:2px 3px;">{{ $ubicTxtE }}</td>
     </tr>
-  </thead>
-  <tbody>
-    @foreach($movimientos as $m)
-      <tr>
-        <td>{{ $m->idmovimiento }}</td>
-        <td>{{ $m->fechamvto ? \Carbon\Carbon::parse($m->fechamvto)->format('d/m/Y H:i') : '-' }}</td>
-        <td>{{ $m->tipoMovimiento->tipomvto ?? '-' }}</td>
-        <td>{{ $m->bien->codigopatrimonial ?? '-' }}</td>
-        <td>{{ $m->bien->denominacionbien ?? '-' }}</td>
-        <td>{{ $m->bien->tipoBien->nombretipo ?? '-' }}</td>
-        <td>{{ $m->ubicacion->area->nombre_area ?? '-' }}</td>
-        <td>{{ ($m->ubicacion->nombre_sede ?? '') . ' - ' . ($m->ubicacion->ambiente ?? '') }}</td>
-        <td>{{ $m->estadoConservacion->nombre_estado ?? '-' }}</td>
-        <td>{{ $m->usuario->name ?? '-' }}</td>
-        <td>{{ $m->documentoSustento->tipodocumento ?? '-' }}</td>
-        <td>{{ $m->documentoSustento->numerodocumento ?? '-' }}</td>
-        <td>{{ $m->documentoSustento->fecha_documento ? \Carbon\Carbon::parse($m->documentoSustento->fecha_documento)->format('d/m/Y') : '-' }}</td>
-        <td>{{ $m->detalletecnico ?? '-' }}</td>
-        <td>{{ ($m->anulado ?? false) ? 'ANULADO' : 'ACTIVO' }}</td>
-        <td>{{ $m->usuarioAnulo->name ?? '-' }}</td>
-        <td>{{ $m->motivoanulacion ?? '-' }}</td>
-      </tr>
-    @endforeach
-  </tbody>
+  @empty
+    <tr>
+      <td colspan="8" style="border:1px solid #000; padding:6px; text-align:center;">No hay registros</td>
+    </tr>
+  @endforelse
 </table>

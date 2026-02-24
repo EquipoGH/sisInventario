@@ -66,6 +66,13 @@
   elseif (!empty($hastaRaw)) $periodoTxt = 'Hasta '.$fmt($hastaRaw);
   else $periodoTxt = 'Todas las fechas';
 
+  // Filtros adicionales para la descripción
+  $filtroPartes = [];
+  if (!empty($filtros['tipo_mvto_nombre'])) $filtroPartes[] = "Tipo mov.: {$filtros['tipo_mvto_nombre']}";
+  if (!empty($filtros['area_nombre']))      $filtroPartes[] = "Área: {$filtros['area_nombre']}";
+  if (!empty($filtros['ubicacion_nombre'])) $filtroPartes[] = "Ubic.: {$filtros['ubicacion_nombre']}";
+  if (!empty($filtros['q']))                $filtroPartes[] = "Búsqueda: \"{$filtros['q']}\"";
+
   $u = $usuario ?? auth()->user();
   $usuarioTxt = $u ? ($u->name ?? $u->email ?? 'Usuario') : 'Usuario';
 @endphp
@@ -100,11 +107,11 @@
 
     <table class="meta-line">
       <tr>
-        <td style="width:40%;">
+        <td style="width:38%;">
           <span class="meta-label">Período:</span>
           <span class="meta-value">{{ $periodoTxt }}</span>
         </td>
-        <td style="width:40%;">
+        <td style="width:42%;">
           <span class="meta-label">Generado por:</span>
           <span class="meta-value">{{ $usuarioTxt }}</span>
         </td>
@@ -113,33 +120,39 @@
           <span class="meta-value">{{ $rows->count() }}</span>
         </td>
       </tr>
+      @if(!empty($filtroPartes))
+      <tr>
+        <td colspan="3">
+          <span class="meta-label">Filtros:</span>
+          <span class="meta-value">{{ implode(' | ', $filtroPartes) }}</span>
+        </td>
+      </tr>
+      @endif
     </table>
   </div>
 </div>
 
+{{-- ✅ 8 columnas: #, Código, Denominación, Tipo bien, Fecha, Movimiento, Área, Ubicación --}}
 <table class="table-datos">
   <thead>
     <tr>
       <th width="3%">#</th>
-<th width="12%">Código</th>
-<th width="28%">Denominación</th>
-<th width="12%">Tipo bien</th>
-<th width="10%">Fecha</th>
-<th width="12%">Movimiento</th>
-<th width="11%">Área</th>
-<th width="12%">Ubicación</th>
-
+      <th width="12%">CÓDIGO</th>
+      <th width="26%">DENOMINACIÓN</th>
+      <th width="12%">TIPO BIEN</th>
+      <th width="10%">FECHA</th>
+      <th width="13%">MOVIMIENTO</th>
+      <th width="12%">ÁREA</th>
+      <th width="12%">UBICACIÓN</th>
     </tr>
   </thead>
 
   <tbody>
     @forelse($rows as $i => $r)
       @php
+        // ✅ Aliases correctos del SELECT en baseQuery()
         $ubicTxt = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
         if ($ubicTxt === '' || $ubicTxt === '-') $ubicTxt = '-';
-
-        $docTxt = trim(($r->tipodocumento ?? '') . ' ' . ($r->numerodocumento ?? ''));
-        if ($docTxt === '') $docTxt = '-';
 
         $fechaTxt = '-';
         if (!empty($r->fecha_mvto)) {
@@ -150,17 +163,19 @@
 
       <tr>
         <td class="c nowrap"><span class="num">{{ $i + 1 }}</span></td>
-        <td class="c nowrap"><span class="clip-2">{{ $r->codigopatrimonial ?? '-' }}</span></td>
-        <td><span class="clip-3">{{ mb_strtoupper($r->denominacionbien ?? '') }}</span></td>
+        {{-- ✅ código_patrimonial (con underscore, alias del SELECT) --}}
+        <td class="c nowrap"><span class="clip-2">{{ $r->codigo_patrimonial ?? '-' }}</span></td>
+        {{-- ✅ denominacion_bien (con underscore, alias del SELECT) --}}
+        <td><span class="clip-3">{{ mb_strtoupper($r->denominacion_bien ?? '') }}</span></td>
         <td><span class="clip-2">{{ $r->tipo_bien ?? '-' }}</span></td>
         <td class="c nowrap">{{ $fechaTxt }}</td>
         <td><span class="clip-2">{{ $r->tipo_mov ?? '-' }}</span></td>
         <td><span class="clip-2">{{ $r->area ?? '-' }}</span></td>
         <td><span class="clip-2">{{ $ubicTxt }}</span></td>
-        <td><span class="clip-2">{{ $docTxt }}</span></td>
       </tr>
     @empty
-      <tr><td colspan="9" class="c">No hay registros</td></tr>
+      {{-- ✅ colspan correcto: 8 columnas --}}
+      <tr><td colspan="8" class="c">No hay registros</td></tr>
     @endforelse
   </tbody>
 </table>

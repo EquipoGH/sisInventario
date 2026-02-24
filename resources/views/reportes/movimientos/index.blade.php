@@ -71,8 +71,8 @@
             <select name="area_id" class="form-control form-control-sm" id="area_id">
               <option value="">-- Todas --</option>
               @foreach($areas as $a)
-                <option value="{{ $a->id_area ?? $a->idarea ?? $a->id }}">
-                  {{ $a->nombre_area ?? $a->nombrearea ?? $a->nombre ?? '-' }}
+                <option value="{{ $a->id_area }}">
+                  {{ $a->nombre_area }}
                 </option>
               @endforeach
             </select>
@@ -85,8 +85,8 @@
             <select name="ubicacion_id" class="form-control form-control-sm" id="ubicacion_id">
               <option value="">-- Todas --</option>
               @foreach($ubicaciones as $u)
-                <option value="{{ $u->id_ubicacion ?? $u->idubicacion ?? $u->id }}">
-                  {{ $u->nombre_sede ?? $u->nombresede ?? '' }} - {{ $u->ambiente ?? '' }}
+                <option value="{{ $u->id_ubicacion }}">
+                  {{ $u->nombre_sede ?? '' }} - {{ $u->ambiente ?? '' }}
                 </option>
               @endforeach
             </select>
@@ -100,8 +100,8 @@
             <select name="tipo_mvto" class="form-control form-control-sm" id="tipo_mvto">
               <option value="">-- Todos --</option>
               @foreach($tiposMovimiento as $t)
-                <option value="{{ $t->id_tipo_mvto ?? $t->id ?? $t->idtipomvto ?? '' }}">
-                  {{ $t->tipo_mvto ?? $t->tipomvto ?? $t->nombre ?? '-' }}
+                <option value="{{ $t->id_tipo_mvto }}">
+                  {{ $t->tipo_mvto }}
                 </option>
               @endforeach
             </select>
