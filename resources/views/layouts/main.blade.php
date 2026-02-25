@@ -85,9 +85,12 @@
     <!-- 8️⃣ CSS ESPECÍFICO DE CADA VISTA -->
     @yield('css')
 
-
-
-
+    <!-- 9️⃣ SCRIPT ANTIPARPADEO SIDEBAR -->
+    <script>
+        if (localStorage.getItem('sidebar-collapsed') === '1') {
+            document.documentElement.classList.add('sidebar-collapse');
+        }
+    </script>
 </head>
 
 @php
@@ -305,14 +308,14 @@
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/locale/es.js"></script>
 
-<!-- ✅ Persistencia del estado del sidebar (colapsado/expandido) -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const key = 'sidebar-collapsed';
 
-        // Restaurar estado
-        if (localStorage.getItem(key) === '1') {
+        // Si la clase se agregó al HTML por el script del head, se la pasamos al body
+        if (document.documentElement.classList.contains('sidebar-collapse')) {
             document.body.classList.add('sidebar-collapse');
+            document.documentElement.classList.remove('sidebar-collapse');
         }
 
         // Guardar cuando el usuario hace toggle

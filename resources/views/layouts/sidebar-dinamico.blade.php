@@ -1,5 +1,4 @@
 {{-- resources/views/layouts/sidebar-dinamico.blade.php --}}
-
 <li class="nav-item">
   <a href="{{ route('dashboard') }}"
      class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -14,7 +13,6 @@
     if (!$mod) continue;
 
     $perms = $pm->permisos ?? collect();
-
     $open = false;
 
     if (!empty($mod->route_prefix)) {
@@ -33,19 +31,19 @@
 
     $icon = $mod->icono ?: 'fas fa-layer-group';
     $modColor = trim((string) ($mod->color ?? ''));
-    $iconStyle = $modColor !== '' ? "color: {$modColor};" : '';
+    $iconStyle = $modColor !== '' ? "color: " . e($modColor) . ";" : '';
   @endphp
 
   <li class="nav-item {{ $open ? 'menu-open' : '' }}">
     <a href="#" class="nav-link {{ $open ? 'active' : '' }}">
-      <i class="nav-icon {{ $icon }}" style="{{ $iconStyle }}"></i>
+      <i class="nav-icon {{ e($icon) }}" style="{{ $iconStyle }}"></i>
       <p>
-        {{ $mod->nommodulo }}
+        {{ e($mod->nommodulo) }}
         <i class="right fas fa-angle-left"></i>
       </p>
     </a>
 
-    <ul class="nav nav-treeview">
+    <ul class="nav nav-treeview" style="{{ $open ? 'display: block;' : 'display: none;' }}">
       @forelse($perms as $perm)
         @php
           $routeName = $perm->route_name;
@@ -58,15 +56,15 @@
         <li class="nav-item">
           <a href="{{ $href }}"
              class="nav-link {{ $active ? 'active' : '' }} {{ $hasRoute ? '' : 'disabled' }}">
-            <i class="far fa-circle nav-icon"></i>
-            <p>{{ $perm->nombpermiso }}</p>
+            <i class="far {{ $active ? 'fa-dot-circle text-info' : 'fa-circle' }} nav-icon" style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
+            <p>{{ e($perm->nombpermiso) }}</p>
           </a>
         </li>
       @empty
         <li class="nav-item">
-          <a href="#" class="nav-link disabled">
-            <i class="far fa-circle nav-icon"></i>
-            <p class="text-muted">Sin permisos asignados</p>
+          <a href="#" class="nav-link disabled" tabindex="-1" aria-disabled="true">
+            <i class="far fa-circle nav-icon" style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
+            <p class="text-muted"><small>Sin rutas de acceso</small></p>
           </a>
         </li>
       @endforelse

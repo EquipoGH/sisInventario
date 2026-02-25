@@ -777,6 +777,13 @@ $(function () {
     });
   });
 
+  // Fix: Nested modals scrolling issue
+  $('#modalPermisos').on('hidden.bs.modal', function () {
+    if ($('#modalModulos').hasClass('show')) {
+      $('body').addClass('modal-open');
+    }
+  });
+
   // Init
   buscar('', 1);
 });
