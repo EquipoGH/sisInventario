@@ -638,7 +638,7 @@ $(document).ready(function() {
       success: function(res){
         Toast.fire({ icon: 'success', title: res.message || 'Registros desactivados' });
         $('#checkAll').prop('checked', false);
-        buscar(terminoBusqueda, paginaActual);
+        setTimeout(() => window.location.reload(), 1500);
       },
       error: function(xhr){
         console.log('BULK DESACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
@@ -659,7 +659,7 @@ $(document).ready(function() {
       success: function(res){
         Toast.fire({ icon: 'success', title: res.message || 'Registros activados' });
         $('#checkAll').prop('checked', false);
-        buscar(terminoBusqueda, paginaActual);
+        setTimeout(() => window.location.reload(), 1500);
       },
       error: function(xhr){
         console.log('BULK ACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
@@ -699,7 +699,7 @@ $(document).ready(function() {
         if (res.success) {
           $('#modalCreate').modal('hide');
           Toast.fire({ icon: 'success', title: res.message || 'Registrado' });
-          buscar('', 1);
+          setTimeout(() => window.location.reload(), 1500);
         }
       },
       error: function(xhr) {
@@ -736,7 +736,7 @@ $(document).ready(function() {
         if (res.success) {
           $('#modalEdit').modal('hide');
           Toast.fire({ icon: 'success', title: res.message || 'Actualizado' });
-          buscar(terminoBusqueda, paginaActual);
+          setTimeout(() => window.location.reload(), 1500);
         }
       },
       error: function(xhr) {

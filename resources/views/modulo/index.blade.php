@@ -542,18 +542,18 @@ $(document).ready(function () {
   const $formEdit = $('#formEdit');
   const $btnActualizar = $('#btnActualizar');
 
-  const $editId = $('#editid');
-  const $editNomModulo = $('#editnommodulo');
-  const $editEstadoModulo = $('#editestadomodulo');
-  const $editEtiqueta = $('#editetiqueta');
+  const $editId = $('#edit_id');
+  const $editNomModulo = $('#edit_nommodulo');
+  const $editEstadoModulo = $('#edit_estadomodulo');
+  const $editEtiqueta = $('#edit_etiqueta');
 
   const $editIcono = $('#editicono');
-  const $editIconPreview = $('#editiconpreview');
-  const $editIconPreviewText = $('#editiconpreviewtext');
+  const $editIconPreview = $('#edit_icon_preview');
+  const $editIconPreviewText = $('#edit_icon_preview_text');
 
-  const $editColor = $('#editcolor');
-  const $editColorPicker = $('#editcolorpicker');
-  const $editColorPreview = $('#editcolorpreview-span');
+  const $editColor = $('#edit_color');
+  const $editColorPicker = $('#edit_color_picker');
+  const $editColorPreview = $('#edit_color_preview');
 
   const $editRoutePrefix = $('#edit_route_prefix'); // <-- edit_route_prefix
 
@@ -981,7 +981,7 @@ $(document).ready(function () {
       success: function (res) {
         Toast.fire({ icon: 'success', title: res.message || 'Registros desactivados' });
         $checkAll.prop('checked', false);
-        buscar(terminoBusqueda, paginaActual);
+        setTimeout(() => window.location.reload(), 1500);
       },
       error: function (xhr) {
         console.log('BULK DESACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
@@ -1002,7 +1002,7 @@ $(document).ready(function () {
       success: function (res) {
         Toast.fire({ icon: 'success', title: res.message || 'Registros activados' });
         $checkAll.prop('checked', false);
-        buscar(terminoBusqueda, paginaActual);
+        setTimeout(() => window.location.reload(), 1500);
       },
       error: function (xhr) {
         console.log('BULK ACTIVAR ERROR', xhr.status, xhr.responseText, xhr.responseJSON);
@@ -1085,7 +1085,7 @@ $(document).ready(function () {
         if (res.success) {
           $modalCreate.modal('hide');
           Toast.fire({ icon: 'success', title: res.message || 'Registrado' });
-          buscar('', 1);
+          setTimeout(() => window.location.reload(), 1500);
         }
       },
       error: function (xhr) {
@@ -1128,7 +1128,7 @@ $(document).ready(function () {
         if (res.success) {
           $modalEdit.modal('hide');
           Toast.fire({ icon: 'success', title: res.message || 'Actualizado' });
-          buscar(terminoBusqueda, paginaActual);
+          setTimeout(() => window.location.reload(), 1500);
         }
       },
       error: function (xhr) {

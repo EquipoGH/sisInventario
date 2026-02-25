@@ -165,10 +165,10 @@
             <i class="fas fa-user mr-2"></i> Mi Perfil
         </a>
         <div class="dropdown-divider"></div>
-        <form method="POST" action="{{ route('logout') }}">
+        <form method="POST" action="{{ route('logout') }}" id="logout-form">
             @csrf
-            <button type="submit" class="dropdown-item">
-                <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+            <button type="button" class="dropdown-item" onclick="confirmLogout()">
+                <i class="fas fa-sign-out-alt mr-2 text-danger"></i> Cerrar Sesión
             </button>
         </form>
     </div>
@@ -328,6 +328,44 @@
             });
         }
     });
+</script>
+
+{{-- ✅ Script para confirmar cierre de sesión profesional y animado --}}
+<script>
+    function confirmLogout() {
+        Swal.fire({
+            title: '¿Desea cerrar su sesión?',
+            text: "Se cerrará de forma segura su sesión en el sistema.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-sign-out-alt"></i> Sí, cerrar sesión',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            reverseButtons: true,
+            padding: '2em',
+            customClass: {
+                title: 'text-dark',
+                popup: 'rounded-lg shadow-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Cerrando sesión...',
+                    html: 'Por favor, espere un momento.',
+                    timerProgressBar: true,
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                        setTimeout(() => {
+                            document.getElementById('logout-form').submit();
+                        }, 800);
+                    }
+                });
+            }
+        });
+    }
 </script>
 
 {{-- 8️⃣ SCRIPTS PERSONALIZADOS DE CADA VISTA --}}
