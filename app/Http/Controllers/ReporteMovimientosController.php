@@ -47,48 +47,24 @@ class ReporteMovimientosController extends Controller
     }
 
     /**
-     * Último movimiento por bien (PostgreSQL DISTINCT ON).
-     * ORDER BY debe iniciar con el mismo campo del DISTINCT ON. [web:119]
+     * Eliminado: ultimosMovimientosSub ya que ahora el reporte actúa como Kárdex Histórico Real.
      */
-    private function ultimosMovimientosSub(Request $request)
+
+    private function baseQuery(Request $request)
     {
         $desde = $request->input('desde');
         $hasta = $request->input('hasta');
 
-        $mov = DB::table('movimiento as m')
-            ->where(function ($w) {
-                // ✅ PostgreSQL usa boolean: false, no 0
-                $w->whereNull('m.anulado')->orWhere('m.anulado', false);
-            });
-
-        if ($desde) $mov->whereDate('m.fecha_mvto', '>=', $desde);
-        if ($hasta) $mov->whereDate('m.fecha_mvto', '<=', $hasta);
-
-        // Tu columna es movimiento.tipo_mvto
-        if ($request->filled('tipo_mvto')) $mov->where('m.tipo_mvto', $request->tipo_mvto);
-
-        if ($request->filled('ubicacion_id')) $mov->where('m.idubicacion', $request->ubicacion_id);
-
-        return $mov
-            ->selectRaw('DISTINCT ON (m.idbien) m.*')
-            ->orderBy('m.idbien')
-            ->orderByDesc('m.fecha_mvto')
-            ->orderByDesc('m.id_movimiento');
-    }
-
-    private function baseQuery(Request $request)
-    {
-        $ult = $this->ultimosMovimientosSub($request);
-
-        return DB::table('bien as b')
-            // Si quieres incluir bienes sin movimiento cambia a leftJoinSub.
-            ->joinSub($ult, 'm', function ($join) {
-                $join->on('b.id_bien', '=', 'm.idbien');
-            })
+        return DB::table('movimiento as m')
+            ->join('bien as b', 'b.id_bien', '=', 'm.idbien')
             ->leftJoin('tipo_bien as tb', 'tb.id_tipo_bien', '=', 'b.id_tipobien')
             ->leftJoin('tipo_mvto as tm', 'tm.id_tipo_mvto', '=', 'm.tipo_mvto')
             ->leftJoin('ubicacion as u', 'u.id_ubicacion', '=', 'm.idubicacion')
             ->leftJoin('area as a', 'a.id_area', '=', 'u.idarea')
+            ->where(function ($w) {
+                // ✅ PostgreSQL usa boolean: false, no 0
+                $w->whereNull('m.anulado')->orWhere('m.anulado', false);
+            })
             ->select([
                 'b.id_bien',
                 'b.codigo_patrimonial',
@@ -100,6 +76,18 @@ class ReporteMovimientosController extends Controller
                 'u.nombre_sede',
                 'u.ambiente',
             ])
+            ->when($desde, function ($q, $desde) {
+                $q->whereDate('m.fecha_mvto', '>=', $desde);
+            })
+            ->when($hasta, function ($q, $hasta) {
+                $q->whereDate('m.fecha_mvto', '<=', $hasta);
+            })
+            ->when($request->filled('tipo_mvto'), function ($q) use ($request) {
+                $q->where('m.tipo_mvto', $request->tipo_mvto);
+            })
+            ->when($request->filled('ubicacion_id'), function ($q) use ($request) {
+                $q->where('m.idubicacion', $request->ubicacion_id);
+            })
             ->when($request->filled('area_id'), function ($q) use ($request) {
                 $q->where('u.idarea', $request->area_id);
             })
@@ -112,6 +100,40 @@ class ReporteMovimientosController extends Controller
                       ->orWhere('b.modelo_bien', 'ILIKE', "%{$term}%")
                       ->orWhere('b.nserie_bien', 'ILIKE', "%{$term}%");
                 });
+            })
+            ->when(\App\Helpers\PermisosHelper::esInvitado(), function ($q) {
+                // ⭐ OPCIÓN B: Ocultamiento Total para Invitados (A prueba de balas) ⭐
+                // Evaluamos el estado REAL ACTUAL del bien globalmente.
+                try {
+                    $estadoBuenoId = \App\Models\EstadoBien::obtenerIdPorNombre('bueno');
+                    $idsBaja = \App\Models\TipoMvto::where('tipo_mvto', 'ILIKE', '%baja%')->pluck('id_tipo_mvto')->toArray();
+
+                    $q->whereIn('b.id_bien', function($query) use ($estadoBuenoId, $idsBaja) {
+                        $query->select('idbien')
+                              ->from(function($sub) {
+                                  $sub->selectRaw('DISTINCT ON (idbien) idbien, id_estado_conservacion_bien, tipo_mvto')
+                                      ->from('movimiento')
+                                      ->where(function($w){
+                                           $w->whereNull('anulado')->orWhere('anulado', false);
+                                      })
+                                      ->orderBy('idbien')
+                                      ->orderByDesc('fecha_mvto')
+                                      ->orderByDesc('id_movimiento');
+                              }, 'ultimos')
+                              ->where('id_estado_conservacion_bien', $estadoBuenoId);
+                        
+                        if (!empty($idsBaja)) {
+                            $query->whereNotIn('tipo_mvto', $idsBaja);
+                        }
+                    });
+
+                    // Nos aseguramos que ninguna fila individual en el historial mostrado sea una Baja visible.
+                    if (!empty($idsBaja)) {
+                        $q->whereNotIn('m.tipo_mvto', $idsBaja);
+                    }
+                } catch (\Exception $e) {
+                    $q->whereRaw('1 = 0');
+                }
             });
     }
 
@@ -133,7 +155,8 @@ class ReporteMovimientosController extends Controller
             $recordsFiltered = $this->countFiltered($request);
             $recordsTotal    = $recordsFiltered;
 
-            $rows = $query->orderBy('b.codigo_patrimonial')
+            $rows = $query->orderByDesc('m.fecha_mvto')
+                ->orderBy('b.codigo_patrimonial')
                 ->offset($start)
                 ->limit($length)
                 ->get();
@@ -182,7 +205,7 @@ class ReporteMovimientosController extends Controller
 
     public function pdf(Request $request)
     {
-        $rows = $this->baseQuery($request)->orderBy('b.codigo_patrimonial')->get();
+        $rows = $this->baseQuery($request)->orderByDesc('m.fecha_mvto')->orderBy('b.codigo_patrimonial')->get();
 
         $settings = $this->reportSettings();
 
@@ -227,7 +250,7 @@ class ReporteMovimientosController extends Controller
 
     public function excel(Request $request)
     {
-        $rows = $this->baseQuery($request)->orderBy('b.codigo_patrimonial')->get();
+        $rows = $this->baseQuery($request)->orderByDesc('m.fecha_mvto')->orderBy('b.codigo_patrimonial')->get();
 
         $settings = $this->reportSettings();
 

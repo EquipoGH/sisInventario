@@ -137,12 +137,12 @@ class ReporteBienController extends Controller
     }
 
     /**
-     * Solo admin puede ver "inventario por estado"
+     * Autorización base por reporte. (Invitados no pueden ver el inventario por estado)
      */
     private function authorizeReporte(string $reporte): void
     {
         if ($reporte === 'inventario_estado_admin') {
-            abort_unless(auth()->check() && auth()->user()->esAdmin(), 403);
+            abort_if(auth()->check() && \App\Helpers\PermisosHelper::esInvitado(), 403, 'Acceso denegado a este reporte.');
         }
     }
 
@@ -199,7 +199,20 @@ class ReporteBienController extends Controller
         // Activos/Inactivos/Todos (robusto)
         $this->applyEstadoFilter($q, $estado);
 
-        // Inventario general por año (fecha_registro del bien)
+        // Filtro global para INVITADO: Solo ver estado de conservación "BUENO"
+        if (\App\Helpers\PermisosHelper::esInvitado()) {
+            try {
+                $estadoBuenoId = \App\Models\EstadoBien::obtenerIdPorNombre('bueno');
+                $q->whereHas('latestMovimiento', function ($m) use ($estadoBuenoId) {
+                    $m->where('id_estado_conservacion_bien', $estadoBuenoId);
+                });
+            } catch (\Exception $e) {
+                // Si no existe 'bueno', no mostramos nada
+                $q->whereRaw('1 = 0');
+            }
+        }
+
+        // Filtro por año (aplica a todos los reportes si se envía)
         if ($anio = $this->anioFromRequest($request)) {
             $q->whereYear('fecha_registro', $anio);
         }
@@ -396,11 +409,25 @@ class ReporteBienController extends Controller
             $tipoBienNombre = $tb ? ($tb->nombre_tipo ?? $tb->id_tipo_bien) : $request->input('tipo_bien');
         }
 
+        $estadoBienNombre = null;
+        if ($reporte === 'inventario_estado_admin' && $request->filled('estado_bien_id')) {
+            $eb = EstadoBien::find($request->input('estado_bien_id'));
+            $estadoBienNombre = $eb ? $eb->nombre_estado : null;
+        }
+
+        $responsableNombre = null;
+        if ($reporte === 'bienes_responsable' && $request->filled('responsable_id')) {
+            $resp = Responsable::where('dni_responsable', $request->input('responsable_id'))->first();
+            $responsableNombre = $resp ? trim($resp->apellidos_responsable . ' ' . $resp->nombre_responsable) : null;
+        }
+
         $filtros = $request->all();
         $filtros['estado'] = $estado;
         $filtros['area_nombre'] = $areaNombre;
         $filtros['ubicacion_nombre'] = $ubicacionNombre;
         $filtros['tipo_bien_nombre'] = $tipoBienNombre;
+        $filtros['estado_bien_nombre'] = $estadoBienNombre;
+        $filtros['responsable_nombre'] = $responsableNombre;
 
         return Pdf::loadView('reportes.bienes.pdf', [
             'bienes' => $bienes,
@@ -444,11 +471,25 @@ class ReporteBienController extends Controller
             $tipoBienNombre = $tb ? ($tb->nombre_tipo ?? $tb->id_tipo_bien) : $request->input('tipo_bien');
         }
 
+        $estadoBienNombre = null;
+        if ($reporte === 'inventario_estado_admin' && $request->filled('estado_bien_id')) {
+            $eb = EstadoBien::find($request->input('estado_bien_id'));
+            $estadoBienNombre = $eb ? $eb->nombre_estado : null;
+        }
+
+        $responsableNombre = null;
+        if ($reporte === 'bienes_responsable' && $request->filled('responsable_id')) {
+            $resp = Responsable::where('dni_responsable', $request->input('responsable_id'))->first();
+            $responsableNombre = $resp ? trim($resp->apellidos_responsable . ' ' . $resp->nombre_responsable) : null;
+        }
+
         $filtros = $request->all();
         $filtros['estado'] = $estado;
         $filtros['area_nombre'] = $areaNombre;
         $filtros['ubicacion_nombre'] = $ubicacionNombre;
         $filtros['tipo_bien_nombre'] = $tipoBienNombre;
+        $filtros['estado_bien_nombre'] = $estadoBienNombre;
+        $filtros['responsable_nombre'] = $responsableNombre;
 
         return Excel::download(
             new BienesExport($bienes, $settings, $filtros, $reporte),

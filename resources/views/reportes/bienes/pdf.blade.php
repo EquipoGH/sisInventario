@@ -138,8 +138,8 @@
     $tipoTxt = match($reporte ?? 'inventario_general') {
       'inventario_general'      => 'Inventario General (por año)',
       'inventario_area'         => 'Inventario por Área y Ubicación',
-      'inventario_estado_admin' => 'Inventario por Estado de Conservación',
-      'bienes_responsable'      => 'Bienes por Responsable',
+      'inventario_estado_admin' => 'Inventario por Estado de Conservación' . (!empty($filtros['estado_bien_nombre']) ? ' (' . $filtros['estado_bien_nombre'] . ')' : ' (Todos)'),
+      'bienes_responsable'      => 'Bienes por Responsable' . (!empty($filtros['responsable_nombre']) ? ' (' . $filtros['responsable_nombre'] . ')' : ' (Todos)'),
       default                   => 'Inventario General',
     };
 
@@ -235,14 +235,13 @@
       <tr>
         <th class="col-n" width="3%"  style="width:3%;">#</th>
         <th width="10%"  style="width:10%;">CÓDIGO</th>
-        <th width="22%"  style="width:22%;">DENOMINACIÓN</th>
+        <th width="24%"  style="width:24%;">DENOMINACIÓN</th>
         <th width="9%"   style="width:9%;">TIPO</th>
         <th width="7%"   style="width:7%;">MARCA</th>
         <th width="7%"   style="width:7%;">MODELO</th>
         <th width="9%"   style="width:9%;">SERIE</th>
-        <th width="9%"   style="width:9%;">ÁREA</th>
-        <th width="13%"  style="width:13%;">UBICACIÓN</th>
-        <th width="11%"  style="width:11%;">ESTADO CONS.</th>
+        <th width="12%"  style="width:12%;">ÁREA</th>
+        <th width="19%"  style="width:19%;">UBICACIÓN</th>
       </tr>
     </thead>
 
@@ -270,20 +269,19 @@
           <td class="c col-n nowrap" width="3%"  style="width:3%;"><span class="num">{{ $i + 1 }}</span></td>
           <td class="c nowrap"       width="10%"  style="width:10%;"><span class="clip-2">{{ $b->codigo_patrimonial }}</span></td>
 
-          <td width="22%" style="width:22%;"><span class="clip-3">{{ mb_strtoupper($b->denominacion_bien ?? '') }}</span></td>
+          <td width="24%" style="width:24%;"><span class="clip-3">{{ mb_strtoupper($b->denominacion_bien ?? '') }}</span></td>
           <td width="9%"  style="width:9%;"><span  class="clip-2">{{ optional($b->tipoBien)->nombre_tipo }}</span></td>
 
           <td width="7%"  style="width:7%;"><span  class="clip-2">{{ $b->marca_bien }}</span></td>
           <td width="7%"  style="width:7%;"><span  class="clip-2">{{ $b->modelo_bien }}</span></td>
           <td width="9%"  style="width:9%;"><span  class="clip-2">{{ $b->nserie_bien }}</span></td>
 
-          <td width="9%"  style="width:9%;"><span  class="clip-2">{{ $area?->nombre_area }}</span></td>
-          <td width="13%" style="width:13%;"><span class="clip-2">{{ $ubicTxtRow }}</span></td>
-          <td width="11%" style="width:11%;"><span class="clip-2">{{ $estadoCons }}</span></td>
+          <td width="12%" style="width:12%;"><span  class="clip-2">{{ $area?->nombre_area }}</span></td>
+          <td width="19%" style="width:19%;"><span class="clip-2">{{ $ubicTxtRow }}</span></td>
         </tr>
       @empty
         <tr>
-          <td colspan="10" class="c">No hay registros</td>
+          <td colspan="9" class="c">No hay registros</td>
         </tr>
       @endforelse
     </tbody>

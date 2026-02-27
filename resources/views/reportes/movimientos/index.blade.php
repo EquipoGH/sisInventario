@@ -25,14 +25,47 @@
 
 @section('css')
 <style>
-  .filters-card .form-group label { font-size: .78rem; margin-bottom: .35rem; }
-  .filters-card .form-control { font-size: .85rem; }
-  .filters-actions .btn { min-width: 120px; }
-  .hint { font-size: .78rem; color: #6c757d; }
+  .filters-card .form-group label { font-size: .80rem; margin-bottom: .35rem; font-weight: 600; color: #495057; }
+  .filters-card .form-control { font-size: .85rem; border-radius: 0.4rem; border: 1px solid #ced4da; transition: all 0.3s; }
+  .filters-card .form-control:focus { border-color: #80bdff; box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); }
+  .filters-actions .btn { min-width: 120px; border-radius: 0.4rem; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; }
+  .filters-actions .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+  .hint { font-size: .78rem; color: #6c757d; font-style: italic; }
 
-  #tablaMovimientos thead th { white-space: nowrap; }
-  #tablaMovimientos tbody td { vertical-align: top; }
-  .td-clip { display:block; max-width: 380px; white-space: normal; word-break: break-word; line-height: 1.2; }
+  /* Premium Cards */
+  .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: all 0.3s ease; }
+  .filters-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: translateY(-3px); }
+  .card-header { border-bottom: 1px solid rgba(0,0,0,0.05); background-color: #fff; border-top-left-radius: 0.75rem !important; border-top-right-radius: 0.75rem !important; }
+  .card-outline.card-primary { border-top: 4px solid #007bff; }
+  .card-outline.card-secondary { border-top: 4px solid #6c757d; }
+
+  /* Top Buttons */
+  .btn-group .btn { transition: all 0.2s; border-radius: 0.4rem !important; margin-left: 5px; font-weight: 600; }
+  .btn-group .btn:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+  
+  /* Premium DataTables */
+  #tablaMovimientos { border-radius: 0.5rem; overflow: hidden; }
+  #tablaMovimientos thead th { white-space: nowrap; border-bottom: 2px solid #dee2e6; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+  .thead-premium { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; }
+  #tablaMovimientos tbody tr { transition: background-color 0.2s; }
+  #tablaMovimientos tbody tr:hover { background-color: #f8f9fa !important; cursor: pointer; }
+  #tablaMovimientos tbody td { vertical-align: middle; padding: 12px; }
+  
+  .td-clip { display:block; max-width: 380px; white-space: normal; word-break: break-word; line-height: 1.4; }
+
+  /* Empty State Premium */
+  .dataTables_empty { padding: 3rem !important; text-align: center; color: #6c757d; font-size: 1.1rem; }
+  .empty-icon { font-size: 3rem; color: #dee2e6; margin-bottom: 1rem; display: block; }
+
+  /* Fila Coloreadas por Tipo Movimiento */
+  .row-registro { background-color: rgba(0, 123, 255, 0.08) !important; }
+  .row-registro:hover { background-color: rgba(0, 123, 255, 0.15) !important; }
+  
+  .row-asignacion { background-color: rgba(40, 167, 69, 0.08) !important; }
+  .row-asignacion:hover { background-color: rgba(40, 167, 69, 0.15) !important; }
+
+  .row-baja { background-color: rgba(220, 53, 69, 0.08) !important; }
+  .row-baja:hover { background-color: rgba(220, 53, 69, 0.15) !important; }
 </style>
 @endsection
 
@@ -85,7 +118,7 @@
             <select name="ubicacion_id" class="form-control form-control-sm" id="ubicacion_id">
               <option value="">-- Todas --</option>
               @foreach($ubicaciones as $u)
-                <option value="{{ $u->id_ubicacion }}">
+                <option value="{{ $u->id_ubicacion }}" data-area="{{ $u->idarea }}">
                   {{ $u->nombre_sede ?? '' }} - {{ $u->ambiente ?? '' }}
                 </option>
               @endforeach
@@ -100,6 +133,9 @@
             <select name="tipo_mvto" class="form-control form-control-sm" id="tipo_mvto">
               <option value="">-- Todos --</option>
               @foreach($tiposMovimiento as $t)
+                @if(\App\Helpers\PermisosHelper::esInvitado() && stripos($t->tipo_mvto, 'baja') !== false)
+                  @continue
+                @endif
                 <option value="{{ $t->id_tipo_mvto }}">
                   {{ $t->tipo_mvto }}
                 </option>
@@ -108,18 +144,17 @@
           </div>
         </div>
 
-        <div class="col-lg-4 col-md-8">
+        <div class="col-lg-2 col-md-6 col-sm-12">
           <div class="form-group">
             <label class="text-muted">Búsqueda (bien)</label>
             <input type="text" name="q" id="q" class="form-control form-control-sm"
-                   placeholder="Código, denominación, marca, modelo, serie...">
-            <div class="hint mt-1">Tip: escribe mínimo 2 caracteres para buscar.</div>
+                   placeholder="Código, serie...">
           </div>
         </div>
 
-        <div class="col-12">
-          <div class="d-flex align-items-center justify-content-between flex-wrap filters-actions">
-            <div class="btn-group mb-2 mb-md-0">
+        <div class="col-lg-3 col-md-12 col-sm-12 d-flex align-items-end mb-3">
+          <div class="w-100 d-flex justify-content-lg-end justify-content-md-start filters-actions">
+            <div class="btn-group">
               <button class="btn btn-primary btn-sm" type="button" id="btnFiltrar">
                 <i class="fas fa-filter"></i> Aplicar
               </button>
@@ -127,7 +162,6 @@
                 <i class="fas fa-sync"></i> Recargar
               </button>
             </div>
-            <small class="text-muted">Exporta después de aplicar filtros.</small>
           </div>
         </div>
 
@@ -144,9 +178,9 @@
   <div class="card-body">
     <div class="table-responsive">
       <table id="tablaMovimientos" class="table table-hover table-sm table-bordered" style="width:100%">
-        <thead class="thead-dark">
+        <thead class="thead-premium">
   <tr>
-    <th style="width:50px;">#</th>
+    <th class="border-top-0" style="width:50px;">#</th>
     <th style="width:120px;">Código</th>
     <th>Denominación</th>
     <th style="width:140px;">Tipo bien</th>
@@ -223,13 +257,26 @@ $(function () {
   { data: 'ubicacion', render: (d)=> d ? `<span class="td-clip">${d}</span>` : '-' },
 ],
 
+    createdRow: function (row, data, dataIndex) {
+      if (!data.tipo_mov) return;
+      const t = data.tipo_mov.toLowerCase();
+      
+      if (t.includes('registro') || t.includes('ingreso')) {
+        $(row).addClass('row-registro');
+      } else if (t.includes('asignacion') || t.includes('asignación')) {
+        $(row).addClass('row-asignacion');
+      } else if (t.includes('baja')) {
+        $(row).addClass('row-baja');
+      }
+    },
+
     language: {
-      processing: "Cargando...",
-      lengthMenu: "Mostrar _MENU_",
-      info: "Mostrando _START_ a _END_ de _TOTAL_",
-      infoEmpty: "Sin resultados",
-      zeroRecords: "No hay datos para mostrar",
-      paginate: { next: "Siguiente", previous: "Anterior" }
+      processing: "<i class='fas fa-circle-notch fa-spin text-primary mr-2'></i> Cargando historial...",
+      lengthMenu: "Mostrar _MENU_ eventos",
+      info: "Mostrando de <b>_START_</b> a <b>_END_</b> de un total de <b>_TOTAL_</b> movimientos",
+      infoEmpty: "Sin resultados para mostrar",
+      zeroRecords: "<div class='text-center py-4'><i class='fas fa-exchange-alt empty-icon'></i><h5 class='text-muted mb-1 mt-3'>Aún no hay movimientos</h5><p class='text-muted small mb-0'>No hemos encontrado transacciones activas para estos filtros.</p></div>",
+      paginate: { next: "Siguiente <i class='fas fa-chevron-right ml-1'></i>", previous: "<i class='fas fa-chevron-left mr-1'></i> Anterior" }
     }
   });
 
@@ -249,7 +296,37 @@ $(function () {
 
   $('#btnFiltrar').on('click', function () { refreshExportLinks(); table.ajax.reload(); });
   $('#btnRecargar').on('click', function () { refreshExportLinks(); table.ajax.reload(null, false); });
-  $('#area_id,#ubicacion_id,#tipo_mvto').on('change', function () { refreshExportLinks(); table.ajax.reload(); });
+  $('#area_id,#tipo_mvto').on('change', function () { refreshExportLinks(); table.ajax.reload(); });
+  $('#ubicacion_id').on('change', function () { refreshExportLinks(); table.ajax.reload(); });
+
+  // ⭐ Lógica de filtrado anidado: Área -> Ubicación
+  $('#area_id').on('change', function() {
+    const areaSeleccionada = $(this).val();
+    const $ubicacionSelect = $('#ubicacion_id');
+    const valorActualUbicacion = $ubicacionSelect.val();
+
+    let opcionValidaVisible = false;
+
+    $ubicacionSelect.find('option').each(function() {
+      const $opt = $(this);
+      const areaOpt = $opt.data('area');
+
+      // Si es el option por defecto ("-- Todas --") o coincide el area, lo mostramos
+      if (!$opt.val() || !areaSeleccionada || areaOpt == areaSeleccionada) {
+        $opt.show();
+        if ($opt.val() === valorActualUbicacion) opcionValidaVisible = true;
+      } else {
+        $opt.hide();
+      }
+    });
+
+    // Si la ubicación que estaba seleccionada ya no es visible para esta nueva área, la reseteamos
+    if (!opcionValidaVisible && valorActualUbicacion !== '') {
+      $ubicacionSelect.val('');
+      refreshExportLinks();
+      table.ajax.reload();
+    }
+  });
 
   refreshExportLinks();
   table.ajax.reload();

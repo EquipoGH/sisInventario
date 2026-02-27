@@ -25,17 +25,40 @@
 
 @section('css')
 <style>
-  .filters-card .form-group label { font-size: .78rem; margin-bottom: .35rem; }
-  .filters-card .form-control { font-size: .85rem; }
-  .filters-actions .btn { min-width: 120px; }
-  .hint { font-size: .78rem; color: #6c757d; }
+  .filters-card .form-group label { font-size: .80rem; margin-bottom: .35rem; font-weight: 600; color: #495057; }
+  .filters-card .form-control { font-size: .85rem; border-radius: 0.4rem; border: 1px solid #ced4da; transition: all 0.3s; }
+  .filters-card .form-control:focus { border-color: #80bdff; box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); }
+  .filters-actions .btn { min-width: 120px; border-radius: 0.4rem; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; }
+  .filters-actions .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+  .hint { font-size: .78rem; color: #6c757d; font-style: italic; }
 
-  #tablaBienes thead th { white-space: nowrap; }
-  #tablaBienes tbody td { vertical-align: top; }
-  .td-clip { display:block; max-width: 340px; white-space: normal; word-break: break-word; line-height: 1.2; }
-  .badge-code { font-size: .85rem; }
+  /* Premium Cards */
+  .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: all 0.3s ease; }
+  .filters-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: translateY(-3px); }
+  .card-header { border-bottom: 1px solid rgba(0,0,0,0.05); background-color: #fff; border-top-left-radius: 0.75rem !important; border-top-right-radius: 0.75rem !important; }
+  .card-outline.card-primary { border-top: 4px solid #007bff; }
+  .card-outline.card-secondary { border-top: 4px solid #6c757d; }
 
-  .loading-select { opacity: .75; pointer-events: none; }
+  /* Top Buttons */
+  .btn-group .btn { transition: all 0.2s; border-radius: 0.4rem !important; margin-left: 5px; font-weight: 600; }
+  .btn-group .btn:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+  
+  /* Premium DataTables */
+  #tablaBienes { border-radius: 0.5rem; overflow: hidden; }
+  #tablaBienes thead th { white-space: nowrap; border-bottom: 2px solid #dee2e6; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+  .thead-premium { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; }
+  #tablaBienes tbody tr { transition: background-color 0.2s; }
+  #tablaBienes tbody tr:hover { background-color: #f8f9fa !important; cursor: pointer; }
+  #tablaBienes tbody td { vertical-align: middle; padding: 12px; }
+  
+  .td-clip { display:block; max-width: 340px; white-space: normal; word-break: break-word; line-height: 1.4; }
+  .badge-code { font-size: .85rem; padding: 0.4em 0.6em; border-radius: 0.3rem; }
+  
+  .loading-select { opacity: .75; pointer-events: none; background-color: #e9ecef; }
+
+  /* Empty State Premium */
+  .dataTables_empty { padding: 3rem !important; text-align: center; color: #6c757d; font-size: 1.1rem; }
+  .empty-icon { font-size: 3rem; color: #dee2e6; margin-bottom: 1rem; display: block; }
 </style>
 @endsection
 
@@ -62,8 +85,8 @@
               <option value="inventario_area">Inventario por área y ubicación</option>
 
               @auth
-  @if(auth()->user()->esAdmin())
-    <option value="inventario_estado_admin">Inventario por estado (solo Admin)</option>
+  @if(!\App\Helpers\PermisosHelper::esInvitado())
+    <option value="inventario_estado_admin">Inventario por estado</option>
   @endif
 @endauth
 
@@ -74,7 +97,8 @@
           </div>
         </div>
 
-        <div class="col-lg-2 col-md-4">
+        @if(!\App\Helpers\PermisosHelper::esInvitado())
+        <div class="col-lg-2 col-md-4" id="wrapEstado">
           <div class="form-group">
             <label class="text-muted">Estado (activos/inactivos)</label>
             <select class="form-control" name="estado" id="estado">
@@ -84,6 +108,9 @@
             </select>
           </div>
         </div>
+        @else
+        <input type="hidden" name="estado" id="estado" value="activos">
+        @endif
 
         <div class="col-lg-2 col-md-4" id="wrapAnio">
           <div class="form-group">
@@ -163,38 +190,36 @@
           </div>
         </div>
 
-        <div class="col-lg-8 col-md-12">
+        <div class="col-lg-5 col-md-12 col-sm-12">
           <div class="form-group">
             <label class="text-muted">Búsqueda (global)</label>
-            <div class="input-group">
+            <div class="input-group input-group-sm">
               <div class="input-group-prepend">
                 <span class="input-group-text bg-primary border-primary">
                   <i class="fas fa-search text-white"></i>
                 </span>
               </div>
               <input type="text" class="form-control" name="q" id="q"
-                     placeholder="Código, denominación, marca, modelo, serie...">
+                     placeholder="Código, serie...">
               <div class="input-group-append">
                 <button class="btn btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar filtros">
                   <i class="fas fa-eraser"></i>
                 </button>
               </div>
             </div>
-            <div class="hint mt-1">Tip: escribe mínimo 2 caracteres para buscar.</div>
           </div>
         </div>
 
-        <div class="col-12">
-          <div class="d-flex align-items-center justify-content-between flex-wrap filters-actions">
-            <div class="btn-group mb-2 mb-md-0">
-              <button class="btn btn-primary" type="button" id="btnFiltrar">
+        <div class="col-lg-3 col-md-12 col-sm-12 d-flex align-items-end mb-3">
+          <div class="w-100 d-flex justify-content-lg-end justify-content-md-start filters-actions">
+            <div class="btn-group">
+              <button class="btn btn-primary btn-sm" type="button" id="btnFiltrar">
                 <i class="fas fa-filter"></i> Aplicar
               </button>
-              <button class="btn btn-default" type="button" id="btnRecargar">
+              <button class="btn btn-default btn-sm" type="button" id="btnRecargar">
                 <i class="fas fa-sync"></i> Recargar
               </button>
             </div>
-            <small class="text-muted">Consejo: exporta después de aplicar filtros.</small>
           </div>
         </div>
 
@@ -211,9 +236,9 @@
   <div class="card-body">
     <div class="table-responsive">
       <table id="tablaBienes" class="table table-hover table-sm table-bordered" style="width:100%">
-        <thead class="thead-dark">
+        <thead class="thead-premium">
           <tr>
-            <th>Código</th>
+            <th class="border-top-0">Código</th>
             <th>Bien</th>
             <th>Tipo</th>
             <th>Marca</th>
@@ -275,8 +300,8 @@ $(function () {
   function toggleFiltersByReporte() {
     const rep = $reporte.val();
 
-    // Inventario general => Año visible
-    $('#wrapAnio').toggle(rep === 'inventario_general');
+    // Inventario general => Año visible siempre, así que no se oculta
+    // $('#wrapAnio').toggle(rep === 'inventario_general');
 
     // Responsable solo para bienes_responsable
     $('#wrapResponsable').toggle(rep === 'bienes_responsable');
@@ -352,12 +377,12 @@ $(function () {
     ],
 
     language: {
-      processing: "Cargando...",
-      lengthMenu: "Mostrar _MENU_",
-      info: "Mostrando _START_ a _END_ de _TOTAL_",
-      infoEmpty: "Sin resultados",
-      zeroRecords: "No hay datos para mostrar",
-      paginate: { next: "Siguiente", previous: "Anterior" }
+      processing: "<i class='fas fa-circle-notch fa-spin text-primary mr-2'></i> Cargando información...",
+      lengthMenu: "Mostrar _MENU_ registros",
+      info: "Mostrando de <b>_START_</b> a <b>_END_</b> de un total de <b>_TOTAL_</b> bienes",
+      infoEmpty: "Sin resultados para mostrar",
+      zeroRecords: "<div class='text-center py-4'><i class='fas fa-box-open empty-icon'></i><h5 class='text-muted mb-1 mt-3'>No encontramos ningún bien</h5><p class='text-muted small mb-0'>Intenta ajustar los filtros o el término de búsqueda.</p></div>",
+      paginate: { next: "Siguiente <i class='fas fa-chevron-right ml-1'></i>", previous: "<i class='fas fa-chevron-left mr-1'></i> Anterior" }
     }
   });
 

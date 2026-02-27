@@ -8,11 +8,10 @@
   <tr>
     <td style="text-align:center; font-weight:bold; padding-top:2px;">
       @php
-        // ✅ Tipos de reporte correctos (igual que el controlador)
         $tipoTxtExcel = match($reporte ?? 'inventario_general') {
           'inventario_area'         => 'INVENTARIO POR ÁREA Y UBICACIÓN',
-          'inventario_estado_admin' => 'INVENTARIO POR ESTADO DE CONSERVACIÓN',
-          'bienes_responsable'      => 'BIENES POR RESPONSABLE',
+          'inventario_estado_admin' => 'INVENTARIO POR ESTADO DE CONSERVACIÓN' . (!empty($filtros['estado_bien_nombre']) ? ' (' . mb_strtoupper($filtros['estado_bien_nombre']) . ')' : ' (TODOS)'),
+          'bienes_responsable'      => 'BIENES POR RESPONSABLE' . (!empty($filtros['responsable_nombre']) ? ' (' . mb_strtoupper($filtros['responsable_nombre']) . ')' : ' (TODOS)'),
           default                   => 'INVENTARIO GENERAL',
         };
       @endphp
@@ -50,14 +49,13 @@
           <tr>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:18px;  text-align:center;">#</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:78px;  text-align:center;">CÓDIGO</th>
-            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:170px; text-align:center;">DENOMINACIÓN</th>
+            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:205px; text-align:center;">DENOMINACIÓN</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:72px;  text-align:center;">TIPO</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:52px;  text-align:center;">MARCA</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:52px;  text-align:center;">MODELO</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:78px;  text-align:center;">SERIE</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:65px;  text-align:center;">ÁREA</th>
-            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:90px;  text-align:center;">UBICACIÓN</th>
-            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:65px;  text-align:center;">ESTADO CONS.</th>
+            <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:120px; text-align:center;">UBICACIÓN</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:65px;  text-align:center;">REGISTRADO POR</th>
             <th style="border:1px solid #000; background:#ddd; padding:3px 2px; width:48px;  text-align:center;">FECHA REG.</th>
           </tr>
@@ -85,13 +83,12 @@
               <td style="border:1px solid #000; padding:2px 3px;">{{ $b->nserie_bien }}</td>
               <td style="border:1px solid #000; padding:2px 3px;">{{ $area?->nombre_area }}</td>
               <td style="border:1px solid #000; padding:2px 3px;">{{ $ubicTxtE }}</td>
-              <td style="border:1px solid #000; padding:2px 3px;">{{ $estadoCons }}</td>
               <td style="border:1px solid #000; padding:2px 3px;">{{ $usuarioMvto }}</td>
               <td style="border:1px solid #000; padding:2px 3px; text-align:center;">{{ optional($b->fecha_registro)->format('d/m/Y') }}</td>
             </tr>
           @empty
             <tr>
-              <td colspan="12" style="border:1px solid #000; padding:6px; text-align:center;">
+              <td colspan="11" style="border:1px solid #000; padding:6px; text-align:center;">
                 No hay registros
               </td>
             </tr>
