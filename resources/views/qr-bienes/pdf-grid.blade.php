@@ -2,8 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Códigos QR - Inventario de Bienes</title>
+    <title>Códigos QR - Inventario Patrimonial</title>
     <style>
+        /* CONFIGURACIÓN DE PÁGINA A4 RIGIDA */
+        @page {
+            margin: 0;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -11,160 +16,144 @@
         }
 
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9px;
-            color: #1f2937;
+            font-family: Helvetica, Arial, sans-serif;
             background: #ffffff;
+            width: 210mm;
+            height: 297mm;
         }
 
-        /* ========== ENCABEZADO ========== */
-        .header {
-            text-align: center;
-            background: #1e40af;
+        /* HEADER MUCHO MÁS COMPACTO */
+        .page-header {
+            width: 100%;
+            background: #0f172a;
             color: white;
-            padding: 10px;
-            margin-bottom: 15px;
+            padding: 5mm;
+            text-align: center;
+            height: 20mm;
+            overflow: hidden;
         }
 
-        .header h1 {
-            font-size: 14px;
+        .page-header h1 {
+            font-size: 14pt;
+            letter-spacing: 1px;
             font-weight: bold;
-            margin-bottom: 3px;
             text-transform: uppercase;
         }
 
-        .header .info {
-            font-size: 7px;
-            margin-top: 3px;
+        .page-header .info {
+            font-size: 8pt;
+            color: #94a3b8;
+            margin-top: 2px;
         }
 
-        /* ========== GRID 3x3 ========== */
-        .qr-grid {
+        /* CONTENEDOR DE GRILLA CON ALTURA CONTROLADA */
+        .grid-container {
+            width: 210mm;
+            height: 260mm; /* Espacio para los QRs */
+            padding: 5mm;
+            overflow: hidden;
+        }
+
+        /* CADA ITEM TENDRA ALTO FIJO */
+        .qr-item {
+            width: 63mm;
+            height: 85mm; /* 3 filas de 85mm = 255mm. Cabe en 260mm */
+            float: left;
+            padding: 2mm;
+            text-align: center;
+        }
+
+        .qr-card {
+            border: 0.5pt solid #cbd5e1;
+            border-radius: 4mm;
+            padding: 5mm 3mm;
+            height: 81mm; /* qr-item height - padding */
             width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
+            background-color: #ffffff;
+            overflow: hidden;
         }
 
-        .qr-grid td {
-            width: 33.33%;
-            height: 240px;
-            border: 2px solid #cbd5e1;
-            padding: 12px;
-            text-align: center;
-            vertical-align: middle;
-            background: #ffffff;
-        }
-
-        .qr-grid td.empty {
-            border: none;
-            background: transparent;
-        }
-
-        /* ========== CÓDIGO QR ========== */
-        .qr-code {
-            width: 130px;
-            height: 130px;
+        .qr-image {
+            width: 42mm;
+            height: 42mm;
             display: block;
-            margin: 0 auto 10px auto;
-            border: 2px solid #e5e7eb;
-            padding: 4px;
-            background: #fafafa;
+            margin: 0 auto;
+            border: 0.1pt solid #e2e8f0;
+            padding: 1mm;
         }
 
-        /* ========== CÓDIGO PATRIMONIAL ========== */
-        .codigo-patrimonial {
-            font-size: 11px;
+        .qr-code-text {
+            margin-top: 4mm;
+            font-size: 11pt;
             font-weight: bold;
-            color: #1e40af;
-            background: #dbeafe;
-            padding: 4px 8px;
-            border: 1px solid #93c5fd;
-            display: inline-block;
-            margin-bottom: 6px;
-            max-width: 90%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            color: #1d4ed8;
+            font-family: monospace;
+            background-color: #eff6ff;
+            padding: 2mm 0;
+            border-radius: 2mm;
+            border: 0.5pt dashed #bfdbfe;
         }
 
-        /* ========== DENOMINACIÓN ========== */
-        .denominacion {
-            font-size: 8px;
-            color: #374151;
-            margin-top: 4px;
-            line-height: 1.3;
-            max-height: 26px;
+        .qr-label {
+            margin-top: 3mm;
+            font-size: 8pt;
+            color: #475569;
+            line-height: 1.1;
+            height: 10mm;
             overflow: hidden;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
-        /* ========== PIE DE PÁGINA ========== */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+        .page-footer {
+            position: absolute;
+            bottom: 5mm;
+            width: 100%;
             text-align: center;
-            font-size: 7px;
-            color: #6b7280;
-            padding: 8px;
-            border-top: 1px solid #e5e7eb;
-            background: #f9fafb;
+            font-size: 7pt;
+            color: #64748b;
+            border-top: 0.1pt solid #e2e8f0;
+            padding-top: 2mm;
         }
 
-        /* ========== SALTOS DE PÁGINA ========== */
         .page-break {
             page-break-after: always;
+            clear: both;
         }
     </style>
 </head>
 <body>
 
 @foreach($paginas as $indicePagina => $paginaBienes)
-    {{-- ENCABEZADO --}}
-    <div class="header">
-        <h1>CÓDIGOS QR - INVENTARIO DE BIENES</h1>
+    <div class="page-header">
+        <h1>INVENTARIO PATRIMONIAL - QRs</h1>
         <div class="info">
-            Total: {{ $total }} | Filtro: {{ $filtro }} | Generado: {{ $fecha }}
+            Registros: {{ $total }} | Filtro: {{ $filtro }} | Página {{ $indicePagina + 1 }} de {{ count($paginas) }}
         </div>
     </div>
 
-    {{-- GRID 3x3 --}}
-    <table class="qr-grid">
-        @foreach($paginaBienes->chunk(3) as $filaIndex => $fila)
-            <tr>
-                @foreach($fila as $bien)
-                    <td>
-                        {{-- QR --}}
-                        <img src="{{ $bien['qr_base64'] }}"
-                             alt="QR"
-                             class="qr-code">
-
-                        {{-- CÓDIGO --}}
-                        <div class="codigo-patrimonial">
-                            {{ $bien['codigo'] }}
-                        </div>
-
-                        {{-- NOMBRE --}}
-                        <div class="denominacion">
-                            {{ $bien['denominacion'] }}
-                        </div>
-                    </td>
-                @endforeach
-
-                {{-- CELDAS VACÍAS --}}
-                @for($i = $fila->count(); $i < 3; $i++)
-                    <td class="empty"></td>
-                @endfor
-            </tr>
+    <div class="grid-container">
+        @foreach($paginaBienes as $bien)
+            <div class="qr-item">
+                <div class="qr-card">
+                    <img src="{{ $bien['qr_base64'] }}" class="qr-image">
+                    
+                    <div class="qr-code-text">
+                        {{ $bien['codigo'] }}
+                    </div>
+                    
+                    <div class="qr-label">
+                        {{ mb_strtoupper($bien['denominacion']) }}
+                    </div>
+                </div>
+            </div>
         @endforeach
-    </table>
-
-    {{-- PIE --}}
-    <div class="footer">
-        Sistema de Gestión de Inventario | {{ $fecha }} | Página {{ $indicePagina + 1 }} de {{ $totalPaginas }}
     </div>
 
-    {{-- SALTO --}}
+    <div class="page-footer">
+        Generado por Sistema de Gestión Patrimonial | {{ $fecha }}
+    </div>
+
     @if(!$loop->last)
         <div class="page-break"></div>
     @endif

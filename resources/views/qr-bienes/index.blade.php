@@ -65,119 +65,123 @@
 </div>
 
 {{-- FORMULARIO DE GENERACIÓN --}}
-<div class="card card-primary card-outline">
+{{-- FORMULARIO DE GENERACIÓN AVANZADO --}}
+<div class="card card-primary card-outline mt-4">
     <div class="card-header">
         <h3 class="card-title">
-            <i class="fas fa-cog"></i> Configuración de Generación
+            <i class="fas fa-filter"></i> Filtros y Generación Masiva (PDF)
         </h3>
     </div>
-    <form action="{{ route('qr-bienes.generar-pdf') }}" method="POST" id="formGenerarQR">
-        @csrf
-        <div class="card-body">
+    
+    <div class="card-body bg-light rounded-bottom">
+        <form id="formFiltrosQR" method="POST" action="{{ route('qr-bienes.generar-pdf') }}" target="_blank">
+            @csrf
             <div class="row">
-                {{-- FILTRO --}}
-                <div class="col-md-6">
+                <div class="col-lg-3 col-md-4">
                     <div class="form-group">
-                        <label for="filtro">
-                            <i class="fas fa-filter"></i> Filtrar Bienes
-                        </label>
-                        <select name="filtro" id="filtro" class="form-control form-control-lg">
-                            <option value="todos">📦 Todos los bienes activos</option>
-                            <option value="con_movimiento">✅ Solo con movimientos</option>
-                            <option value="sin_movimiento">⚠️ Solo sin asignar</option>
+                        <label class="text-muted"><i class="fas fa-layer-group"></i> Estado del Registro</label>
+                        <select class="form-control" name="filtro" id="filtro">
+                            <option value="todos" selected>Todos (Con y sin movimiento)</option>
+                            <option value="con_movimiento">Solo Asignados (Con movimiento)</option>
+                            <option value="sin_movimiento">No asignados (Sin movimiento)</option>
                         </select>
-                        <small class="text-muted">
-                            Selecciona qué bienes incluir en el reporte PDF
-                        </small>
                     </div>
                 </div>
 
-                {{-- INFO DEL FORMATO GRID 3x3 --}}
-                <div class="col-md-6">
-                    <div class="alert alert-info mb-0" style="height: 100%;">
-                        <h5><i class="icon fas fa-info-circle"></i> Formato de Impresión</h5>
-                        <ul class="mb-0" style="font-size: 14px;">
-                            <li><strong>9 QR por página</strong> (Grid 3 × 3)</li>
-                            <li>Tamaño optimizado: <strong>120px</strong></li>
-                            <li>Formato: <strong>A4 Portrait</strong></li>
-                            <li>Incluye: código, nombre, tipo y ubicación</li>
-                        </ul>
+                <div class="col-lg-3 col-md-4">
+                    <div class="form-group">
+                        <label class="text-muted"><i class="fas fa-building"></i> Área</label>
+                        <select class="form-control" name="area_id" id="area_id">
+                            <option value="">-- Todas --</option>
+                            @foreach($areas as $a)
+                                <option value="{{ $a->id_area }}">{{ $a->nombre_area }}</option>
+                            @endforeach
+                        </select>
+                        <div class="small text-muted mt-1 px-1">Filtra también ubicaciones internas.</div>
                     </div>
                 </div>
-            </div>
 
-            {{-- INFORMACIÓN TÉCNICA --}}
-            <div class="row mt-3">
-                <div class="col-12">
-                    <div class="callout callout-success">
-                        <h5><i class="fas fa-mobile-alt"></i> Compatible con tu App Móvil</h5>
-                        <p class="mb-2">
-                            <strong>URL de escaneo:</strong>
-                            <code style="font-size: 13px;">https://web-production-84102.up.railway.app/qr/{codigo}</code>
-                        </p>
-                        <p class="mb-0">
-                            <i class="fas fa-check text-success"></i> Al escanear con tu app Flutter, se mostrarán todos los detalles del bien
-                        </p>
+                <div class="col-lg-3 col-md-4">
+                    <div class="form-group">
+                        <label class="text-muted"><i class="fas fa-map-marker-alt"></i> Ubicación</label>
+                        <select class="form-control" name="ubicacion_id" id="ubicacion_id">
+                            <option value="">-- Todas --</option>
+                        </select>
                     </div>
                 </div>
-            </div>
 
-            {{-- VISTA PREVIA ESTIMADA --}}
-            <div class="row mt-3">
-                <div class="col-md-12">
-                    <div class="card bg-light">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                <i class="fas fa-calculator"></i> Estimación de Páginas
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-md-3">
-                                    <div class="description-block">
-                                        <h5 class="description-header" id="bienes-filtrados">{{ $totalBienes }}</h5>
-                                        <span class="description-text">Bienes a Generar</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="description-block">
-                                        <h5 class="description-header text-primary">9</h5>
-                                        <span class="description-text">QR por Página</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="description-block">
-                                        <h5 class="description-header text-success" id="paginas-estimadas">
-                                            {{ ceil($totalBienes / 9) }}
-                                        </h5>
-                                        <span class="description-text">Páginas Estimadas</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="description-block">
-                                        <h5 class="description-header text-info">120px</h5>
-                                        <span class="description-text">Tamaño del QR</span>
-                                    </div>
-                                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="form-group">
+                        <label class="text-muted"><i class="fas fa-tags"></i> Tipo bien</label>
+                        <select class="form-control" name="tipo_bien" id="tipo_bien">
+                            <option value="">-- Todos --</option>
+                            @foreach($tiposBien as $tb)
+                                <option value="{{ $tb->id_tipo_bien }}">{{ $tb->nombre_tipo }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="form-group">
+                        <label class="text-muted"><i class="fas fa-shield-alt"></i> Conservación</label>
+                        <select class="form-control" name="estado_bien_id" id="estado_bien_id">
+                            <option value="">-- Todos --</option>
+                            @foreach($estadosBien as $eb)
+                                <option value="{{ $eb->id_estado }}">{{ $eb->nombre_estado }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4">
+                    <div class="form-group">
+                        <label class="text-muted"><i class="fas fa-calendar-alt"></i> Año Registro</label>
+                        <select class="form-control" name="anio" id="anio">
+                            <option value="">-- Todos --</option>
+                            @foreach($anios as $y)
+                                <option value="{{ $y }}">{{ $y }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-lg-7 col-md-8">
+                    <div class="form-group">
+                        <label class="text-muted"><i class="fas fa-search"></i> Búsqueda libre (Código, Nombre...)</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white border-primary">
+                                    <i class="fas fa-search"></i>
+                                </span>
                             </div>
+                            <input type="text" class="form-control" name="q" id="q"
+                                   placeholder="Escribe para buscar específicamente...">
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="card-footer">
-            <button type="submit" class="btn btn-primary btn-lg" id="btnGenerar">
-                <i class="fas fa-file-pdf"></i> Generar PDF con Códigos QR
-            </button>
-            <a href="{{ route('bien.index') }}" class="btn btn-secondary btn-lg">
-                <i class="fas fa-arrow-left"></i> Volver a Bienes
-            </a>
-            <button type="button" class="btn btn-info btn-lg float-right" data-toggle="modal" data-target="#modalEjemplo">
-                <i class="fas fa-eye"></i> Ver Ejemplo
-            </button>
-        </div>
-    </form>
+            </div>
+
+            <hr class="mt-2 mb-3">
+            
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="text-muted mb-2 mb-md-0">
+                    <i class="fas fa-info-circle text-info"></i> El sistema creará hojas <b>tamaño A4</b> conteniendo
+                    <strong class="text-dark">9 QRs por página</strong> con la selección filtrada.
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary" type="button" id="btnLimpiar">
+                        <i class="fas fa-eraser"></i> Limpiar Filtros
+                    </button>
+                    <button type="submit" class="btn btn-danger font-weight-bold" id="btnPdfQR">
+                        <i class="fas fa-file-pdf"></i> Imprimir Grilla QRs (PDF)
+                    </button>
+                </div>
+            </div>
+            
+        </form>
+    </div>
 </div>
 
 {{-- MODAL: EJEMPLO DE QR --}}
@@ -222,10 +226,45 @@
 
 @stop
 
+
 @section('js')
 <script>
 $(document).ready(function() {
-    // ========== ACTUALIZAR ESTADÍSTICAS AL CAMBIAR FILTRO ==========
+    // ========== SELECTS EN CASCADA (ÁREAS -> UBICACIONES) ==========
+    const $area = $('#area_id');
+    const $ubic = $('#ubicacion_id');
+    
+    async function cargarUbicacionesPorArea() {
+        const areaId = $area.val();
+        if (!areaId) {
+            $ubic.html('<option value="">-- Todas --</option>');
+            return;
+        }
+        $ubic.html('<option value="">Cargando...</option>');
+        try {
+            // Utilizamos la ruta genérica de "obtener ubicaciones por area"
+            // Asume que exista una ruta para listar en json. Si no existe, podemos obviar este paso.
+            // Por seguridad, haremos fetch genérico; si falla lo dejamos vacío.
+            const url = `/api/ubicaciones-por-area?area_id=${areaId}`; // Ruta teórica o adaptar a la real de Laravel 
+            const res = await fetch(url);
+            if(res.ok) {
+                const data = await res.json();
+                let html = '<option value="">-- Todas --</option>';
+                data.forEach(u => {
+                    html += `<option value="${u.id_ubicacion}">${u.nombre_sede} - ${u.ambiente}</option>`;
+                });
+                $ubic.html(html);
+            } else {
+                 $ubic.html('<option value="">-- Todas --</option>');
+            }
+        } catch (e) {
+            $ubic.html('<option value="">-- Todas --</option>');
+        }
+    }
+
+    $area.on('change', cargarUbicacionesPorArea);
+
+    // ========== ACTUALIZAR ESTADÍSTICAS AL CAMBIAR FILTRO PRINCIPAL ==========
     $('#filtro').on('change', function() {
         const filtro = $(this).val();
         const total = {{ $totalBienes }};
@@ -240,50 +279,42 @@ $(document).ready(function() {
             bienesFiltrados = sinMovimiento;
         }
 
-        // Actualizar contador de bienes
         $('#bienes-filtrados').text(bienesFiltrados);
+        $('#paginas-estimadas').text(Math.ceil(bienesFiltrados / 9));
 
-        // Calcular páginas (9 QR por página)
-        const paginasEstimadas = Math.ceil(bienesFiltrados / 9);
-        $('#paginas-estimadas').text(paginasEstimadas);
-
-        // Mostrar alerta si no hay bienes
         if (bienesFiltrados === 0) {
-            toastr.warning('No hay bienes con este filtro', 'Advertencia');
+            toastr.warning('Atención: Parece que no hay registros bajo esta selección base.', 'Advertencia');
         }
     });
 
+    // ========== LIMPIAR FILTROS ==========
+    $('#btnLimpiar').on('click', function () {
+        $('#formFiltrosQR')[0].reset();
+        $ubic.html('<option value="">-- Todas --</option>');
+        $('#filtro').trigger('change');
+    });
+
     // ========== LOADING AL GENERAR PDF ==========
-    $('#formGenerarQR').on('submit', function(e) {
-        const bienesFiltrados = parseInt($('#bienes-filtrados').text());
+    $('#formFiltrosQR').on('submit', function() {
+        try {
+            const $btn = $('#btnPdfQR');
+            const originalHtml = '<i class="fas fa-file-pdf"></i> Imprimir Grilla QRs (PDF)';
 
-        if (bienesFiltrados === 0) {
-            e.preventDefault();
-            toastr.error('No hay bienes para generar QR', 'Error');
-            return false;
+            // Deshabilitar botón y mostrar spinner rápidamente
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Preparando PDF...');
+            toastr.info('Abriendo PDF en nueva pestaña...', 'Aguarde un momento', { timeOut: 2500 });
+
+            // Restaurar botón después de 1 segundo pase lo que pase
+            setTimeout(function() {
+                $btn.prop('disabled', false).html(originalHtml);
+            }, 1500);
+            
+        } catch (error) {
+            console.error(error);
+            $('#btnPdfQR').prop('disabled', false).html('<i class="fas fa-file-pdf"></i> Imprimir Grilla QRs (PDF)');
         }
-
-        // Deshabilitar botón y mostrar spinner
-        $('#btnGenerar')
-            .prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin"></i> Generando PDF...');
-
-        // Mostrar notificación
-        toastr.info('Generando ' + bienesFiltrados + ' códigos QR...', 'Procesando', {
-            timeOut: 0,
-            extendedTimeOut: 0,
-            closeButton: false
-        });
-
-        // Rehabilitar botón después de 8 segundos
-        setTimeout(function() {
-            $('#btnGenerar')
-                .prop('disabled', false)
-                .html('<i class="fas fa-file-pdf"></i> Generar PDF con Códigos QR');
-
-            toastr.clear();
-            toastr.success('PDF generado exitosamente', 'Éxito');
-        }, 8000);
+        // Permitir que el formulario siga su curso normal (HTML form submit)
+        return true;
     });
 
     // ========== CONFIGURACIÓN DE TOASTR ==========
@@ -293,6 +324,7 @@ $(document).ready(function() {
         "positionClass": "toast-top-right",
         "timeOut": "3000"
     };
+
 });
 </script>
 @stop

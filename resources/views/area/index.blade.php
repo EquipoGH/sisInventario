@@ -101,7 +101,7 @@
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="4" class="text-center text-muted py-4">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 4 : 3 }}" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay áreas registradas
                         </td>
@@ -291,20 +291,22 @@ $(document).ready(function() {
         const tbody = $('#tablaBody');
         tbody.empty();
 
+        const totalCols = esAdmin ? 4 : 3;
+
         if (areas.length === 0) {
             tbody.append(`
                 <tr id="filaVacia">
-                    <td colspan="4" class="text-center text-muted py-4">
+                    <td colspan="${totalCols}" class="text-center text-muted py-4">
                         <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                         No hay áreas registradas
                     </td>
                 </tr>
             `);
-            $('#checkAll').prop('checked', false).prop('disabled', true);
+            if (esAdmin) $('#checkAll').prop('checked', false).prop('disabled', true);
             return;
         }
 
-        $('#checkAll').prop('disabled', false);
+        if (esAdmin) $('#checkAll').prop('disabled', false);
 
         areas.forEach(a => {
             const fecha = new Date(a.created_at).toLocaleDateString('es-PE', {
@@ -315,21 +317,25 @@ $(document).ready(function() {
                 minute: '2-digit'
             });
 
+            const checkboxCol = esAdmin
+                ? `<td class="text-center"><input type="checkbox" class="checkbox-item" value="${a.id_area}"></td>`
+                : '';
+
+            const nombreCell = esAdmin
+                ? `<td class="editable-cell" data-id="${a.id_area}" title="Doble click para editar"><strong>${a.nombre_area.toUpperCase()}</strong></td>`
+                : `<td><strong>${a.nombre_area.toUpperCase()}</strong></td>`;
+
             tbody.append(`
                 <tr id="row-${a.id_area}" class="fade-in">
-                    <td class="text-center">
-                        <input type="checkbox" class="checkbox-item" value="${a.id_area}">
-                    </td>
+                    ${checkboxCol}
                     <td class="text-center"><strong>${a.id_area}</strong></td>
-                    <td class="editable-cell" data-id="${a.id_area}" title="Doble click para editar">
-                        <strong>${a.nombre_area.toUpperCase()}</strong>
-                    </td>
+                    ${nombreCell}
                     <td>${fecha}</td>
                 </tr>
             `);
         });
 
-        $('.checkbox-item').on('change', actualizarBotonEliminar);
+        if (esAdmin) $('.checkbox-item').on('change', actualizarBotonEliminar);
     }
 
     // ==================== CONTADORES ====================

@@ -98,6 +98,7 @@
                         <th width="10%" class="sortable" data-column="fecha" style="cursor:pointer;">
                             Fecha Registro <i class="fas fa-sort sort-icon"></i>
                         </th>
+                        <th width="5%" class="text-center">QR</th>
                     </tr>
                 </thead>
 
@@ -147,10 +148,18 @@
                         <td>{{ $bien->marca_bien ?? '-' }}</td>
                         <td>{{ $bien->modelo_bien ?? '-' }}</td>
                         <td>{{ \Carbon\Carbon::parse($bien->fecha_registro)->format('d/m/Y') }}</td>
+                        <td class="text-center">
+                            <a href="{{ route('qr-bienes.descargar', $bien->codigo_patrimonial) }}" 
+                               class="btn btn-sm btn-outline-success" 
+                               title="Descargar QR"
+                               target="_blank">
+                                <i class="fas fa-qrcode"></i>
+                            </a>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted">
+                        <td colspan="10" class="text-center text-muted">
                             <i class="fas fa-inbox fa-2x mb-2"></i>
                             <p>No hay bienes registrados</p>
                         </td>
@@ -957,6 +966,14 @@ $(document).ready(function() {
                 <td>${b.marca_bien || '-'}</td>
                 <td>${b.modelo_bien || '-'}</td>
                 <td>${fecha}</td>
+                <td class="text-center">
+                    <a href="{{ url('/qr-bienes/descargar') }}/${b.codigo_patrimonial}"
+                       class="btn btn-sm btn-outline-success"
+                       title="Descargar QR"
+                       target="_blank">
+                        <i class="fas fa-qrcode"></i>
+                    </a>
+                </td>
             </tr>
         `);
     });
@@ -1455,6 +1472,14 @@ $('#formCreate').on('submit', function(e) {
                         <td>${bien.marca_bien || '-'}</td>
                         <td>${bien.modelo_bien || '-'}</td>
                         <td>${fechaRegistro}</td>
+                        <td class="text-center">
+                            <a href="{{ url('/qr-bienes/descargar') }}/${bien.codigo_patrimonial}"
+                               class="btn btn-sm btn-outline-success"
+                               title="Descargar QR"
+                               target="_blank">
+                                <i class="fas fa-qrcode"></i>
+                            </a>
+                        </td>
                     </tr>
                 `;
 

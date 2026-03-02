@@ -7,6 +7,15 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Endroid\QrCode\QrCode as EndroidQrCode;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Writer\PngWriter;
+use App\Models\Area;
+use App\Models\TipoBien;
+use App\Models\EstadoBien;
 
 class QRBienController extends Controller
 {
@@ -37,7 +46,16 @@ class QRBienController extends Controller
         })
         ->count();
 
-        return view('qr-bienes.index', compact('totalBienes', 'bienesConMovimiento'));
+        $areas = Area::orderBy('nombre_area')->get();
+        $tiposBien = TipoBien::orderBy('nombre_tipo')->get();
+        $estadosBien = EstadoBien::orderBy('nombre_estado')->get();
+        
+        $anios = Bien::selectRaw('EXTRACT(YEAR FROM created_at) as anio')
+            ->distinct()
+            ->orderBy('anio', 'desc')
+            ->pluck('anio');
+
+        return view('qr-bienes.index', compact('totalBienes', 'bienesConMovimiento', 'areas', 'tiposBien', 'estadosBien', 'anios'));
     }
 
     /**
@@ -70,7 +88,7 @@ class QRBienController extends Controller
                 $query->whereNull('deleted_at');
             }
 
-            // Aplicar filtro adicional
+            // Aplicar filtro adicional/antiguo
             switch ($filtro) {
                 case 'con_movimiento':
                     $query->whereHas('movimientos', function($q) {
@@ -80,6 +98,49 @@ class QRBienController extends Controller
                 case 'sin_movimiento':
                     $query->whereDoesntHave('movimientos');
                     break;
+            }
+
+            // ⭐ NUEVOS FILTROS AVANZADOS (Si vienen en el request)
+            if ($request->filled('area_id')) {
+                $query->whereHas('movimientos', function($q) use ($request) {
+                    $q->where('anulado', false)
+                      ->whereHas('ubicacion', function($q2) use ($request) {
+                          // Se corrige "id_area" a "idarea" que es el nombre real en bd
+                          $q2->where('idarea', $request->area_id);
+                      });
+                });
+            }
+
+            if ($request->filled('ubicacion_id')) {
+                $query->whereHas('movimientos', function($q) use ($request) {
+                    $q->where('anulado', false)->where('id_ubicacion', $request->ubicacion_id);
+                });
+            }
+
+            if ($request->filled('tipo_bien')) {
+                $query->where('id_tipobien', $request->tipo_bien);
+            }
+
+            if ($request->filled('estado_bien_id')) {
+                $query->whereHas('movimientos', function($q) use ($request) {
+                    // El valor proviene del select2 y la bd lo guarda en id_estado_conservacion_bien en tabla movimiento
+                    $q->where('anulado', false)->where('id_estado_conservacion_bien', $request->estado_bien_id);
+                });
+            }
+
+            if ($request->filled('anio')) {
+                $query->whereYear('created_at', $request->anio);
+            }
+
+            if ($request->filled('q')) {
+                $search = $request->q;
+                $query->where(function($q) use ($search) {
+                    $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
+                      ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%")
+                      ->orWhere('marca_bien', 'ILIKE', "%{$search}%")
+                      ->orWhere('modelo_bien', 'ILIKE', "%{$search}%")
+                      ->orWhere('nserie_bien', 'ILIKE', "%{$search}%");
+                });
             }
 
             $bienes = $query->orderBy('codigo_patrimonial')->get();
@@ -242,6 +303,66 @@ class QRBienController extends Controller
                 'ok' => false,
                 'message' => 'Error obteniendo estadísticas'
             ], 500);
+        }
+    }
+    /**
+     * 🖼️ OBTENER IMAGEN QR INDIVIDUAL PARA MOSTRARLA EN EL NAVEGADOR
+     */
+    public function verImagenQR($codigo)
+    {
+        try {
+            $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
+            $urlAPI = "https://web-production-84102.up.railway.app/qr/{$codigo}";
+            
+            // Generar el código QR en base64 para enviarlo al frontend mediante EndroidQrCode para generar un PNG
+            $qr = new EndroidQrCode($urlAPI);
+            $qr->setSize(300);
+            $qr->setMargin(10);
+            $qr->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
+            
+            $writer = new PngWriter();
+            $result = $writer->write($qr);
+
+            return response()->json([
+                'ok' => true,
+                'qr_img' => $result->getDataUri(),
+                'codigo' => $bien->codigo_patrimonial,
+                'nombre' => $bien->denominacion_bien,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Error al generar código QR: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 📥 DESCARGAR IMAGEN QR INDIVIDUAL
+     */
+    public function descargarImagenQR($codigo)
+    {
+        try {
+            $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
+            $urlAPI = "https://web-production-84102.up.railway.app/qr/{$codigo}";
+            
+            $qr = new EndroidQrCode($urlAPI);
+            $qr->setSize(500); // Mayor tamaño para impresión
+            $qr->setMargin(10);
+            $qr->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
+            
+            $writer = new PngWriter();
+            $result = $writer->write($qr);
+                
+            $nombreArchivo = "QR_{$codigo}_" . date('Ymd_His') . ".png";
+            
+            return response($result->getString())
+                ->header('Content-Type', $result->getMimeType())
+                ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al descargar QR: ' . $e->getMessage());
         }
     }
 }

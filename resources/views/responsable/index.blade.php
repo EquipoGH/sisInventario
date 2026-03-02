@@ -107,7 +107,7 @@
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 6 : 5 }}" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay responsables registrados
                         </td>
@@ -367,20 +367,22 @@ $(document).ready(function() {
         const tbody = $('#tablaBody');
         tbody.empty();
 
+        const totalCols = esAdmin ? 6 : 5;
+
         if (responsables.length === 0) {
             tbody.append(`
                 <tr id="filaVacia">
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="${totalCols}" class="text-center text-muted py-4">
                         <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                         No hay responsables registrados
                     </td>
                 </tr>
             `);
-            $('#checkAll').prop('checked', false).prop('disabled', true);
+            if (esAdmin) $('#checkAll').prop('checked', false).prop('disabled', true);
             return;
         }
 
-        $('#checkAll').prop('disabled', false);
+        if (esAdmin) $('#checkAll').prop('disabled', false);
 
         responsables.forEach(r => {
             const fecha = new Date(r.created_at).toLocaleDateString('es-PE', {
@@ -391,11 +393,16 @@ $(document).ready(function() {
                 minute: '2-digit'
             });
 
+            const checkboxCol = esAdmin
+                ? `<td class="text-center"><input type="checkbox" class="checkbox-item" value="${r.dni_responsable}"></td>`
+                : '';
+
+            const rowClass = esAdmin ? 'fade-in editable-row' : 'fade-in';
+            const rowData  = esAdmin ? `data-dni="${r.dni_responsable}"` : '';
+
             tbody.append(`
-                <tr id="row-${r.dni_responsable}" class="fade-in editable-row" data-dni="${r.dni_responsable}">
-                    <td class="text-center">
-                        <input type="checkbox" class="checkbox-item" value="${r.dni_responsable}">
-                    </td>
+                <tr id="row-${r.dni_responsable}" class="${rowClass}" ${rowData}>
+                    ${checkboxCol}
                     <td class="text-center"><strong>${r.dni_responsable}</strong></td>
                     <td><strong>${r.nombre_responsable.toUpperCase()}</strong></td>
                     <td><strong>${r.apellidos_responsable.toUpperCase()}</strong></td>
@@ -405,7 +412,7 @@ $(document).ready(function() {
             `);
         });
 
-        $('.checkbox-item').on('change', actualizarBotonEliminar);
+        if (esAdmin) $('.checkbox-item').on('change', actualizarBotonEliminar);
     }
 
     // ==================== CONTADORES ====================

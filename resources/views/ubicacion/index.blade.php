@@ -167,7 +167,7 @@
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="8" class="text-center text-muted py-4">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 8 : 7 }}" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay ubicaciones registradas
                         </td>
@@ -498,20 +498,22 @@ $(document).ready(function() {
         const tbody = $('#tablaBody');
         tbody.empty();
 
+        const totalCols = esAdmin ? 8 : 7;
+
         if (ubicaciones.length === 0) {
             tbody.append(`
                 <tr id="filaVacia">
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="${totalCols}" class="text-center text-muted py-4">
                         <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                         No hay ubicaciones registradas
                     </td>
                 </tr>
             `);
-            $('#checkAll').prop('checked', false).prop('disabled', true);
+            if (esAdmin) $('#checkAll').prop('checked', false).prop('disabled', true);
             return;
         }
 
-        $('#checkAll').prop('disabled', false);
+        if (esAdmin) $('#checkAll').prop('disabled', false);
 
         ubicaciones.forEach(u => {
             const fecha = new Date(u.created_at).toLocaleDateString('es-PE', {
@@ -524,48 +526,57 @@ $(document).ready(function() {
 
             // ⭐ Generar HTML para columna de recepción
             let recepcionHTML = '';
-            if (u.es_recepcion_inicial) {
-                recepcionHTML = `
-                    <span class="badge badge-success mb-1 d-block">
-                        <i class="fas fa-check-circle"></i> ACTIVA
-                    </span>
-                    <button class="btn btn-xs btn-warning btn-desmarcar"
-                            data-id="${u.id_ubicacion}"
-                            data-nombre="${u.nombre_sede}"
-                            title="Desmarcar">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
+            if (esAdmin) {
+                if (u.es_recepcion_inicial) {
+                    recepcionHTML = `
+                        <span class="badge badge-success mb-1 d-block">
+                            <i class="fas fa-check-circle"></i> ACTIVA
+                        </span>
+                        <button class="btn btn-xs btn-warning btn-desmarcar"
+                                data-id="${u.id_ubicacion}"
+                                data-nombre="${u.nombre_sede}"
+                                title="Desmarcar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                } else {
+                    recepcionHTML = `
+                        <button class="btn btn-xs btn-success btn-marcar"
+                                data-id="${u.id_ubicacion}"
+                                data-nombre="${u.nombre_sede}"
+                                title="Marcar como recepción">
+                            <i class="fas fa-check"></i> Marcar
+                        </button>
+                    `;
+                }
             } else {
-                recepcionHTML = `
-                    <button class="btn btn-xs btn-success btn-marcar"
-                            data-id="${u.id_ubicacion}"
-                            data-nombre="${u.nombre_sede}"
-                            title="Marcar como recepción">
-                        <i class="fas fa-check"></i> Marcar
-                    </button>
-                `;
+                recepcionHTML = u.es_recepcion_inicial
+                    ? `<span class="badge badge-success"><i class="fas fa-check-circle"></i> ACTIVA</span>`
+                    : `<span class="text-muted">-</span>`;
             }
 
+            const checkboxCol = esAdmin
+                ? `<td class="text-center"><input type="checkbox" class="checkbox-item" value="${u.id_ubicacion}"></td>`
+                : '';
+
+            const rowClass = esAdmin ? 'fade-in editable-row' : 'fade-in';
+            const rowData  = esAdmin ? `data-id="${u.id_ubicacion}"` : '';
+
             tbody.append(`
-                <tr id="row-${u.id_ubicacion}" class="fade-in editable-row" data-id="${u.id_ubicacion}">
-                    <td class="text-center">
-                        <input type="checkbox" class="checkbox-item" value="${u.id_ubicacion}">
-                    </td>
+                <tr id="row-${u.id_ubicacion}" class="${rowClass}" ${rowData}>
+                    ${checkboxCol}
                     <td class="text-center"><strong>${u.id_ubicacion}</strong></td>
                     <td><strong>${u.nombre_sede.toUpperCase()}</strong></td>
                     <td>${u.ambiente.toUpperCase()}</td>
                     <td class="text-center">${u.piso_ubicacion.toUpperCase()}</td>
-                    <td>
-                        <span class="badge badge-info">${areaNombre}</span>
-                    </td>
+                    <td><span class="badge badge-info">${areaNombre}</span></td>
                     <td class="text-center">${recepcionHTML}</td>
                     <td class="text-center">${fecha}</td>
                 </tr>
             `);
         });
 
-        $('.checkbox-item').on('change', actualizarBotonEliminar);
+        if (esAdmin) $('.checkbox-item').on('change', actualizarBotonEliminar);
         bindBotonesRecepcion();
     }
 

@@ -107,7 +107,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="text-center text-muted">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 4 : 3 }}" class="text-center text-muted">
                             <i class="fas fa-inbox fa-2x mb-2"></i>
                             <p>No hay registros disponibles</p>
                         </td>
@@ -344,28 +344,37 @@ $(document).ready(function() {
                 hour: '2-digit', minute: '2-digit'
             });
 
-            tbody.append(`
-                <tr id="row-${e.id_estado}" class="fade-in">
-                    <td class="text-center">
+            const checkboxCol = esAdmin
+                ? `<td class="text-center">
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input checkbox-item"
-                                   id="check-${e.id_estado}"
-                                   value="${e.id_estado}">
+                                   id="check-${e.id_estado}" value="${e.id_estado}">
                             <label class="custom-control-label" for="check-${e.id_estado}"></label>
                         </div>
-                    </td>
+                   </td>`
+                : '';
+
+            const nombreCell = esAdmin
+                ? `<td class="editable-cell" data-id="${e.id_estado}" data-nombre="${e.nombre_estado}"
+                       style="cursor:pointer" title="Doble click para editar">
+                       <strong>${e.nombre_estado.toUpperCase()}</strong>
+                   </td>`
+                : `<td><strong>${e.nombre_estado.toUpperCase()}</strong></td>`;
+
+            tbody.append(`
+                <tr id="row-${e.id_estado}" class="fade-in">
+                    ${checkboxCol}
                     <td>${e.id_estado}</td>
-                    <td class="editable-cell" data-id="${e.id_estado}" data-nombre="${e.nombre_estado}"
-                        style="cursor:pointer" title="Doble click para editar">
-                        <strong>${e.nombre_estado.toUpperCase()}</strong>
-                    </td>
+                    ${nombreCell}
                     <td>${fecha}</td>
                 </tr>
             `);
         });
 
-        $('.checkbox-item').on('change', actualizarBotonEliminar);
-        $('#checkAll').prop('checked', false);
+        if (esAdmin) {
+            $('.checkbox-item').on('change', actualizarBotonEliminar);
+            $('#checkAll').prop('checked', false);
+        }
     }
 
     function actualizarContadores(res) {

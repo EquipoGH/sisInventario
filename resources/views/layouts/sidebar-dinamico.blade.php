@@ -68,6 +68,18 @@
           </a>
         </li>
       @endforelse
+
+      {{-- ⭐ INYECCIÓN MANUAL: Mostrar "Generador Masivo QR" dentro de "Reportes" solo para Admin --}}
+      @if(strtolower(trim($mod->nommodulo)) === 'reportes' && auth()->check() && auth()->user()->esAdmin())
+        <li class="nav-item">
+          <a href="{{ route('qr-bienes.index') }}"
+             class="nav-link {{ request()->routeIs('qr-bienes.index') ? 'active' : '' }}">
+            <i class="far {{ request()->routeIs('qr-bienes.index') ? 'fa-dot-circle text-info' : 'fa-circle' }} nav-icon" style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
+            <p>Generador Masivo QR</p>
+          </a>
+        </li>
+      @endif
+
     </ul>
   </li>
 @endforeach

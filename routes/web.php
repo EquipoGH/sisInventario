@@ -199,6 +199,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/qr-bienes', [QRBienController::class, 'index'])->name('qr-bienes.index');
         Route::post('/qr-bienes/generar-pdf', [QRBienController::class, 'generarPDFMasivo'])->name('qr-bienes.generar-pdf');
         Route::get('/qr-bienes/preview/{codigo}', [QRBienController::class, 'previsualizar'])->name('qr-bienes.preview');
+        Route::get('/qr-bienes/descargar/{codigo}', [QRBienController::class, 'descargarImagenQR'])->name('qr-bienes.descargar');
+        Route::get('/qr-bienes/imagen/{codigo}', [QRBienController::class, 'verImagenQR'])->name('qr-bienes.imagen');
     });
 });
 
