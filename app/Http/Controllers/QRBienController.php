@@ -151,7 +151,7 @@ class QRBienController extends Controller
 
             // ✅ GENERAR QR CODES EN FORMATO SVG (NO REQUIERE IMAGICK)
             $bienesConQR = $bienes->map(function($bien) use ($tamanoQR) {
-                $urlAPI = "https://web-production-84102.up.railway.app/qr/{$bien->codigo_patrimonial}";
+                $urlAPI = "https://inventario-android-api.onrender.com/qr/{$bien->codigo_patrimonial}";
 
                 // ✅ CAMBIO: PNG → SVG (Compatible sin Imagick)
                 $qrCodeSVG = QrCode::format('svg')
@@ -178,22 +178,21 @@ class QRBienController extends Controller
                 ];
             });
 
-            // ⭐ AGRUPAR EN PÁGINAS DE 9 QR
-            $paginas = $bienesConQR->chunk($qrPorPagina);
+            // ⭐ AGRUPAR EN PÁGINAS DE 9 QR (values() garantiza índices 0, 1, 2...)
+            $paginas = $bienesConQR->chunk($qrPorPagina)->values();
 
             // ⭐ GENERAR PDF CON VISTA GRID
             $pdf = Pdf::loadView('qr-bienes.pdf-grid', [
                 'paginas' => $paginas,
-                'total' => $bienes->count(),
-                'fecha' => now()->format('d/m/Y H:i'),
-                'filtro' => $this->getNombreFiltro($filtro),
-                'qrPorPagina' => $qrPorPagina,
-                'totalPaginas' => $paginas->count()
+                'total'   => $bienes->count(),
+                'fecha'   => now()->format('d/m/Y H:i'),
+                'filtro'  => $this->getNombreFiltro($filtro),
             ])
             ->setPaper('a4', 'portrait')
             ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', true)
-            ->setOption('defaultFont', 'Arial');
+            ->setOption('isRemoteEnabled', false)
+            ->setOption('defaultFont', 'Arial')
+            ->setOption('dpi', 96);
 
             $nombreArchivo = 'QR_Bienes_' . now()->format('Ymd_His') . '.pdf';
 
@@ -229,7 +228,7 @@ class QRBienController extends Controller
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
 
-            $urlAPI = "https://web-production-84102.up.railway.app/qr/{$codigo}";
+            $urlAPI = "https://inventario-android-api.onrender.com/qr/{$codigo}";
 
             // Generar QR en SVG para previsualización (escalable)
             $qrCode = QrCode::format('svg')
@@ -312,7 +311,7 @@ class QRBienController extends Controller
     {
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
-            $urlAPI = "https://web-production-84102.up.railway.app/qr/{$codigo}";
+            $urlAPI = "https://inventario-android-api.onrender.com/qr/{$codigo}";
             
             // Generar el código QR en base64 para enviarlo al frontend mediante EndroidQrCode para generar un PNG
             $qr = new EndroidQrCode($urlAPI);
@@ -345,7 +344,7 @@ class QRBienController extends Controller
     {
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
-            $urlAPI = "https://web-production-84102.up.railway.app/qr/{$codigo}";
+            $urlAPI = "https://inventario-android-api.onrender.com/qr/{$codigo}";
             
             $qr = new EndroidQrCode($urlAPI);
             $qr->setSize(500); // Mayor tamaño para impresión

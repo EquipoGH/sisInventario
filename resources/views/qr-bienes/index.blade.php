@@ -184,7 +184,132 @@
     </div>
 </div>
 
-{{-- MODAL: EJEMPLO DE QR --}}
+{{-- ============================================================ --}}
+{{--   SECCIÓN: GENERAR QR INDIVIDUAL POR CÓDIGO PATRIMONIAL       --}}
+{{-- ============================================================ --}}
+<div class="card card-outline card-info mt-4" id="cardQrIndividual">
+
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-qrcode"></i> Generar QR Individual por C&oacute;digo Patrimonial
+        </h3>
+        <div class="card-tools">
+            <span class="badge badge-info" id="qrIndBadgeEstado">Listo</span>
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="card-body">
+
+        {{-- Fila del input y botones --}}
+        <div class="row align-items-end">
+
+            {{-- Input código --}}
+            <div class="col-lg-6 col-md-8">
+                <div class="form-group mb-0">
+                    <label class="text-muted">
+                        <i class="fas fa-barcode text-info"></i> C&oacute;digo Patrimonial
+                    </label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-info border-info text-white">
+                                <i class="fas fa-hashtag"></i>
+                            </span>
+                        </div>
+                        <input type="text" id="codigoQrInput"
+                               class="form-control"
+                               placeholder="Ej: PAT001, 8238893428384..."
+                               autocomplete="off">
+                        <div class="input-group-append">
+                            <button class="btn btn-default" id="btnLimpiarQrInd" type="button">
+                                <i class="fas fa-times-circle"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                    <small class="text-muted" id="qrIndHint">
+                        <i class="fas fa-info-circle text-info"></i>
+                        Ingresa el c&oacute;digo del bien y presiona <strong>Ver QR</strong> o <kbd>Enter</kbd>
+                    </small>
+                </div>
+            </div>
+
+            {{-- Botones de acción --}}
+            <div class="col-lg-6 col-md-4 mt-3 mt-md-0">
+                <div class="btn-group">
+                    <button id="btnVerQrInd" class="btn btn-success" type="button">
+                        <i class="fas fa-eye"></i> Ver QR
+                    </button>
+                    <a id="btnDescargarQrInd" href="#" target="_blank"
+                       class="btn btn-primary disabled" aria-disabled="true">
+                        <i class="fas fa-download"></i> Descargar PNG
+                    </a>
+                </div>
+                <span id="qrIndSpinner" class="d-none ml-2">
+                    <i class="fas fa-circle-notch fa-spin text-info"></i>
+                    <span class="text-muted small">Generando...</span>
+                </span>
+            </div>
+        </div>
+
+        {{-- Panel de resultado (oculto hasta que se genera) --}}
+        <div id="qrIndPreviewPanel" class="d-none mt-4">
+            <hr>
+            <div class="row">
+
+                {{-- Columna imagen QR --}}
+                <div class="col-auto text-center">
+                    <div class="callout callout-info p-3">
+                        <img id="qrIndImg" src="" alt="QR"
+                             style="width:150px; height:150px; display:block; margin: 0 auto;">
+                        <div class="mt-2">
+                            <span class="badge badge-light border font-weight-bold" id="qrIndCodigoBadge"></span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Columna info --}}
+                <div class="col">
+                    <h5 class="mb-1">
+                        <i class="fas fa-box text-info"></i>
+                        <span id="qrIndNombre" class="font-weight-bold">-</span>
+                    </h5>
+                    <div class="callout callout-default">
+                        <p class="mb-1 text-muted small"><i class="fas fa-link"></i> URL codificada en el QR:</p>
+                        <code id="qrIndUrl" class="small" style="word-break:break-all;">-</code>
+                    </div>
+                    <div class="btn-group btn-group-sm mt-2">
+                        <a id="btnDescargarQrInd2" href="#" target="_blank"
+                           class="btn btn-primary disabled" aria-disabled="true">
+                            <i class="fas fa-download"></i> Descargar PNG
+                        </a>
+                        <button id="btnNuevoQrInd" class="btn btn-default" type="button">
+                            <i class="fas fa-redo"></i> Nuevo c&oacute;digo
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Panel de error --}}
+        <div id="qrIndErrorPanel" class="d-none mt-3">
+            <div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" onclick="$(this).closest('.alert').parent().addClass('d-none')">
+                    &times;
+                </button>
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>No encontrado:</strong> <span id="qrIndErrorMsg">El c&oacute;digo ingresado no existe en el inventario.</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
 <div class="modal fade" id="modalEjemplo" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -197,8 +322,10 @@
                 </button>
             </div>
             <div class="modal-body text-center">
-                <div class="border rounded p-4 d-inline-block bg-light">
-                    {!! QrCode::size(200)->errorCorrection('H')->generate('https://web-production-84102.up.railway.app/qr/EJEMPLO001') !!}
+                    {{-- QR generado vía JS para evitar la Facade de servidor --}}
+                    <div id="modalQrImgWrap" style="width:200px; height:200px; margin:0 auto; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    </div>
                     <div class="mt-3">
                         <h5 class="text-primary mb-1">EJEMPLO001</h5>
                         <p class="text-muted mb-0">Computadora de Escritorio</p>
@@ -230,7 +357,115 @@
 @section('js')
 <script>
 $(document).ready(function() {
-    // ========== SELECTS EN CASCADA (ÁREAS -> UBICACIONES) ==========
+
+    // ========================
+    // GENERADOR QR INDIVIDUAL
+    // ========================
+    const urlImagenBase = "{{ route('qr-bienes.imagen', ['codigo' => '__CODE__']) }}";
+    const urlDescargarBase = "{{ route('qr-bienes.descargar', ['codigo' => '__CODE__']) }}";
+
+    function getUrlImagen(codigo) { return urlImagenBase.replace('__CODE__', encodeURIComponent(codigo)); }
+    function getUrlDescargar(codigo) { return urlDescargarBase.replace('__CODE__', encodeURIComponent(codigo)); }
+
+    function resetPreviewer() {
+        $('#qrIndPreviewPanel, #qrIndErrorPanel').addClass('d-none');
+        $('#qrIndImg').attr('src', '');
+        $('#qrIndCodigoBadge, #qrIndNombre, #qrIndUrl').text('');
+        $('#btnDescargarQrInd, #btnDescargarQrInd2').attr('href','#').addClass('disabled').attr('aria-disabled','true');
+        $('#qrIndBadgeEstado').removeClass('badge-success badge-danger').addClass('badge-info').text('Listo');
+    }
+
+    async function generarQRIndividual() {
+        const codigo = $('#codigoQrInput').val().trim();
+        if (!codigo) {
+            if (typeof toastr !== 'undefined') toastr.warning('Ingresa un código patrimonial primero.', 'Campo requerido');
+            $('#codigoQrInput').focus();
+            return;
+        }
+
+        resetPreviewer();
+        $('#qrIndSpinner').removeClass('d-none');
+        $('#btnVerQrInd').prop('disabled', true);
+        $('#qrIndHint').html('<i class="fas fa-circle-notch fa-spin text-primary"></i> Buscando bien...');
+
+        try {
+            const res = await fetch(getUrlImagen(codigo), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.ok) {
+                throw new Error(data.message || 'Bien no encontrado.');
+            }
+
+            // Mostrar preview
+            const urlDesc = getUrlDescargar(codigo);
+
+            $('#qrIndImg').attr('src', data.qr_img);
+            $('#qrIndCodigoBadge').text(data.codigo);
+            $('#qrIndNombre').text(data.nombre);
+            $('#qrIndUrl').text('https://inventario-android-api.onrender.com/qr/' + data.codigo);
+
+            $('#btnDescargarQrInd, #btnDescargarQrInd2')
+                .attr('href', urlDesc)
+                .removeClass('disabled').attr('aria-disabled','false');
+
+            $('#qrIndPreviewPanel').removeClass('d-none');
+            $('#qrIndBadgeEstado').removeClass('badge-info badge-danger').addClass('badge-success').text('Generado');
+            $('#qrIndHint').html('<i class="fas fa-check-circle text-success"></i> QR generado para <strong>' + data.codigo + '</strong>');
+
+            if (typeof toastr !== 'undefined') toastr.success('QR generado correctamente.', '¡Listo!');
+
+        } catch (err) {
+            $('#qrIndErrorMsg').text(err.message || 'El código ingresado no existe en el inventario.');
+            $('#qrIndErrorPanel').removeClass('d-none');
+            $('#qrIndHint').html('<i class="fas fa-info-circle text-info"></i> Ingresa el código del bien para generar su QR');
+            $('#qrIndBadgeEstado').removeClass('badge-info badge-success').addClass('badge-danger').text('No encontrado');
+            if (typeof toastr !== 'undefined') toastr.error(err.message || 'Código no encontrado.', 'Error');
+        } finally {
+            $('#qrIndSpinner').addClass('d-none');
+            $('#btnVerQrInd').prop('disabled', false);
+        }
+    }
+
+    // Botón Ver QR
+    $('#btnVerQrInd').on('click', generarQRIndividual);
+
+    // Enter en el input
+    $('#codigoQrInput').on('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); generarQRIndividual(); }
+    });
+
+    // Limpiar
+    $('#btnLimpiarQrInd, #btnNuevoQrInd').on('click', function() {
+        $('#codigoQrInput').val('').focus();
+        resetPreviewer();
+        $('#qrIndErrorPanel').addClass('d-none');
+        $('#qrIndHint').html('<i class="fas fa-info-circle text-info"></i> Ingresa el código del bien para generar su QR');
+    });
+
+    // ========================
+    // MODAL EJEMPLO — carga QR dinámicamente (sin Facade server-side)
+    // ========================
+    $('#modalEjemplo').on('show.bs.modal', function() {
+        const urlImgEjemplo = "{{ route('qr-bienes.imagen', ['codigo' => 'EJEMPLO001']) }}";
+        const $wrap = $('#modalQrImgWrap');
+        $wrap.html('<i class="fas fa-spinner fa-spin fa-2x text-muted"></i>');
+        fetch(urlImgEjemplo, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    $wrap.html('<img src="' + data.qr_img + '" style="width:200px;height:200px;border-radius:6px;" alt="QR Ejemplo">');
+                } else {
+                    // Si EJEMPLO001 no existe en BD, mostramos un QR predefinido con la URL de Render
+                    $wrap.html('<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://inventario-android-api.onrender.com/qr/EJEMPLO001" style="width:200px;height:200px;border-radius:6px;" alt="QR Ejemplo">');
+                }
+            })
+            .catch(() => {
+                $wrap.html('<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://inventario-android-api.onrender.com/qr/EJEMPLO001" style="width:200px;height:200px;border-radius:6px;" alt="QR Ejemplo">');
+            });
+    });
+
     const $area = $('#area_id');
     const $ubic = $('#ubicacion_id');
     
