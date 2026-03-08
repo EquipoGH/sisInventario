@@ -290,7 +290,7 @@
         <div class="header-inner">
             <div class="header-logo-row">
                 <div class="header-title-cell">
-                    <h1>&#128202; Inventario Patrimonial &mdash; QRs</h1>
+                    <h1> Inventario Patrimonial &mdash; QRs</h1>
                     <div class="subtitle">
                         {{ $total }} registros &nbsp;|&nbsp; {{ $filtro }} &nbsp;|&nbsp; P&aacute;gina {{ $indicePagina + 1 }} de {{ count($paginas) }}
                     </div>
