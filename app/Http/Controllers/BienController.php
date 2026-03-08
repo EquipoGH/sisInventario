@@ -81,7 +81,8 @@ class BienController extends Controller
 
         // ⭐ PETICIÓN AJAX
         if ($request->ajax()) {
-            $data = $bienes->map(function($bien) {
+            /** @var \Illuminate\Pagination\LengthAwarePaginator $bienes */
+            $data = $bienes->getCollection()->map(function($bien) {
                 return [
                     'id_bien' => $bien->id_bien,
                     'codigo_patrimonial' => $bien->codigo_patrimonial,
@@ -143,17 +144,17 @@ class BienController extends Controller
 
             $data = $request->validated();
 
-            // 📸 Subir imagen a Cloudinary
+            // 📸 Subir imagen a Cloudinary (optimización máxima de peso)
             if ($request->hasFile('foto_bien')) {
                 $uploadedFile = Cloudinary::upload(
                     $request->file('foto_bien')->getRealPath(),
                     [
                         'folder' => 'bienes',
                         'transformation' => [
-                            'width' => 800,
-                            'height' => 800,
+                            'width' => 600,
+                            'height' => 600,
                             'crop' => 'limit',
-                            'quality' => 'auto:best',
+                            'quality' => 'auto:eco',
                             'fetch_format' => 'auto'
                         ]
                     ]
@@ -265,7 +266,7 @@ class BienController extends Controller
 
             $data = $request->validated();
 
-            // 📸 Si hay nueva imagen
+            // 📸 Si hay nueva imagen (optimización máxima de peso)
             if ($request->hasFile('foto_bien')) {
                 if ($bien->public_id) {
                     try {
@@ -280,10 +281,10 @@ class BienController extends Controller
                     [
                         'folder' => 'bienes',
                         'transformation' => [
-                            'width' => 800,
-                            'height' => 800,
+                            'width' => 600,
+                            'height' => 600,
                             'crop' => 'limit',
-                            'quality' => 'auto:best',
+                            'quality' => 'auto:eco',
                             'fetch_format' => 'auto'
                         ]
                     ]
