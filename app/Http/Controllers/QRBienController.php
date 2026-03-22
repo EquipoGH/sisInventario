@@ -151,7 +151,7 @@ class QRBienController extends Controller
 
             // ✅ GENERAR QR CODES EN FORMATO SVG (NO REQUIERE IMAGICK)
             $bienesConQR = $bienes->map(function($bien) use ($tamanoQR) {
-                $urlAPI = "https://inventario-android-api.onrender.com/qr/{$bien->codigo_patrimonial}";
+                $urlAPI = env('API_NODE_URL', 'https://inventario-android-api.onrender.com') . "/qr/{$bien->codigo_patrimonial}";
 
                 // ✅ CAMBIO: PNG → SVG (Compatible sin Imagick)
                 $qrCodeSVG = QrCode::format('svg')
@@ -228,7 +228,7 @@ class QRBienController extends Controller
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
 
-            $urlAPI = "https://inventario-android-api.onrender.com/qr/{$codigo}";
+            $urlAPI = env('API_NODE_URL', 'https://inventario-android-api.onrender.com') . "/qr/{$codigo}";
 
             // Generar QR en SVG para previsualización (escalable)
             $qrCode = QrCode::format('svg')
@@ -311,7 +311,7 @@ class QRBienController extends Controller
     {
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
-            $urlAPI = "https://inventario-android-api.onrender.com/qr/{$codigo}";
+            $urlAPI = env('API_NODE_URL', 'https://inventario-android-api.onrender.com') . "/qr/{$codigo}";
             
             // Generar el código QR en base64 para enviarlo al frontend mediante EndroidQrCode para generar un PNG
             $qr = new EndroidQrCode($urlAPI);
@@ -344,7 +344,7 @@ class QRBienController extends Controller
     {
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
-            $urlAPI = "https://inventario-android-api.onrender.com/qr/{$codigo}";
+            $urlAPI = env('API_NODE_URL', 'https://inventario-android-api.onrender.com') . "/qr/{$codigo}";
             
             $qr = new EndroidQrCode($urlAPI);
             $qr->setSize(500); // Mayor tamaño para impresión
