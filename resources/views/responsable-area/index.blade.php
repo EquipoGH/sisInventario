@@ -19,89 +19,75 @@
                     <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
                 </button>
             </div>
-            <div class="col-md-8">
-                <div class="row">
-                    {{-- FILTRO POR RESPONSABLE --}}
-                    <div class="col-md-4">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-success text-white">
-                                    <i class="fas fa-user"></i>
-                                </span>
-                            </div>
-                            <select id="responsableFiltro" class="form-control">
-                                <option value="">👤 Todos los responsables</option>
-                                @foreach($responsables as $resp)
-                                    <option value="{{ $resp->dni_responsable }}">
-                                        {{ $resp->dni_responsable }} - {{ strtoupper($resp->apellidos_responsable) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary"
-                                        type="button"
-                                        id="btnLimpiarResponsable"
-                                        title="Limpiar filtro"
-                                        style="display:none;">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+            <div class="col-md-12">
+                {{-- BARRA DE FILTROS EN UNA SOLA FILA --}}
+                <div class="d-flex flex-wrap align-items-center gap-2" style="gap:.5rem;">
+
+                    {{-- Responsable --}}
+                    <div class="input-group" style="max-width:220px; flex:1 1 180px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-success text-white py-1 px-2">
+                                <i class="fas fa-user fa-sm"></i>
+                            </span>
                         </div>
-                        <small class="text-muted mt-1 d-block" id="infoResponsable" style="display:none;">
-                            <i class="fas fa-info-circle"></i> Responsable: <strong id="responsableFiltrado"></strong>
-                        </small>
+                        <select id="responsableFiltro" class="form-control form-control-sm">
+                            <option value="">Todos los responsables</option>
+                            @foreach($responsables as $resp)
+                                <option value="{{ $resp->dni_responsable }}">
+                                    {{ $resp->dni_responsable }} - {{ strtoupper($resp->apellidos_responsable) }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    {{-- FILTRO POR ÁREA --}}
-                    <div class="col-md-4">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-info text-white">
-                                    <i class="fas fa-building"></i>
-                                </span>
-                            </div>
-                            <select id="areaFiltro" class="form-control">
-                                <option value="">📍 Todas las áreas</option>
-                                @foreach($areas as $area)
-                                    <option value="{{ $area->id_area }}">{{ strtoupper($area->nombre_area) }}</option>
-                                @endforeach
-                            </select>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary"
-                                        type="button"
-                                        id="btnLimpiarArea"
-                                        title="Limpiar filtro"
-                                        style="display:none;">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+                    {{-- Área --}}
+                    <div class="input-group" style="max-width:180px; flex:1 1 150px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-info text-white py-1 px-2">
+                                <i class="fas fa-building fa-sm"></i>
+                            </span>
                         </div>
-                        <small class="text-muted mt-1 d-block" id="infoArea" style="display:none;">
-                            <i class="fas fa-info-circle"></i> Área: <strong id="areaFiltrada"></strong>
-                        </small>
+                        <select id="areaFiltro" class="form-control form-control-sm">
+                            <option value="">Todas las áreas</option>
+                            @foreach($areas as $area)
+                                <option value="{{ $area->id_area }}">{{ strtoupper($area->nombre_area) }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    {{-- BÚSQUEDA --}}
-                    <div class="col-md-4">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-primary">
-                                    <i class="fas fa-search text-white"></i>
-                                </span>
-                            </div>
-                            <input type="text"
-                                   id="searchInput"
-                                   class="form-control"
-                                   placeholder="Buscar..."
-                                   autocomplete="off">
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiar">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+                    {{-- Año --}}
+                    <div class="input-group" style="max-width:120px; flex:0 0 110px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-warning text-dark py-1 px-2">
+                                <i class="fas fa-calendar-alt fa-sm"></i>
+                            </span>
+                        </div>
+                        <select id="anioFiltro" class="form-control form-control-sm">
+                            <option value="">Todos</option>
+                            @foreach($aniosDisponibles as $anio)
+                                <option value="{{ $anio }}">{{ $anio }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Búsqueda --}}
+                    <div class="input-group" style="max-width:220px; flex:1 1 180px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-primary text-white py-1 px-2">
+                                <i class="fas fa-search fa-sm"></i>
+                            </span>
+                        </div>
+                        <input type="text" id="searchInput" class="form-control form-control-sm"
+                               placeholder="Buscar DNI, nombre, área..." autocomplete="off">
+                        <div class="input-group-append">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar todo">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     </div>
+
                 </div>
+            </div>
 
                 {{-- INFO RESULTADOS --}}
                 <div class="row mt-2">
@@ -134,23 +120,26 @@
             <table class="table table-bordered table-striped table-hover" id="tablaAsignaciones">
                 <thead class="thead-dark">
                     <tr>
-                        <th width="5%" class="text-center">
+                        <th width="4%" class="text-center">
                             <input type="checkbox" id="checkAll">
                         </th>
-                        <th width="8%" class="text-center sortable" data-column="id">
-                            ID <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th width="12%" class="text-center sortable" data-column="dni">
+                        <th width="11%" class="text-center sortable" data-column="dni">
                             DNI <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="35%" class="sortable" data-column="responsable">
+                        <th width="28%" class="sortable" data-column="responsable">
                             Responsable <i class="fas fa-sort sort-icon"></i>
                         </th>
                         <th width="20%" class="sortable" data-column="area">
                             Área <i class="fas fa-sort sort-icon"></i>
                         </th>
-                        <th width="20%" class="sortable" data-column="fecha">
+                        <th width="9%" class="text-center sortable" data-column="anio">
+                            Período <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th width="18%" class="sortable" data-column="fecha">
                             Fecha Asignación <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th width="10%" class="text-center">
+                            Historial
                         </th>
                     </tr>
                 </thead>
@@ -160,26 +149,26 @@
                         <td class="text-center">
                             <input type="checkbox" class="checkbox-item" value="{{ $asignacion->id_responsable_area }}">
                         </td>
-                        <td class="text-center"><strong>{{ $asignacion->id_responsable_area }}</strong></td>
                         <td class="text-center">{{ $asignacion->dni_responsable }}</td>
                         <td>
-                            <strong>{{ strtoupper($asignacion->responsable->nombre_responsable ?? 'N/A') }} {{ strtoupper($asignacion->responsable->apellidos_responsable ?? '') }}</strong>
+                            {{ strtoupper($asignacion->responsable->nombre_responsable ?? 'N/A') }} {{ strtoupper($asignacion->responsable->apellidos_responsable ?? '') }}
                             <br>
-                            <small class="text-muted">
-                                <i class="fas fa-briefcase"></i> {{ strtoupper($asignacion->responsable->cargo_responsable ?? 'N/A') }}
-                            </small>
+                            <small class="text-muted">{{ strtoupper($asignacion->responsable->cargo_responsable ?? 'N/A') }}</small>
                         </td>
-                        <td>
-                            <span class="badge badge-info p-2">
-                                <i class="fas fa-building"></i> {{ strtoupper($asignacion->area->nombre_area ?? 'N/A') }}
-                            </span>
-                        </td>
+                        <td>{{ strtoupper($asignacion->area->nombre_area ?? 'N/A') }}</td>
+                        <td class="text-center"><span class="badge badge-primary">{{ $asignacion->periodo_anio ?? date('Y') }}</span></td>
                         <td>{{ \Carbon\Carbon::parse($asignacion->fecha_asignacion)->format('d/m/Y H:i') }}</td>
-
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-info btn-historial"
+                                    data-dni="{{ $asignacion->dni_responsable }}"
+                                    title="Ver trazabilidad">
+                                <i class="fas fa-chart-bar"></i>
+                            </button>
+                        </td>
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay asignaciones registradas
                         </td>
@@ -257,14 +246,29 @@
                         </div>
                     </div>
 
-                    <div class="alert alert-info">
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="periodo_anio"><i class="fas fa-calendar-alt text-warning"></i> Período <span class="text-danger">*</span></label>
+                                <select name="periodo_anio" id="periodo_anio" class="form-control" required>
+                                    @foreach($aniosDisponibles as $anio)
+                                        <option value="{{ $anio }}" {{ $anio == $anioActual ? 'selected' : '' }}>{{ $anio }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="text-danger error-periodo_anio"></span>
+                                <small class="text-muted">Año en que el responsable está asignado al área.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2">
                         <i class="fas fa-info-circle"></i>
-                        <strong>Nota:</strong> La fecha de asignación se registrará automáticamente.
+                        La fecha de asignación se registrará automáticamente.
                     </div>
 
                     <div id="alertDuplicado" class="alert alert-danger" style="display:none;">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Error:</strong> Este responsable ya está asignado a esta área.
+                        <strong>Error:</strong> <span id="alertDuplicadoMsg">Este responsable ya está asignado a esta área en este año.</span>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -280,13 +284,13 @@
     </div>
 </div>
 
-{{-- ========================= MODAL EDITAR ========================= --}}
+{{-- ========================= MODAL RE-ASIGNAR (crea nuevo registro para historial) ========================= --}}
 <div class="modal fade" id="modalEdit" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white">
+            <div class="modal-header text-white" style="background:#e65100;">
                 <h5 class="modal-title">
-                    <i class="fas fa-edit"></i> Editar Asignación
+                    <i class="fas fa-exchange-alt"></i> Re-asignar a Nueva Área
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
@@ -294,8 +298,9 @@
             </div>
             <form id="formEdit">
                 @csrf
-                @method('PUT')
-                <input type="hidden" id="edit_id">
+                {{-- DNI del responsable para crear nuevo registro --}}
+                <input type="hidden" id="edit_id" name="edit_id_registro">
+                <input type="hidden" id="edit_dni_hidden" name="dni_responsable">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -308,9 +313,9 @@
 
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="edit_idarea">Cambiar a Área <span class="text-danger">*</span></label>
+                                <label for="edit_idarea">Nueva Área <span class="text-danger">*</span></label>
                                 <select name="idarea" id="edit_idarea" class="form-control" required>
-                                    <option value="">-- Seleccione un área --</option>
+                                    <option value="">-- Seleccione el nuevo área --</option>
                                     @foreach($areas as $area)
                                         <option value="{{ $area->id_area }}">{{ strtoupper($area->nombre_area) }}</option>
                                     @endforeach
@@ -320,20 +325,62 @@
                         </div>
                     </div>
 
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Atención:</strong> Solo puede cambiar el área asignada. No se puede cambiar el responsable.
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit_periodo_anio"><i class="fas fa-calendar-alt text-warning"></i> Período <span class="text-danger">*</span></label>
+                                <select name="periodo_anio" id="edit_periodo_anio" class="form-control" required>
+                                    @foreach($aniosDisponibles as $anio)
+                                        <option value="{{ $anio }}">{{ $anio }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2">
+                        <i class="fas fa-history"></i>
+                        La asignación anterior <strong>no se elimina</strong> — queda en el historial del responsable.
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times"></i> Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary" id="btnActualizar">
-                        <i class="fas fa-sync-alt"></i> Actualizar
+                    <button type="submit" class="btn btn-warning text-white" id="btnActualizar">
+                        <i class="fas fa-exchange-alt"></i> Registrar Re-asignación
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+{{-- ========================= MODAL TRAZABILIDAD / HISTORIAL ========================= --}}
+<div class="modal fade" id="modalHistorial" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a237e; color:#fff;">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    Trazabilidad — <span id="histNombre"></span>
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="histBody">
+                {{-- Contenido cargado dinámicamente --}}
+                <div class="text-center py-4" id="histLoading">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2 text-muted">Cargando historial...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <small class="text-muted mr-auto" id="histSubtitulo"></small>
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -353,6 +400,7 @@ $(document).ready(function() {
     let terminoBusqueda = '';
     let areaSeleccionada = '';
     let responsableSeleccionado = '';
+    let anioSeleccionado = $('#anioFiltro').val() || '';
 
     actualizarIconosOrdenamiento();
 
@@ -423,7 +471,14 @@ $(document).ready(function() {
         buscar(terminoBusqueda, paginaActual);
     });
 
-    // ==================== FUNCIÓN PRINCIPAL DE BÚSQUEDA ====================
+    // ==================== FILTRO POR AÑO ====================
+    $('#anioFiltro').on('change', function() {
+        anioSeleccionado = $(this).val();
+        paginaActual = 1;
+        buscar(terminoBusqueda, paginaActual);
+    });
+
+    // ==================== FUNCIÓN PRINCIPAL DE BÚSQL ====================
     function buscar(termino, page = 1) {
         mostrarCargando(true);
 
@@ -436,7 +491,8 @@ $(document).ready(function() {
                 orden: ordenActual.columna,
                 direccion: ordenActual.direccion,
                 area_filtro: areaSeleccionada,
-                responsable_filtro: responsableSeleccionado
+                responsable_filtro: responsableSeleccionado,
+                anio_filtro: anioSeleccionado
             },
             dataType: 'json',
             success: function(res) {
@@ -470,7 +526,7 @@ $(document).ready(function() {
         if (asignaciones.length === 0) {
             tbody.append(`
                 <tr id="filaVacia">
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                         <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                         No hay asignaciones registradas
                     </td>
@@ -503,22 +559,21 @@ $(document).ready(function() {
                     <td class="text-center">
                         <input type="checkbox" class="checkbox-item" value="${a.id_responsable_area}">
                     </td>
-                    <td class="text-center"><strong>${a.id_responsable_area}</strong></td>
                     <td class="text-center">${a.dni_responsable}</td>
                     <td>
-                        <strong>${nombreResp}</strong>
-                        <br>
-                        <small class="text-muted">
-                            <i class="fas fa-briefcase"></i> ${cargoResp}
-                        </small>
+                        ${nombreResp}<br>
+                        <small class="text-muted">${cargoResp}</small>
                     </td>
-                    <td>
-                        <span class="badge badge-info p-2">
-                            <i class="fas fa-building"></i> ${nombreArea}
-                        </span>
-                    </td>
+                    <td>${nombreArea}</td>
+                    <td class="text-center"><span class="badge badge-primary">${a.periodo_anio || ''}</span></td>
                     <td>${fecha}</td>
-
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-info btn-historial"
+                                data-dni="${a.dni_responsable}"
+                                title="Ver trazabilidad">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                    </td>
                 </tr>
             `);
         });
@@ -655,6 +710,7 @@ $(document).ready(function() {
         $('#searchInput').val('');
         $('#areaFiltro').val('');
         $('#responsableFiltro').val('');
+        $('#anioFiltro').val('').trigger('change');
         $('#btnLimpiarArea').fadeOut(200);
         $('#btnLimpiarResponsable').fadeOut(200);
         $('#infoArea').fadeOut(200);
@@ -662,6 +718,7 @@ $(document).ready(function() {
         terminoBusqueda = '';
         areaSeleccionada = '';
         responsableSeleccionado = '';
+        anioSeleccionado = '';
         paginaActual = 1;
         ordenActual = { columna: 'fecha', direccion: 'desc' };
         actualizarIconosOrdenamiento();
@@ -772,7 +829,9 @@ $(document).ready(function() {
                 `${data.responsable.nombre_responsable} ${data.responsable.apellidos_responsable}`.toUpperCase() :
                 'N/A';
             $('#edit_responsable_nombre').val(nombreCompleto);
-            $('#edit_idarea').val(data.idarea);
+            $('#edit_idarea').val(''); // Limpiar para que elija nueva área
+            $('#edit_dni_hidden').val(data.dni_responsable);
+            $('#edit_periodo_anio').val(data.periodo_anio || new Date().getFullYear());
             $('#modalEdit').modal('show');
         }).fail(function(xhr) {
             Toast.fire({
@@ -831,43 +890,144 @@ $(document).ready(function() {
         });
     });
 
-    // ==================== ACTUALIZAR ====================
+    // ==================== RE-ASIGNAR (crea nuevo registro) ====================
     $('#formEdit').on('submit', function(e) {
         e.preventDefault();
         $('.text-danger').text('');
 
         const btn = $('#btnActualizar');
-        const id = $('#edit_id').val();
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Registrando...');
+
+        // Construir datos para crear nuevo registro (POST al store)
+        const formData = {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            dni_responsable : $('#edit_dni_hidden').val(),
+            idarea          : $('#edit_idarea').val(),
+            periodo_anio    : $('#edit_periodo_anio').val()
+        };
 
         $.ajax({
-            url: `/responsable-area/${id}`,
-            method: 'PUT',
-            data: $(this).serialize(),
+            url: '{{ route("responsable-area.store") }}',
+            method: 'POST',
+            data: formData,
             success: function(res) {
-                btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
+                btn.prop('disabled', false).html('<i class="fas fa-exchange-alt"></i> Registrar Re-asignación');
 
                 if (res.success) {
                     $('#modalEdit').modal('hide');
-                    Toast.fire({ icon: 'success', title: res.message });
+                    Toast.fire({ icon: 'success', title: '¡Re-asignación registrada en el historial!' });
                     buscar(terminoBusqueda, paginaActual);
                 }
             },
             error: function(xhr) {
-                btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
+                btn.prop('disabled', false).html('<i class="fas fa-exchange-alt"></i> Registrar Re-asignación');
 
                 if (xhr.status === 422) {
                     const errors = xhr.responseJSON.errors || {};
                     $.each(errors, (campo, mensajes) => {
                         $(`.error-edit-${campo}`).text(mensajes[0]);
                     });
-
                     if (xhr.responseJSON.message) {
                         Toast.fire({ icon: 'error', title: xhr.responseJSON.message });
                     }
                 } else {
-                    Toast.fire({ icon: 'error', title: 'Error al actualizar' });
+                    Toast.fire({ icon: 'error', title: 'Error al registrar re-asignación' });
                 }
+            }
+        });
+    });
+
+    // ==================== HISTORIAL / TRAZABILIDAD ====================
+    $(document).on('click', '.btn-historial', function(e) {
+        e.stopPropagation(); // evitar que dispare el dblclick de la fila
+
+        const dni = $(this).data('dni');
+
+        // Resetear modal
+        $('#histNombre').text('...');
+        $('#histSubtitulo').text('');
+        $('#histBody').html(`
+            <div class="text-center py-4" id="histLoading">
+                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                <p class="mt-2 text-muted">Cargando historial...</p>
+            </div>
+        `);
+        $('#modalHistorial').modal('show');
+
+        $.ajax({
+            url: `/catalogos/responsable-area/historial/${dni}`,
+            method: 'GET',
+            dataType: 'json',
+            success: function(res) {
+                if (!res.success) {
+                    $('#histBody').html('<div class="alert alert-danger">No se encontró al responsable.</div>');
+                    return;
+                }
+
+                const r = res.responsable;
+                const asignaciones = res.asignaciones;
+
+                $('#histNombre').text(r.nombre);
+                $('#histSubtitulo').text(`DNI: ${r.dni}  •  ${r.cargo}`);
+
+                let filas = '';
+                if (asignaciones.length === 0) {
+                    filas = `<tr><td colspan="3" class="text-center text-muted py-3">
+                        <i class="fas fa-inbox fa-2x d-block mb-2"></i>Sin asignaciones registradas
+                    </td></tr>`;
+                } else {
+                    asignaciones.forEach((a, idx) => {
+                        const esActual = idx === 0;
+                        filas += `
+                            <tr ${esActual ? 'class="table-primary font-weight-bold"' : ''}>
+                                <td class="text-center">
+                                    <span class="badge badge-${esActual ? 'success' : 'secondary'}">
+                                        ${a.periodo_anio}
+                                    </span>
+                                </td>
+                                <td>${a.area}</td>
+                                <td class="text-muted small">${a.fecha_asignacion}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                $('#histBody').html(`
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-3"
+                             style="width:48px;height:48px;font-size:1.3rem;flex-shrink:0;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">${r.nombre}</h6>
+                            <small class="text-muted">${r.cargo} &nbsp;|&nbsp; DNI: ${r.dni}</small>
+                        </div>
+                        <span class="ml-auto badge badge-pill badge-info px-3 py-2">
+                            ${asignaciones.length} asignación(es)
+                        </span>
+                    </div>
+                    <table class="table table-sm table-bordered">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th class="text-center" width="15%">Período</th>
+                                <th>Área</th>
+                                <th width="25%">Fecha asignación</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filas}</tbody>
+                    </table>
+                    <small class="text-muted">
+                        <i class="fas fa-circle text-success"></i> Fila resaltada = asignación más reciente
+                    </small>
+                `);
+            },
+            error: function(xhr) {
+                $('#histBody').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error al cargar el historial. (${xhr.status})
+                    </div>
+                `);
             }
         });
     });

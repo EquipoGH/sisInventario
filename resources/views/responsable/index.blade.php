@@ -99,9 +99,9 @@
                             <input type="checkbox" class="checkbox-item" value="{{ $responsable->dni_responsable }}">
                         </td>
                         @endif
-                        <td class="text-center"><strong>{{ $responsable->dni_responsable }}</strong></td>
-                        <td><strong>{{ strtoupper($responsable->nombre_responsable) }}</strong></td>
-                        <td><strong>{{ strtoupper($responsable->apellidos_responsable) }}</strong></td>
+                        <td class="text-center">{{ $responsable->dni_responsable }}</td>
+                        <td>{{ strtoupper($responsable->nombre_responsable) }}</td>
+                        <td>{{ strtoupper($responsable->apellidos_responsable) }}</td>
                         <td>{{ strtoupper($responsable->cargo_responsable) }}</td>
                         <td>{{ $responsable->created_at->format('d/m/Y H:i') }}</td>
                     </tr>
@@ -403,9 +403,9 @@ $(document).ready(function() {
             tbody.append(`
                 <tr id="row-${r.dni_responsable}" class="${rowClass}" ${rowData}>
                     ${checkboxCol}
-                    <td class="text-center"><strong>${r.dni_responsable}</strong></td>
-                    <td><strong>${r.nombre_responsable.toUpperCase()}</strong></td>
-                    <td><strong>${r.apellidos_responsable.toUpperCase()}</strong></td>
+                    <td class="text-center">${r.dni_responsable}</td>
+                    <td>${r.nombre_responsable.toUpperCase()}</td>
+                    <td>${r.apellidos_responsable.toUpperCase()}</td>
                     <td>${r.cargo_responsable.toUpperCase()}</td>
                     <td>${fecha}</td>
                 </tr>

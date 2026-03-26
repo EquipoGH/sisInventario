@@ -69,6 +69,18 @@
         </li>
       @endforelse
 
+      {{-- ⭐ INYECCIÓN MANUAL: Mostrar "Movimientos" dentro de "Gestión De Bienes" --}}
+      @if(strtolower(trim($mod->nommodulo)) === 'gestión de bienes')
+        <li class="nav-item">
+          <a href="{{ route('movimiento.index') }}"
+             class="nav-link {{ request()->routeIs('movimiento.*') ? 'active' : '' }}">
+            <i class="far {{ request()->routeIs('movimiento.*') ? 'fa-dot-circle text-info' : 'fa-circle' }} nav-icon"
+               style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
+            <p>Movimientos</p>
+          </a>
+        </li>
+      @endif
+
       {{-- ⭐ INYECCIÓN MANUAL: Mostrar "Generador Masivo QR" dentro de "Reportes" solo para Admin --}}
       @if(strtolower(trim($mod->nommodulo)) === 'reportes' && auth()->check() && auth()->user()->esAdmin())
         <li class="nav-item">

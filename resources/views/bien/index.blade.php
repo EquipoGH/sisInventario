@@ -125,7 +125,7 @@
                                 <span class="text-muted">Sin foto</span>
                             @endif
                         </td>
-                        <td><strong>{{ $bien->codigo_patrimonial }}</strong></td>
+                        <td>{{ $bien->codigo_patrimonial }}</td>
                         <td class="editable-cell"
                             data-id="{{ $bien->id_bien }}"
                             style="cursor: pointer;"
@@ -134,27 +134,22 @@
                         </td>
                         <td>
                             @if($bien->NumDoc)
-                                <span class="badge badge-secondary"
-                                      title="{{ $bien->documentoSustento->tipo_documento ?? 'Documento' }}">
-                                    <i class="fas fa-file-alt"></i> {{ $bien->NumDoc }}
-                                </span>
+                                <i class="fas fa-file-alt text-muted"></i> {{ $bien->NumDoc }}
                             @else
                                 <span class="text-muted">-</span>
                             @endif
                         </td>
-                        <td>
-                            <span class="badge badge-info">{{ $bien->tipoBien->nombre_tipo ?? 'N/A' }}</span>
-                        </td>
+                        <td>{{ $bien->tipoBien->nombre_tipo ?? 'N/A' }}</td>
                         <td>{{ $bien->marca_bien ?? '-' }}</td>
                         <td>{{ $bien->modelo_bien ?? '-' }}</td>
                         <td>{{ \Carbon\Carbon::parse($bien->fecha_registro)->format('d/m/Y') }}</td>
                         <td class="text-center">
-                            <a href="{{ route('qr-bienes.descargar', $bien->codigo_patrimonial) }}" 
-                               class="btn btn-sm btn-outline-success" 
-                               title="Descargar QR"
-                               target="_blank">
+                            <button class="btn btn-sm btn-outline-success btn-ver-qr"
+                               data-codigo="{{ $bien->codigo_patrimonial }}"
+                               data-nombre="{{ $bien->denominacion_bien }}"
+                               title="Ver QR">
                                 <i class="fas fa-qrcode"></i>
-                            </a>
+                            </button>
                         </td>
                     </tr>
                     @empty
@@ -323,13 +318,24 @@
                                        class="form-control-file" accept="image/*">
                                 <small class="text-muted d-block">JPG, PNG o GIF - Máx. 5MB</small>
                                 <span class="text-danger error-foto_bien"></span>
-                            </div>
-                            <div id="preview_create" class="text-center p-3 border rounded" style="min-height: 300px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa;">
-                                <div id="preview_placeholder">
-                                    <i class="fas fa-image fa-5x text-muted mb-3"></i>
-                                    <p class="text-muted">Previsualización de imagen</p>
+                                       <div id="preview_create" class="text-center p-3 border rounded" style="min-height: 300px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; flex-direction: column;">
+                                    <div id="preview_placeholder">
+                                        <i class="fas fa-image fa-5x text-muted mb-3"></i>
+                                        <p class="text-muted">Previsualización de imagen</p>
+                                    </div>
+                                    <img id="img_preview_create" src="" class="img-fluid" style="display:none; max-height: 350px; border-radius: 8px;">
                                 </div>
-                                <img id="img_preview_create" src="" class="img-fluid" style="display:none; max-height: 400px; border-radius: 8px;">
+                                <div id="peso_create" class="mt-2" style="display:none;">
+                                    <small class="d-block text-muted">
+                                        <i class="fas fa-file-image text-info"></i>
+                                        <strong>Peso original:</strong> <span id="peso_original_create"></span>
+                                    </small>
+                                    <small class="d-block text-muted">
+                                        <i class="fas fa-cloud-upload-alt text-success"></i>
+                                        <strong>Estimado en Cloudinary:</strong> <span id="peso_cloudinary_create" class="text-success"></span>
+                                        <span class="badge badge-success badge-sm">~36% del original</span>
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -484,8 +490,23 @@
                                 <small class="text-muted d-block">Dejar vacío para mantener la actual</small>
                                 <span class="text-danger error-edit-foto_bien"></span>
                             </div>
-                            <div id="preview_edit" class="text-center p-3 border rounded" style="min-height: 300px; background-color: #f8f9fa;">
-                                <img id="img_preview_edit" src="" class="img-fluid" style="max-height: 400px; border-radius: 8px;">
+                            <div id="preview_edit" class="text-center p-3 border rounded" style="min-height: 300px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; flex-direction: column;">
+                                <div id="edit_preview_placeholder">
+                                    <i class="fas fa-image fa-5x text-muted mb-3"></i>
+                                    <p class="text-muted">Previsualización de imagen</p>
+                                </div>
+                                <img id="img_preview_edit" src="" class="img-fluid" style="display:none; max-height: 350px; border-radius: 8px;">
+                            </div>
+                            <div id="peso_edit" class="mt-2" style="display:none;">
+                                <small class="d-block text-muted">
+                                    <i class="fas fa-file-image text-info"></i>
+                                    <strong>Peso original:</strong> <span id="peso_original_edit"></span>
+                                </small>
+                                <small class="d-block text-muted">
+                                    <i class="fas fa-cloud-upload-alt text-success"></i>
+                                    <strong>Estimado en Cloudinary:</strong> <span id="peso_cloudinary_edit" class="text-success"></span>
+                                    <span class="badge badge-success badge-sm">~36% del original</span>
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -515,6 +536,43 @@
             </div>
             <div class="modal-body text-center">
                 <img id="foto_grande" src="" class="img-fluid" style="max-height: 70vh;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Previsualización QR -->
+<div class="modal fade" id="modalQR" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-qrcode"></i> Código QR
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div id="qr_loading" style="display:none;">
+                    <i class="fas fa-spinner fa-spin fa-3x text-muted"></i>
+                    <p class="text-muted mt-2">Generando QR...</p>
+                </div>
+                <div id="qr_content" style="display:none;">
+                    <p class="mb-1"><strong id="qr_nombre"></strong></p>
+                    <p class="text-muted mb-3"><small><i class="fas fa-barcode"></i> Código: <span id="qr_codigo"></span></small></p>
+                    <div class="border rounded p-3 d-inline-block bg-white">
+                        <img id="qr_img" src="" alt="Código QR" style="width:260px; height:260px;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <a id="qr_descargar" href="#" class="btn btn-success" download>
+                    <i class="fas fa-download"></i> Descargar QR
+                </a>
             </div>
         </div>
     </div>
@@ -804,70 +862,78 @@ $(document).ready(function() {
     }
 
     // ===============================
-    // VALIDACIÓN EN TIEMPO REAL DEL CÓDIGO PATRIMONIAL (CREAR)
+    // VALIDACIÓN DEL CÓDIGO PATRIMONIAL AL SALIR DEL CAMPO (CREAR)
     // ===============================
-    $('#codigo_patrimonial').on('keyup', function() {
+    $('#codigo_patrimonial').on('blur', function() {
         const codigo = $(this).val().trim();
         const feedback = $('#codigo_feedback');
 
         if (codigo.length === 0) {
-            feedback.text('').removeClass('text-danger text-success');
+            feedback.text('').removeClass('text-danger text-success text-info');
             return;
         }
 
-        clearTimeout(codigoTimeout);
         feedback.html('<i class="fas fa-spinner fa-spin"></i> Verificando...').removeClass('text-danger text-success').addClass('text-info');
 
-        codigoTimeout = setTimeout(() => {
-            $.post('{{ route("bien.verificar-codigo") }}', {
-                codigo: codigo,
-                id: null
-            }, function(res) {
-                if (res.existe) {
-                    feedback.html('<i class="fas fa-times-circle"></i> Este código ya está registrado')
-                        .removeClass('text-info text-success').addClass('text-danger');
-                    $('#btnGuardar').prop('disabled', true);
-                } else {
-                    feedback.html('<i class="fas fa-check-circle"></i> Código disponible')
-                        .removeClass('text-info text-danger').addClass('text-success');
-                    $('#btnGuardar').prop('disabled', false);
-                }
-            });
-        }, 500);
+        $.post('{{ route("bien.verificar-codigo") }}', {
+            codigo: codigo,
+            id: null
+        }, function(res) {
+            if (res.existe) {
+                feedback.html('<i class="fas fa-times-circle"></i> Este código ya está registrado')
+                    .removeClass('text-info text-success').addClass('text-danger');
+                $('#btnGuardar').prop('disabled', true);
+            } else {
+                feedback.html('<i class="fas fa-check-circle"></i> Código disponible')
+                    .removeClass('text-info text-danger').addClass('text-success');
+                $('#btnGuardar').prop('disabled', false);
+            }
+        });
+    });
+
+    // Limpiar feedback mientras se escribe
+    $('#codigo_patrimonial').on('input', function() {
+        const feedback = $('#codigo_feedback');
+        feedback.text('').removeClass('text-danger text-success text-info');
+        $('#btnGuardar').prop('disabled', false);
     });
 
     // ===============================
-    // VALIDACIÓN EN TIEMPO REAL DEL CÓDIGO PATRIMONIAL (EDITAR)
+    // VALIDACIÓN DEL CÓDIGO PATRIMONIAL AL SALIR DEL CAMPO (EDITAR)
     // ===============================
-    $('#edit_codigo_patrimonial').on('keyup', function() {
+    $('#edit_codigo_patrimonial').on('blur', function() {
         const codigo = $(this).val().trim();
         const feedback = $('#edit_codigo_feedback');
         const id = $('#edit_id').val();
 
         if (codigo.length === 0) {
-            feedback.text('').removeClass('text-danger text-success');
+            feedback.text('').removeClass('text-danger text-success text-info');
             return;
         }
 
-        clearTimeout(codigoTimeout);
         feedback.html('<i class="fas fa-spinner fa-spin"></i> Verificando...').removeClass('text-danger text-success').addClass('text-info');
 
-        codigoTimeout = setTimeout(() => {
-            $.post('{{ route("bien.verificar-codigo") }}', {
-                codigo: codigo,
-                id: id
-            }, function(res) {
-                if (res.existe) {
-                    feedback.html('<i class="fas fa-times-circle"></i> Este código ya está registrado')
-                        .removeClass('text-info text-success').addClass('text-danger');
-                    $('#btnActualizar').prop('disabled', true);
-                } else {
-                    feedback.html('<i class="fas fa-check-circle"></i> Código válido')
-                        .removeClass('text-info text-danger').addClass('text-success');
-                    $('#btnActualizar').prop('disabled', false);
-                }
-            });
-        }, 500);
+        $.post('{{ route("bien.verificar-codigo") }}', {
+            codigo: codigo,
+            id: id
+        }, function(res) {
+            if (res.existe) {
+                feedback.html('<i class="fas fa-times-circle"></i> Este código ya está registrado')
+                    .removeClass('text-info text-success').addClass('text-danger');
+                $('#btnActualizar').prop('disabled', true);
+            } else {
+                feedback.html('<i class="fas fa-check-circle"></i> Código válido')
+                    .removeClass('text-info text-danger').addClass('text-success');
+                $('#btnActualizar').prop('disabled', false);
+            }
+        });
+    });
+
+    // Limpiar feedback mientras se escribe
+    $('#edit_codigo_patrimonial').on('input', function() {
+        const feedback = $('#edit_codigo_feedback');
+        feedback.text('').removeClass('text-danger text-success text-info');
+        $('#btnActualizar').prop('disabled', false);
     });
 
     // ===============================
@@ -942,9 +1008,7 @@ $(document).ready(function() {
 
         // ⭐ CORREGIDO: NumDoc (mayúsculas) y documento_sustento
         const numDocHtml = b.NumDoc
-            ? `<span class="badge badge-secondary" title="${b.documento_sustento?.tipo_documento || 'Documento'}">
-                   <i class="fas fa-file-alt"></i> ${b.NumDoc}
-               </span>`
+            ? `<i class="fas fa-file-alt text-muted"></i> ${b.NumDoc}`
             : `<span class="text-muted">-</span>`;
 
         tbody.append(`
@@ -958,21 +1022,21 @@ $(document).ready(function() {
                     </div>
                 </td>
                 <td class="text-center">${fotoHtml}</td>
-                <td><strong>${b.codigo_patrimonial}</strong></td>
+                <td>${b.codigo_patrimonial}</td>
                 <td class="editable-cell" data-id="${b.id_bien}" style="cursor:pointer"
                     title="Doble click para editar">${b.denominacion_bien.toUpperCase()}</td>
                 <td>${numDocHtml}</td>
-                <td><span class="badge badge-info">${tipoNombre}</span></td>
+                <td>${tipoNombre}</td>
                 <td>${b.marca_bien || '-'}</td>
                 <td>${b.modelo_bien || '-'}</td>
                 <td>${fecha}</td>
                 <td class="text-center">
-                    <a href="{{ url('/qr-bienes/descargar') }}/${b.codigo_patrimonial}"
-                       class="btn btn-sm btn-outline-success"
-                       title="Descargar QR"
-                       target="_blank">
+                    <button class="btn btn-sm btn-outline-success btn-ver-qr"
+                       data-codigo="${b.codigo_patrimonial}"
+                       data-nombre="${b.denominacion_bien}"
+                       title="Ver QR">
                         <i class="fas fa-qrcode"></i>
-                    </a>
+                    </button>
                 </td>
             </tr>
         `);
@@ -1056,27 +1120,49 @@ $(document).ready(function() {
     });
 
     // ===============================
-    // VISTA PREVIA DE IMAGEN
+    // VISTA PREVIA DE IMAGEN (CREAR)
     // ===============================
     $('#foto_bien').on('change', function() {
         const file = this.files[0];
         if (file) {
+            // Mostrar peso
+            const originalKB = (file.size / 1024).toFixed(2);
+            const estimadoKB = (file.size * 0.36 / 1024).toFixed(2);
+            $('#peso_original_create').text(originalKB + ' KB');
+            $('#peso_cloudinary_create').text('~' + estimadoKB + ' KB');
+            $('#peso_create').show();
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 $('#preview_placeholder').hide();
                 $('#img_preview_create').attr('src', e.target.result).show();
-            }
+            };
             reader.readAsDataURL(file);
+        } else {
+            $('#preview_placeholder').show();
+            $('#img_preview_create').attr('src', '').hide();
+            $('#peso_create').hide();
         }
     });
 
+    // ===============================
+    // VISTA PREVIA DE IMAGEN (EDITAR)
+    // ===============================
     $('#edit_foto_bien').on('change', function() {
         const file = this.files[0];
         if (file) {
+            // Mostrar peso
+            const originalKB = (file.size / 1024).toFixed(2);
+            const estimadoKB = (file.size * 0.36 / 1024).toFixed(2);
+            $('#peso_original_edit').text(originalKB + ' KB');
+            $('#peso_cloudinary_edit').text('~' + estimadoKB + ' KB');
+            $('#peso_edit').show();
+
             const reader = new FileReader();
             reader.onload = function(e) {
-                $('#img_preview_edit').attr('src', e.target.result);
-            }
+                $('#edit_preview_placeholder').hide();
+                $('#img_preview_edit').attr('src', e.target.result).show();
+            };
             reader.readAsDataURL(file);
         }
     });
@@ -1088,6 +1174,42 @@ $(document).ready(function() {
         const foto = $(this).data('foto');
         $('#foto_grande').attr('src', foto);
         $('#modalFoto').modal('show');
+    });
+
+    // ===============================
+    // PREVISUALIZAR CÓDIGO QR
+    // ===============================
+    $(document).on('click', '.btn-ver-qr', function() {
+        const codigo = $(this).data('codigo');
+        const nombre = $(this).data('nombre');
+
+        // Preparar modal
+        $('#qr_loading').show();
+        $('#qr_content').hide();
+        $('#modalQR').modal('show');
+
+        // Cargar QR via AJAX
+        $.ajax({
+            url: '{{ url("/qr-bienes/imagen") }}/' + codigo,
+            method: 'GET',
+            success: function(res) {
+                if (res.ok) {
+                    $('#qr_nombre').text(nombre);
+                    $('#qr_codigo').text(codigo);
+                    $('#qr_img').attr('src', res.qr_img);
+                    $('#qr_descargar').attr('href', '{{ url("/qr-bienes/descargar") }}/' + codigo);
+                    $('#qr_loading').hide();
+                    $('#qr_content').show();
+                } else {
+                    $('#modalQR').modal('hide');
+                    Swal.fire('Error', res.message || 'No se pudo generar el QR', 'error');
+                }
+            },
+            error: function() {
+                $('#modalQR').modal('hide');
+                Swal.fire('Error', 'No se pudo conectar para generar el QR', 'error');
+            }
+        });
     });
 
     // ===============================
@@ -1385,9 +1507,11 @@ function eliminarMultiples(ids) {
 
         // Cargar foto si existe
         if (data.foto_bien) {
+            $('#edit_preview_placeholder').hide();
             $('#img_preview_edit').attr('src', data.foto_bien).show();
         } else {
-            $('#img_preview_edit').hide();
+            $('#edit_preview_placeholder').show();
+            $('#img_preview_edit').attr('src', '').hide();
         }
 
         // Abrir modal
@@ -1437,9 +1561,7 @@ $('#formCreate').on('submit', function(e) {
 
                 // ⭐ DOCUMENTO SUSTENTO (con nombres correctos)
                 const docSustento = bien.documento_sustento ?
-                    `<span class="badge badge-secondary" title="${bien.documento_sustento.tipo_documento || 'Documento'}">
-                        <i class="fas fa-file-alt"></i> ${bien.NumDoc}
-                     </span>` :
+                    `<i class="fas fa-file-alt text-muted"></i> ${bien.NumDoc}` :
                     '<span class="text-muted">-</span>';
 
                 // ⭐ TIPO DE BIEN (nombre_tipo NO nombre)
@@ -1463,22 +1585,22 @@ $('#formCreate').on('submit', function(e) {
                             </div>
                         </td>
                         <td class="text-center">${fotoHtml}</td>
-                        <td><strong>${bien.codigo_patrimonial}</strong></td>
+                        <td>${bien.codigo_patrimonial}</td>
                         <td class="editable-cell" data-id="${bien.id_bien}" style="cursor:pointer" title="Doble click para editar">
                             ${bien.denominacion_bien.toUpperCase()}
                         </td>
                         <td>${docSustento}</td>
-                        <td><span class="badge badge-info">${tipoNombre}</span></td>
+                        <td>${tipoNombre}</td>
                         <td>${bien.marca_bien || '-'}</td>
                         <td>${bien.modelo_bien || '-'}</td>
                         <td>${fechaRegistro}</td>
                         <td class="text-center">
-                            <a href="{{ url('/qr-bienes/descargar') }}/${bien.codigo_patrimonial}"
-                               class="btn btn-sm btn-outline-success"
-                               title="Descargar QR"
-                               target="_blank">
+                            <button class="btn btn-sm btn-outline-success btn-ver-qr"
+                               data-codigo="${bien.codigo_patrimonial}"
+                               data-nombre="${bien.denominacion_bien}"
+                               title="Ver QR">
                                 <i class="fas fa-qrcode"></i>
-                            </a>
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -1599,6 +1721,7 @@ $('#formCreate').on('submit', function(e) {
         $('#preview_numdoc').hide();
         $('#preview_placeholder').show();
         $('#img_preview_create').hide();
+        $('#peso_create').hide();
         $('.error-codigo_patrimonial, .error-denominacion_bien, .error-id_tipobien, .error-id_documento, .error-fecha_registro, .error-foto_bien').text('');
         $('#btnGuardar').prop('disabled', false);
         $('#codigo_feedback').text('');
@@ -1608,9 +1731,12 @@ $('#formCreate').on('submit', function(e) {
         $('#formEdit')[0].reset();
         $('#edit_NumDoc').val(''); // ⭐ LIMPIAR NUMDOC
         $('#edit_preview_numdoc').hide();
+        $('#edit_preview_placeholder').show();
+        $('#img_preview_edit').attr('src', '').hide();
+        $('#peso_edit').hide();
         $('.error-edit-codigo_patrimonial, .error-edit-denominacion_bien, .error-edit-id_tipobien, .error-edit-id_documento, .error-edit-fecha_registro, .error-edit-foto_bien').text('');
         $('#btnActualizar').prop('disabled', false);
-        $('#edit_codigo_feedback').text('');
+        $('#edit_codigo_feedback').text('').removeClass('text-danger text-success text-info');
     });
 
     // ===============================
@@ -1689,9 +1815,9 @@ $('#formCreate').on('submit', function(e) {
 
             tbody.append(`
                 <tr>
-                    <td><strong>${bien.codigo_patrimonial}</strong></td>
+                    <td>${bien.codigo_patrimonial}</td>
                     <td>${bien.denominacion_bien}</td>
-                    <td><span class="badge badge-secondary">${tipoNombre}</span></td>
+                    <td>${tipoNombre}</td>
                     <td><small>${fecha}</small></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-success btn-restaurar"

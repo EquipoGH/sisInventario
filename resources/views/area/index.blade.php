@@ -72,10 +72,7 @@
                             <input type="checkbox" id="checkAll">
                         </th>
                         @endif
-                        <th width="10%" class="text-center sortable" data-column="id">
-                            ID <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th width="65%" class="sortable" data-column="nombre">
+                        <th width="75%" class="sortable" data-column="nombre">
                             Nombre del Área <i class="fas fa-sort sort-icon"></i>
                         </th>
                         <th width="20%" class="sortable" data-column="fecha">
@@ -91,17 +88,16 @@
                             <input type="checkbox" class="checkbox-item" value="{{ $area->id_area }}">
                         </td>
                         @endif
-                        <td class="text-center"><strong>{{ $area->id_area }}</strong></td>
                         <td class="{{ Auth::user()->esAdmin() ? 'editable-cell' : '' }}"
                             data-id="{{ $area->id_area }}"
                             title="{{ Auth::user()->esAdmin() ? 'Doble click para editar' : '' }}">
-                            <strong>{{ strtoupper($area->nombre_area) }}</strong>
+                            {{ strtoupper($area->nombre_area) }}
                         </td>
                         <td>{{ $area->created_at->format('d/m/Y H:i') }}</td>
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="{{ Auth::user()->esAdmin() ? 4 : 3 }}" class="text-center text-muted py-4">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 3 : 2 }}" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay áreas registradas
                         </td>
@@ -291,7 +287,7 @@ $(document).ready(function() {
         const tbody = $('#tablaBody');
         tbody.empty();
 
-        const totalCols = esAdmin ? 4 : 3;
+        const totalCols = esAdmin ? 3 : 2;
 
         if (areas.length === 0) {
             tbody.append(`
@@ -322,13 +318,12 @@ $(document).ready(function() {
                 : '';
 
             const nombreCell = esAdmin
-                ? `<td class="editable-cell" data-id="${a.id_area}" title="Doble click para editar"><strong>${a.nombre_area.toUpperCase()}</strong></td>`
-                : `<td><strong>${a.nombre_area.toUpperCase()}</strong></td>`;
+                ? `<td class="editable-cell" data-id="${a.id_area}" title="Doble click para editar">${a.nombre_area.toUpperCase()}</td>`
+                : `<td>${a.nombre_area.toUpperCase()}</td>`;
 
             tbody.append(`
                 <tr id="row-${a.id_area}" class="fade-in">
                     ${checkboxCol}
-                    <td class="text-center"><strong>${a.id_area}</strong></td>
                     ${nombreCell}
                     <td>${fecha}</td>
                 </tr>

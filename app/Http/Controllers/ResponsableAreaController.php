@@ -7,6 +7,8 @@ use App\Models\Responsable;
 use App\Models\Area;
 use App\Http\Requests\ResponsableAreaRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class ResponsableAreaController extends Controller
 {
@@ -15,24 +17,36 @@ class ResponsableAreaController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->get('search', '');
-        $areaFiltro = $request->get('area_filtro', '');
+        $search            = $request->get('search', '');
+        $areaFiltro        = $request->get('area_filtro', '');
         $responsableFiltro = $request->get('responsable_filtro', '');
+        $anioFiltro        = $request->get('anio_filtro', '');
         $perPage = 10;
 
-        // Total de registros sin filtros
-        $total = ResponsableArea::count();
+        // ───────────────────────────────────────────────────────────
+        // 📌 Solo mostrar el ÚLTIMO registro por DNI (1 fila por persona)
+        // Usamos la subconsulta: MAX(id_responsable_area) agrupado por dni
+        // ───────────────────────────────────────────────────────────
+        $ultimosIdsSubquery = DB::table('responsable_area')
+            ->selectRaw('MAX(id_responsable_area)')
+            ->groupBy('dni_responsable');
 
-        $query = ResponsableArea::with(['responsable', 'area']);
+        $query = ResponsableArea::with(['responsable', 'area'])
+            ->whereIn('id_responsable_area', $ultimosIdsSubquery);
 
         // 🔍 BÚSQUEDA
         if (!empty($search)) {
             $query->buscar($search);
         }
 
-        // 🎯 FILTRO POR ÁREA
+        // 🎯 FILTRO POR ÁREA (última asignación que esté en esa área)
         if (!empty($areaFiltro)) {
             $query->porArea($areaFiltro);
+        }
+
+        // 📅 FILTRO POR AÑO (última asignación en ese año)
+        if (!empty($anioFiltro)) {
+            $query->where('periodo_anio', $anioFiltro);
         }
 
         // 🎯 FILTRO POR RESPONSABLE
@@ -41,53 +55,55 @@ class ResponsableAreaController extends Controller
         }
 
         // 📊 ORDENAMIENTO DINÁMICO
-        $columna = $request->get('orden', 'fecha_asignacion');
+        $columna   = $request->get('orden', 'fecha_asignacion');
         $direccion = $request->get('direccion', 'desc');
 
-        // Mapeo de columnas del frontend al backend
         $columnasPermitidas = [
-            'id' => 'id_responsable_area',
-            'dni' => 'dni_responsable',
+            'id'          => 'id_responsable_area',
+            'dni'         => 'dni_responsable',
             'responsable' => 'dni_responsable',
-            'area' => 'idarea',
-            'fecha' => 'fecha_asignacion'
+            'area'        => 'idarea',
+            'anio'        => 'periodo_anio',
+            'fecha'       => 'fecha_asignacion'
         ];
 
-        // Validar que la columna existe
-        if (array_key_exists($columna, $columnasPermitidas)) {
-            $columnaReal = $columnasPermitidas[$columna];
-        } else {
-            $columnaReal = 'fecha_asignacion';
-        }
+        $columnaReal = $columnasPermitidas[$columna] ?? 'fecha_asignacion';
+        $direccion   = in_array(strtolower($direccion), ['asc', 'desc']) ? strtolower($direccion) : 'desc';
 
-        // Validar dirección
-        $direccion = in_array(strtolower($direccion), ['asc', 'desc'])
-            ? strtolower($direccion)
-            : 'desc';
-
-        // Aplicar ordenamiento
         $query->orderBy($columnaReal, $direccion);
+
+        // Total de responsables únicos (sin filtros)
+        $total = DB::table('responsable_area')->distinct()->count('dni_responsable');
 
         // 📄 PAGINACIÓN
         $asignaciones = $query->paginate($perPage);
-        $resultados = $query->count();
 
-        // Obtener datos para los filtros
-        $areas = Area::orderBy('nombre_area')->get();
+        // Datos para filtros y comboboxes
+        $areas        = Area::orderBy('nombre_area')->get();
         $responsables = Responsable::orderBy('apellidos_responsable')->get();
+
+        $anioActual       = (int) date('Y');
+        $aniosDisponibles = array_unique(array_merge(
+            range($anioActual - 2, $anioActual + 2),
+            ResponsableArea::selectRaw('DISTINCT periodo_anio')
+                ->orderBy('periodo_anio', 'desc')
+                ->pluck('periodo_anio')
+                ->toArray()
+        ));
+        rsort($aniosDisponibles);
 
         // 📤 RESPUESTA AJAX
         if ($request->ajax()) {
             return response()->json([
-                'success' => true,
-                'data' => $asignaciones->items(),
-                'total' => $total,
-                'resultados' => $asignaciones->total(),
+                'success'      => true,
+                'data'         => $asignaciones->items(),
+                'total'        => $total,
+                'resultados'   => $asignaciones->total(),
                 'current_page' => $asignaciones->currentPage(),
-                'last_page' => $asignaciones->lastPage(),
-                'per_page' => $asignaciones->perPage(),
-                'from' => $asignaciones->firstItem(),
-                'to' => $asignaciones->lastItem()
+                'last_page'    => $asignaciones->lastPage(),
+                'per_page'     => $asignaciones->perPage(),
+                'from'         => $asignaciones->firstItem(),
+                'to'           => $asignaciones->lastItem()
             ]);
         }
 
@@ -95,9 +111,12 @@ class ResponsableAreaController extends Controller
             'asignaciones',
             'total',
             'areas',
-            'responsables'
+            'responsables',
+            'aniosDisponibles',
+            'anioActual'
         ));
     }
+
 
     /**
      * Guardar nueva asignación
@@ -107,7 +126,8 @@ class ResponsableAreaController extends Controller
         try {
             $asignacion = ResponsableArea::create([
                 'dni_responsable' => $request->dni_responsable,
-                'idarea' => $request->idarea,
+                'idarea'          => $request->idarea,
+                'periodo_anio'    => $request->periodo_anio ?? date('Y'),
                 'fecha_asignacion' => now()
             ]);
 
@@ -141,26 +161,14 @@ class ResponsableAreaController extends Controller
     public function update(Request $request, ResponsableArea $responsableArea)
     {
         try {
-            // Validar manualmente ya que no usamos ResponsableAreaRequest
             $request->validate([
-                'idarea' => 'required|integer|exists:area,id_area'
+                'idarea'       => 'required|integer|exists:area,id_area',
+                'periodo_anio' => 'required|integer|min:2020|max:2099'
             ]);
 
-            // Verificar duplicado si cambia el área
-            if ($responsableArea->idarea != $request->idarea) {
-                if (ResponsableArea::existeAsignacion(
-                    $responsableArea->dni_responsable,
-                    $request->idarea
-                )) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Este responsable ya está asignado a esta área'
-                    ], 422);
-                }
-            }
-
             $responsableArea->update([
-                'idarea' => $request->idarea
+                'idarea'       => $request->idarea,
+                'periodo_anio' => $request->periodo_anio
             ]);
 
             $responsableArea->load(['responsable', 'area']);
@@ -168,7 +176,7 @@ class ResponsableAreaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Asignación actualizada exitosamente',
-                'data' => $responsableArea
+                'data'    => $responsableArea
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -196,6 +204,44 @@ class ResponsableAreaController extends Controller
                 'message' => 'Error al eliminar: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Historial/Trazabilidad de un responsable por DNI
+     */
+    public function historial($dni)
+    {
+        $responsable = \App\Models\Responsable::where('dni_responsable', $dni)->first();
+
+        if (!$responsable) {
+            return response()->json(['success' => false, 'message' => 'Responsable no encontrado'], 404);
+        }
+
+        $asignaciones = ResponsableArea::with('area')
+            ->where('dni_responsable', $dni)
+            ->orderBy('periodo_anio', 'desc')
+            ->orderBy('fecha_asignacion', 'desc')
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'id'              => $a->id_responsable_area,
+                    'periodo_anio'    => $a->periodo_anio,
+                    'area'            => $a->area ? strtoupper($a->area->nombre_area) : 'N/A',
+                    'fecha_asignacion'=> $a->fecha_asignacion
+                        ? \Carbon\Carbon::parse($a->fecha_asignacion)->format('d/m/Y H:i')
+                        : 'N/A',
+                ];
+            });
+
+        return response()->json([
+            'success'     => true,
+            'responsable' => [
+                'dni'     => $responsable->dni_responsable,
+                'nombre'  => strtoupper(trim($responsable->nombre_responsable . ' ' . $responsable->apellidos_responsable)),
+                'cargo'   => strtoupper($responsable->cargo_responsable ?? ''),
+            ],
+            'asignaciones' => $asignaciones
+        ]);
     }
 
     /**

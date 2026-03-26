@@ -10,57 +10,37 @@
    COLORES DE FONDO POR TIPO DE MOVIMIENTO
    ========================================== */
 
-/* 🟦 SIN ASIGNAR - Celeste claro (IGUAL QUE REGISTRO) */
+/* 🟦 SIN ASIGNAR */
 .tipo-sin-asignar {
-    background-color: #e3f2fd !important;
 }
 
-/* 🟦 REGISTRO - Celeste claro (MANTENER POR COMPATIBILIDAD) */
+/* 🟦 REGISTRO */
 .tipo-registro {
-    background-color: #e3f2fd !important;
 }
 
-
-/* 🟢 ASIGNACIÓN - Verde claro */
+/* 🟢 ASIGNACIÓN */
 .tipo-asignacion {
-    background-color: #e8f5e9 !important;
 }
 
-/* ❌ HOVER ELIMINADO - NO CAMBIA COLOR
-.tipo-asignacion:hover {
-    background-color: #c8e6c9 !important;
-} */
-
-/* 🔴 BAJA - Rojo claro */
+/* 🔴 BAJA */
 .tipo-baja {
-    background-color: #ffebee !important;
 }
 
-/* ❌ HOVER ELIMINADO - NO CAMBIA COLOR
-.tipo-baja:hover {
-    background-color: #ffcdd2 !important;
-} */
-
-/* Badge SIN ASIGNAR - Celeste azul */
+/* Badges de tipo (desactivados, se usan solo para referencia) */
 .badge-tipo-sin-asignar {
-    background-color: #2196F3 !important;
+    background-color: #6c757d !important;
     color: white !important;
 }
-
-/* Badge REGISTRO - Mantener (fallback) */
 .badge-tipo-registro {
-    background-color: #2196F3 !important;
+    background-color: #6c757d !important;
     color: white !important;
 }
-
-
 .badge-tipo-asignacion {
-    background-color: #4CAF50 !important;
+    background-color: #6c757d !important;
     color: white !important;
 }
-
 .badge-tipo-baja {
-    background-color: #F44336 !important;
+    background-color: #6c757d !important;
     color: white !important;
 }
 
@@ -544,7 +524,7 @@
                 @if(Auth::user()->esAdmin())
                     <button type="button" class="btn btn-warning btn-action" id="btnBajaSeleccionados">
                         <i class="fas fa-times-circle"></i>
-                        <span class="d-none d-sm-inline">Dar de Baja</span>
+                        <span class="d-none d-sm-inline">Dar de baja mov</span>
                         <span class="badge badge-light ml-1" id="contadorBaja">0</span>
                     </button>
                 @endif
@@ -554,14 +534,7 @@
                     <span class="d-none d-sm-inline">Revertir Baja</span>
                     <span class="badge badge-light ml-1" id="contadorRevertir">0</span>
                 </button>
-                {{-- ⭐⭐⭐ CAMBIO: Eliminar → Anular (Solo Admin) ⭐⭐⭐ --}}
-                @if(Auth::user()->esAdmin())
-                <button type="button" class="btn btn-danger btn-action" id="btnAnularSeleccionados">
-                    <i class="fas fa-ban"></i>
-                    <span class="d-none d-sm-inline">Anular</span>
-                    <span class="badge badge-light ml-1" id="contadorAnular">0</span>
-                </button>
-                @endif
+
 
             </div>
         </div>
@@ -644,7 +617,8 @@
             <select id="filtroUbicacion" class="form-control form-control-sm custom-select-filter">
                 <option value="">Todas</option>
                 @foreach($ubicaciones as $ubicacion)
-                    <option value="{{ $ubicacion->id_ubicacion }}">
+                    <option value="{{ $ubicacion->id_ubicacion }}"
+                            data-area="{{ $ubicacion->idarea ?? '' }}">
                         {{ Str::limit($ubicacion->nombre_sede, 20) }}
                     </option>
                 @endforeach
@@ -768,9 +742,6 @@
                                 <label class="custom-control-label" for="checkAll"></label>
                             </div>
                         </th>
-                        <th width="5%" class="sortable" data-column="id" style="cursor:pointer;">
-                            ID <i class="fas fa-sort sort-icon"></i>
-                        </th>
                         <th width="10%" class="sortable" data-column="fecha" style="cursor:pointer;">
                             FECHA <i class="fas fa-sort sort-icon"></i>
                         </th>
@@ -782,8 +753,7 @@
                         <th width="12%">ÁREA</th>
                         <th width="12%">UBICACIÓN</th>
                         <th width="8%">ESTADO CONSERV.</th>
-                        <th width="7%">ESTADO MVTO</th>  {{-- ⭐ NUEVA COLUMNA --}}
-                        <th width="10%">ACCIÓN</th>
+                        <th width="10%">CONTROL</th>
 
                     </tr>
                 </thead>
@@ -805,108 +775,61 @@
                                 <input type="checkbox" class="custom-control-input checkbox-item"
                                        id="check-{{ $movimiento->id_movimiento }}"
                                        value="{{ $movimiento->id_movimiento }}"
-                                       data-bien-id="{{ $movimiento->idbien }}">
+                                       data-bien-id="{{ $movimiento->idbien }}"
+                                       data-tipo-mvto="{{ strtoupper($movimiento->tipoMovimiento->tipo_mvto) }}"
+                                       data-tiene-asignacion="{{ $movimiento->bien->movimientos()->whereHas('tipoMovimiento', fn($q) => $q->where('tipo_mvto', 'ILIKE', '%asignacion%')->orWhere('tipo_mvto', 'ILIKE', '%asignaci%n%'))->where('anulado', false)->exists() ? '1' : '0' }}">
                                 <label class="custom-control-label" for="check-{{ $movimiento->id_movimiento }}"></label>
                             </div>
                         </td>
 
-                        <td class="text-center"><strong>{{ $movimiento->id_movimiento }}</strong></td>
-
                         <td>
-                            <strong>{{ \Carbon\Carbon::parse($movimiento->fecha_mvto)->format('d/m/Y') }}</strong><br>
+                            {{ \Carbon\Carbon::parse($movimiento->fecha_mvto)->format('d/m/Y') }}<br>
                             <small class="text-muted">{{ \Carbon\Carbon::parse($movimiento->fecha_mvto)->format('H:i:s') }}</small>
                         </td>
 
-                        <td>
-                            <span class="responsable-text">
-                                <i class="fas fa-user-circle"></i> {{ $movimiento->usuario->name ?? 'N/A' }}
-                            </span>
-                        </td>
+                        <td>{{ $movimiento->bien->codigo_patrimonial }}</td>
 
                         <td>
-                            <span class="badge badge-info">
-                                {{ $movimiento->bien->codigo_patrimonial }}
-                            </span>
+                            {{ Str::limit($movimiento->bien->denominacion_bien, 30) }}<br>
+                            <small class="text-muted">{{ $movimiento->bien->tipoBien->nombre_tipo ?? '' }}</small>
                         </td>
 
+                        <td>{{ $movimiento->tipoMovimiento->tipo_mvto }}</td>
+
+                        {{-- ÁREA --}}
                         <td>
-                            <strong>{{ Str::limit($movimiento->bien->denominacion_bien, 30) }}</strong>
-                            <br>
-                            <small class="text-muted">{{ $movimiento->bien->tipoBien->nombre_tipo }}</small>
+                            @if($movimiento->ubicacion && $movimiento->ubicacion->area)
+                                <small><i class="fas fa-building text-muted"></i> {{ $movimiento->ubicacion->area->nombre_area }}</small>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
                         </td>
 
-                        <td>
-                            <span class="badge {{ $badgeClass }}">
-                                {{ $movimiento->tipoMovimiento->tipo_mvto }}
-                            </span>
-                        </td>
-
+                        {{-- UBICACIÓN --}}
                         <td>
                             @if($movimiento->ubicacion)
-                                <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt"></i> {{ $movimiento->ubicacion->ubicacion_completa }}
-                                </small>
+                                <small><i class="fas fa-map-marker-alt text-muted"></i> {{ $movimiento->ubicacion->nombre_sede }}</small>
                             @else
                                 <span class="text-muted">-</span>
                             @endif
                         </td>
 
-                        {{-- ⭐ COLUMNA: ESTADO DE CONSERVACIÓN --}}
+                        {{-- ESTADO CONSERVACIÓN --}}
                         <td>
                             @if($movimiento->estadoConservacion)
-                                @php
-                                    $nombreEstado = strtoupper($movimiento->estadoConservacion->nombre_estado);
-
-                                    if (str_contains($nombreEstado, 'BUENO') || str_contains($nombreEstado, 'EXCELENTE') || str_contains($nombreEstado, 'ÓPTIMO')) {
-                                        $badgeClass = 'badge-success';
-                                    } elseif (str_contains($nombreEstado, 'REGULAR') || str_contains($nombreEstado, 'ACEPTABLE')) {
-                                        $badgeClass = 'badge-warning';
-                                    } elseif (str_contains($nombreEstado, 'MALO') || str_contains($nombreEstado, 'DEFICIENTE') || str_contains($nombreEstado, 'DETERIORADO')) {
-                                        $badgeClass = 'badge-danger';
-                                    } else {
-                                        $badgeClass = 'badge-secondary';
-                                    }
-                                @endphp
-
-                                <span class="badge {{ $badgeClass }}">
-                                    {{ $movimiento->estadoConservacion->nombre_estado }}
-                                </span>
+                                {{ $movimiento->estadoConservacion->nombre_estado }}
                             @else
                                 <span class="text-muted">-</span>
                             @endif
                         </td>
 
-                        {{-- ⭐⭐⭐ NUEVA COLUMNA: ESTADO DEL MOVIMIENTO (VIGENTE/ANULADO) ⭐⭐⭐ --}}
-                        <td class="text-center">
-                            @if($movimiento->anulado)
-                                <span class="badge badge-anulado"
-                                    title="Anulado el {{ \Carbon\Carbon::parse($movimiento->fecha_anulacion)->format('d/m/Y H:i') }} por {{ $movimiento->usuarioAnulo->name ?? 'N/A' }}">
-                                    <i class="fas fa-ban"></i> ANULADO
-                                </span>
-                            @else
-                                <span class="badge badge-success">
-                                    <i class="fas fa-check-circle"></i> VIGENTE
-                                </span>
-                            @endif
-                        </td>
-
-                        {{-- ⭐⭐⭐ COLUMNA: ACCIÓN (SOLO BOTÓN VER) ⭐⭐⭐ --}}
+                        {{-- CONTROL --}}
                         <td class="text-center">
                             <button type="button" class="btn btn-info btn-sm btn-ver"
                                     title="Ver Detalles"
                                     data-id="{{ $movimiento->id_movimiento }}">
                                 <i class="fas fa-eye"></i>
                             </button>
-                        </td>
-
-
-
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-info btn-ver" title="Ver Detalles" data-id="{{ $movimiento->id_movimiento }}">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
                         </td>
                     </tr>
                     @empty
@@ -1456,28 +1379,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="baja_documento_sustentatorio">Documento Sustento</label>
-                                <select class="form-control" id="baja_documento_sustentatorio" name="documento_sustentatorio">
-                                    <option value="">Sin documento</option>
-                                    @foreach($documentos as $doc)
-                                        <option value="{{ $doc->id_documento }}">
-                                            {{ $doc->tipo_documento }} - {{ $doc->numero_documento }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <span class="text-danger error-baja-documento_sustentatorio d-block mt-1"></span>
-                            </div>
-                        </div>
 
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="baja_NumDocto">Número de Documento</label>
-                                <input type="text" class="form-control" id="baja_NumDocto" name="NumDocto" maxlength="20" placeholder="Ej: BAJA-2026-001">
-                                <span class="text-danger error-baja-NumDocto d-block mt-1"></span>
-                            </div>
-                        </div>
 
                         <div class="col-md-12">
                             <div class="form-group">
@@ -1574,41 +1476,7 @@
                                 <span class="text-danger error-revertir-detalletecnico d-block mt-1"></span>
                             </div>
 
-                            {{-- ✅ Documento Sustento --}}
-                            <div class="col-md-6 mb-3">
-                                <label for="revertirdocumentosustentatorio">
-                                    <i class="fas fa-file-alt text-secondary"></i> Documento Sustento
-                                </label>
-                                <select
-                                    class="form-control"
-                                    id="revertirdocumentosustentatorio"
-                                    name="documentosustentatorio"
-                                >
-                                    <option value="">Sin documento</option>
-                                    @foreach($documentos as $doc)
-                                        <option value="{{ $doc->id_documento }}">
-                                            {{ $doc->tipo_documento }} - {{ $doc->numero_documento }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <span class="text-danger error-revertir-documentosustentatorio d-block mt-1"></span>
-                            </div>
 
-                            {{-- ✅ Número de Documento --}}
-                            <div class="col-md-6 mb-3">
-                                <label for="revertirNumDocto">
-                                    <i class="fas fa-hashtag text-secondary"></i> Número de Documento
-                                </label>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="revertirNumDocto"
-                                    name="NumDocto"
-                                    maxlength="20"
-                                    placeholder="Ej: REV-BAJA-2026-001"
-                                >
-                                <span class="text-danger error-revertir-NumDocto d-block mt-1"></span>
-                            </div>
                         </div>
 
                         {{-- ⭐ NOTA IMPORTANTE --}}
@@ -1809,6 +1677,7 @@ $(document).ready(function() {
         let tieneBaja = false;
         let totalBaja = 0;
         let tieneRegistroOAsignacion = false;
+        let todosSonRegistroSinAsignacion = true; // para ocultar btn dar de baja
 
         $('.checkbox-item:checked').each(function() {
             const bienId = $(this).data('bien-id');
@@ -1816,17 +1685,26 @@ $(document).ready(function() {
                 bienesSeleccionados.push(bienId);
             }
 
-            // ✅ DETECTAR TIPO DE MOVIMIENTO
-            const fila = $(this).closest('tr');
-            const tipoBadge = fila.find('.badge-tipo-baja');
+            // ✅ DETECTAR TIPO DE MOVIMIENTO por data attribute (sin depender de badges)
+            const tipoMvto = ($(this).data('tipo-mvto') || '').toUpperCase();
+            const tieneAsignacion = $(this).data('tiene-asignacion') === '1' || $(this).data('tiene-asignacion') === 1;
 
-            if (tipoBadge.length > 0) {
-                // Es un movimiento de tipo BAJA
+            if (tipoMvto.includes('BAJA') || tipoMvto.includes('REVERSI')) {
                 tieneBaja = true;
                 totalBaja++;
+                todosSonRegistroSinAsignacion = false;
+            } else if (tipoMvto.includes('REGISTRO') || tipoMvto.includes('SIN ASIGNAR')) {
+                // Es REGISTRO: solo cuenta como "sin asignación" si el bien NO tiene asignaciones
+                if (tieneAsignacion) {
+                    // Bien ya fue asignado en algún momento
+                    tieneRegistroOAsignacion = true;
+                    todosSonRegistroSinAsignacion = false;
+                }
+                // Si no tiene asignación, se mantiene como "soloRegistro"
             } else {
-                // Es REGISTRO o ASIGNACIÓN
+                // ASIGNACIÓN u otro tipo activo
                 tieneRegistroOAsignacion = true;
+                todosSonRegistroSinAsignacion = false;
             }
         });
 
@@ -1835,7 +1713,7 @@ $(document).ready(function() {
         // ⭐ ACTUALIZAR CONTADORES
         $('#contadorAsignar').text(cantidad);
         $('#contadorBaja').text(cantidad);
-        $('#contadorRevertir').text(totalBaja); // ✅ SOLO MUESTRA CANTIDAD DE BAJAS
+        $('#contadorRevertir').text(totalBaja);
         $('#contadorSeleccionados').text(cantidad);
 
         // ⭐ MOSTRAR/OCULTAR GRUPO COMPLETO CON ANIMACIÓN
@@ -1845,7 +1723,7 @@ $(document).ready(function() {
             $('#accionesMasivas').fadeOut(300);
         }
 
-        // ✅ LÓGICA INTELIGENTE DE BOTONES SEGÚN TIPO DE MOVIMIENTO
+        // ✅ LÓGICA INTELIGENTE DE BOTONES
 
         // 1. BOTÓN ASIGNAR: Solo visible si NO hay ningún bien de BAJA seleccionado
         if (cantidad > 0 && !tieneBaja) {
@@ -1854,8 +1732,10 @@ $(document).ready(function() {
             $('#btnAsignarSeleccionados').fadeOut(200).addClass('d-none');
         }
 
-        // 2. BOTÓN DAR DE BAJA: Solo visible si NO hay ningún bien de BAJA seleccionado
-        if (cantidad > 0 && !tieneBaja) {
+        // 2. BOTÓN DAR DE BAJA MOV:
+        // - Solo si NO hay baja
+        // - Y NO son todos del tipo REGISTRO sin asignación previa
+        if (cantidad > 0 && !tieneBaja && !todosSonRegistroSinAsignacion) {
             $('#btnBajaSeleccionados').fadeIn(200).removeClass('d-none');
         } else {
             $('#btnBajaSeleccionados').fadeOut(200).addClass('d-none');
@@ -1933,8 +1813,6 @@ $(document).ready(function() {
         $('#baja_bienes_ids').val(JSON.stringify(bienesSeleccionados));
         $('#baja_fecha_mvto').val(new Date().toISOString().split('T')[0]);
         $('#baja_detalle_tecnico').val('');
-        $('#baja_documento_sustentatorio').val('');
-        $('#baja_NumDocto').val('');
 
         $('.text-danger').text('');
 
@@ -1971,9 +1849,7 @@ $(document).ready(function() {
         const formData = {
             bienes_ids: bienesSeleccionados,
             fecha_mvto: $('#baja_fecha_mvto').val(),
-            detalle_tecnico: $('#baja_detalle_tecnico').val(),
-            documento_sustentatorio: $('#baja_documento_sustentatorio').val() || null,
-            NumDocto: $('#baja_NumDocto').val() || null
+            detalle_tecnico: $('#baja_detalle_tecnico').val()
         };
 
         $('#btnGuardarBaja').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
@@ -2074,11 +1950,10 @@ $(document).ready(function() {
         }
 
         // ✅ VALIDAR QUE EL BIEN SELECCIONADO SEA DE TIPO "BAJA"
-        const checkboxSeleccionado = $('.checkbox-item:checked');
-        const fila = checkboxSeleccionado.closest('tr');
-        const tipoBadge = fila.find('.badge-tipo-baja');
+        const checkboxSeleccionado = $('.checkbox-item:checked').first();
+        const tipoMvtoRevertir = (checkboxSeleccionado.data('tipo-mvto') || '').toUpperCase();
 
-        if (tipoBadge.length === 0) {
+        if (!tipoMvtoRevertir.includes('BAJA') && !tipoMvtoRevertir.includes('REVERSI')) {
             Swal.fire({
                 icon: 'error',
                 title: '❌ No es un bien dado de baja',
@@ -2096,20 +1971,17 @@ $(document).ready(function() {
         }
 
         // ✅ OBTENER INFO DEL BIEN PARA MOSTRAR EN EL MODAL
-        const codigoBien = fila.find('.badge-info').first().text().trim();
+        const codigoBien = checkboxSeleccionado.closest('tr').find('td').eq(3).text().trim();
 
         // ✅ TODO CORRECTO - PROCEDER CON LA REVERSIÓN
         $('#cantidadRevertir').text('1');
         $('#revertir_bienes_ids').val(JSON.stringify(bienesSeleccionados));
 
-        // ✅✅✅ FECHA ACTUAL (SIN BLADE, USA JAVASCRIPT) ✅✅✅
         const hoy = new Date().toISOString().split('T')[0];
-        $('#revertirfechamvto').val(hoy);  // ✅ CORREGIDO - Sin guion bajo
+        $('#revertirfechamvto').val(hoy);
 
-        // ✅✅✅ LIMPIAR CAMPOS (IDs CORREGIDOS) ✅✅✅
-        $('#revertirdetalletecnico').val('');              // ✅ CORREGIDO
-        $('#revertirdocumentosustentatorio').val('');      // ✅ CORREGIDO
-        $('#revertirNumDocto').val('');                    // ✅ CORREGIDO
+        // Limpiar campos del modal
+        $('#revertirdetalletecnico').val('');
 
         // Limpiar errores previos
         $('.text-danger').text('');
@@ -3341,46 +3213,31 @@ $(document).ready(function() {
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .replace(/\s+/g, '-');
 
-        const badgeClass = `badge-tipo-${tipoNormalizado}`;
         const fecha = typeof moment !== 'undefined' ? moment(mov.fecha_mvto).format('DD/MM/YYYY') : mov.fecha_mvto.split(' ')[0];
-
-        let estadoBadge = 'badge-secondary';
-        if (mov.estado_conservacion) {
-            const estado = mov.estado_conservacion.nombre_estado.toUpperCase();
-            if (estado.includes('BUENO') || estado.includes('EXCELENTE')) {
-                estadoBadge = 'badge-success';
-            } else if (estado.includes('REGULAR')) {
-                estadoBadge = 'badge-warning';
-            } else if (estado.includes('MALO') || estado.includes('DETERIORADO')) {
-                estadoBadge = 'badge-danger';
-            }
-        }
 
         const denominacion = mov.bien.denominacion_bien || '';
         const denominacionCorta = denominacion.length > 30 ? denominacion.substring(0, 30) + '...' : denominacion;
         const tipoNombre = mov.bien.tipo_bien ? mov.bien.tipo_bien.nombre_tipo : '';
         const ubicacionNombre = mov.ubicacion ? mov.ubicacion.nombre_sede : '';
-
-        // ✅ OBTENER ÁREA DE LA UBICACIÓN
         const areaNombre = (mov.ubicacion && mov.ubicacion.area) ? mov.ubicacion.area.nombre_area : '-';
 
-        // ⭐⭐⭐ BADGE ESTADO MOVIMIENTO (VIGENTE/ANULADO) ⭐⭐⭐
-        const badgeEstadoMovimiento = mov.anulado ? `
-            <span class="badge badge-anulado" title="Anulado el ${mov.fecha_anulacion || 'N/A'} por ${mov.usuario_anulo ? mov.usuario_anulo.name : 'N/A'}">
-                <i class="fas fa-ban"></i> ANULADO
-            </span>
-        ` : `
-            <span class="badge badge-success">
-                <i class="fas fa-check-circle"></i> VIGENTE
-            </span>
-        `;
+        // Estado de conservación: texto plano
+        const estadoConservacion = mov.estado_conservacion ? mov.estado_conservacion.nombre_estado : '-';
 
-        // ⭐ APLICAR CLASE CSS ESPECIAL SI ESTÁ ANULADO
+        // Estado movimiento: texto plano con ícono
+        const estadoMovimiento = mov.anulado
+            ? `<span title="Anulado el ${mov.fecha_anulacion || 'N/A'}"><i class="fas fa-times-circle text-danger"></i> Anulado</span>`
+            : `<span><i class="fas fa-check-circle text-success"></i> Vigente</span>`;
+
+        // Clase anulado (solo para estilo de fila, no colores de fondo)
         const claseAnulado = mov.anulado ? 'tipo-anulado' : '';
+
+        // Tipo MVTO normalizado para data attribute
+        const tipoMvtoUpper = mov.tipo_movimiento.tipo_mvto.toUpperCase();
 
         const row = `
             <tr id="row-${mov.id_movimiento}" 
-                class="fila-movimiento tipo-${tipoNormalizado} ${claseAnulado}" 
+                class="fila-movimiento ${claseAnulado}" 
                 data-id="${mov.id_movimiento}">
                 
                 <td class="text-center">
@@ -3389,34 +3246,31 @@ $(document).ready(function() {
                             id="check-${mov.id_movimiento}"
                             value="${mov.id_movimiento}"
                             data-bien-id="${mov.idbien}"
+                            data-tipo-mvto="${tipoMvtoUpper}"
+                            data-tiene-asignacion="${mov.tiene_asignacion ? '1' : '0'}"
                             ${mov.anulado ? 'disabled' : ''}>
                         <label class="custom-control-label" for="check-${mov.id_movimiento}"></label>
                     </div>
                 </td>
                 
-                <td class="text-center"><strong>${mov.id_movimiento}</strong></td>
-                <td><strong>${fecha}</strong></td>
-                <td><span class="badge badge-info">${mov.bien.codigo_patrimonial}</span></td>
+                <td>${fecha}</td>
+                <td>${mov.bien.codigo_patrimonial}</td>
                 
                 <td>
-                    <strong>${denominacionCorta}</strong><br>
+                    ${denominacionCorta}<br>
                     <small class="text-muted">${tipoNombre}</small>
                 </td>
-                
-                <td><span class="badge ${badgeClass}">${mov.tipo_movimiento.tipo_mvto}</span></td>
-                <td><small class="text-muted"><i class="fas fa-building"></i> ${areaNombre}</small></td>
-                
+
+                <td>${mov.tipo_movimiento.tipo_mvto}</td>
+
+                <td><small><i class="fas fa-building text-muted"></i> ${areaNombre}</small></td>
+
                 <td>
-                    ${ubicacionNombre ? `<small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${ubicacionNombre}</small>` : '<span class="text-muted">-</span>'}
+                    ${ubicacionNombre ? `<small><i class="fas fa-map-marker-alt text-muted"></i> ${ubicacionNombre}</small>` : '<span class="text-muted">-</span>'}
                 </td>
                 
-                <td>
-                    ${mov.estado_conservacion ? `<span class="badge ${estadoBadge}">${mov.estado_conservacion.nombre_estado}</span>` : '<span class="text-muted">-</span>'}
-                </td>
+                <td>${estadoConservacion}</td>
                 
-                <td class="text-center">${badgeEstadoMovimiento}</td>
-                
-                <!-- ⭐⭐⭐ SOLO BOTÓN VER (OJO) ⭐⭐⭐ -->
                 <td class="text-center">
                     <button type="button" class="btn btn-info btn-sm btn-ver" 
                             title="Ver Detalles" 
@@ -3562,6 +3416,32 @@ $(document).ready(function() {
     // ✅ DETECTAR CAMBIOS EN FILTROS
         $('#filtroTipo, #filtroEstadoBien, #filtroArea, #filtroUbicacion, #filtroFechaDesde, #filtroFechaHasta').on('change', function() {
         verificarFiltrosActivos();
+    });
+
+    // ==========================================
+    // ⭐ FILTRO CASCADA: ÁREA → UBICACIÓN
+    // ==========================================
+    $('#filtroArea').on('change', function() {
+        const areaId = $(this).val();
+        const $ubicacion = $('#filtroUbicacion');
+        const $opciones = $ubicacion.find('option[data-area]');
+
+        // Resetear selección de ubicación
+        $ubicacion.val('');
+
+        if (areaId === '' || areaId === null) {
+            // Sin área seleccionada: mostrar TODAS
+            $opciones.show();
+        } else {
+            // Filtrar: mostrar solo las de esa área
+            $opciones.each(function() {
+                if ($(this).data('area').toString() === areaId.toString()) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
     });
 
 

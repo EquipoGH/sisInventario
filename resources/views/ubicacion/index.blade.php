@@ -10,60 +10,63 @@
 <div class="card">
     <div class="card-body">
         {{-- BARRA DE ACCIONES --}}
-        <div class="row mb-3">
-            <div class="col-md-4">
+        <div class="d-flex flex-wrap align-items-end gap-2 mb-3" style="gap: 0.75rem;">
+
+            {{-- Botones de acción (solo admin) --}}
             @if(Auth::user()->esAdmin())
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
+            <div class="d-flex" style="gap: 0.5rem;">
+                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalCreate">
                     <i class="fas fa-plus"></i> Nueva Ubicación
                 </button>
-                <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
+                <button type="button" class="btn btn-danger btn-sm" id="btnEliminarSeleccionados" style="display:none;">
                     <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
                 </button>
+            </div>
             @endif
-            <div class="col-md-8">
-                <div class="row">
-                    {{-- FILTRO POR ÁREA --}}
-                    <div class="col-md-5">
-                        <select id="areaFiltro" class="form-control">
-                            <option value="">📍 Todas las áreas</option>
-                            @foreach($areas as $area)
-                                <option value="{{ $area->id_area }}">{{ strtoupper($area->nombre_area) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
 
-                    {{-- BÚSQUEDA --}}
-                    <div class="col-md-7">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-primary">
-                                    <i class="fas fa-search text-white"></i>
-                                </span>
-                            </div>
-                            <input type="text"
-                                   id="searchInput"
-                                   class="form-control"
-                                   placeholder="Buscar por sede, ambiente, piso o área..."
-                                   autocomplete="off">
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiar">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <small class="text-muted mt-1 d-block text-right">
-                            <span id="infoResultados">
-                                Mostrando <strong id="from">{{ $ubicaciones->firstItem() ?? 0 }}</strong>
-                                a <strong id="to">{{ $ubicaciones->lastItem() ?? 0 }}</strong>
-                                de <strong id="resultadosCount">{{ $ubicaciones->total() }}</strong>
-                                (<strong id="totalCount">{{ $total }}</strong> total)
-                            </span>
-                            <span id="loadingSearch" style="display:none;">
-                                <i class="fas fa-spinner fa-spin text-primary"></i> Buscando...
-                            </span>
-                        </small>
+            {{-- Filtro por área --}}
+            <div style="min-width: 190px; flex: 1;">
+                <label class="text-muted mb-1" style="font-size: 0.75rem; font-weight: 500; letter-spacing: 0.03em;"
+                       for="areaFiltro"><i class="fas fa-filter"></i> ÁREA</label>
+                <select id="areaFiltro" class="form-control form-control-sm">
+                    <option value="">Todas las áreas</option>
+                    @foreach($areas as $area)
+                        <option value="{{ $area->id_area }}">{{ strtoupper($area->nombre_area) }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Búsqueda --}}
+            <div style="min-width: 260px; flex: 2;">
+                <label class="text-muted mb-1" style="font-size: 0.75rem; font-weight: 500; letter-spacing: 0.03em;"
+                       for="searchInput"><i class="fas fa-search"></i> BUSCAR</label>
+                <div class="input-group input-group-sm">
+                    <input type="text"
+                           id="searchInput"
+                           class="form-control"
+                           placeholder="Sede, ambiente, piso o área..."
+                           autocomplete="off">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                 </div>
+            </div>
+
+            {{-- Info resultados --}}
+            <div class="ml-auto text-right" style="align-self: flex-end;">
+                <small class="text-muted">
+                    <span id="infoResultados">
+                        Mostrando <strong id="from">{{ $ubicaciones->firstItem() ?? 0 }}</strong>
+                        – <strong id="to">{{ $ubicaciones->lastItem() ?? 0 }}</strong>
+                        de <strong id="resultadosCount">{{ $ubicaciones->total() }}</strong>
+                        (<strong id="totalCount">{{ $total }}</strong> total)
+                    </span>
+                    <span id="loadingSearch" style="display:none;">
+                        <i class="fas fa-spinner fa-spin text-primary"></i> Buscando...
+                    </span>
+                </small>
             </div>
         </div>
 
@@ -86,10 +89,7 @@
                             <input type="checkbox" id="checkAll">
                         </th>
                         @endif
-                        <th width="6%" class="text-center sortable" data-column="id">
-                            ID <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th width="19%" class="sortable" data-column="sede">
+                        <th width="25%" class="sortable" data-column="sede">
                             Nombre Sede <i class="fas fa-sort sort-icon"></i>
                         </th>
                         <th width="17%" class="sortable" data-column="ambiente">
@@ -123,43 +123,32 @@
                             <input type="checkbox" class="checkbox-item" value="{{ $ubicacion->id_ubicacion }}">
                         </td>
                         @endif
-                        <td class="text-center"><strong>{{ $ubicacion->id_ubicacion }}</strong></td>
-                        <td><strong>{{ strtoupper($ubicacion->nombre_sede) }}</strong></td>
+                        <td>{{ strtoupper($ubicacion->nombre_sede) }}</td>
                         <td>{{ strtoupper($ubicacion->ambiente) }}</td>
                         <td class="text-center">{{ strtoupper($ubicacion->piso_ubicacion) }}</td>
-                        <td>
-                            <span class="badge badge-info">
-                                {{ strtoupper($ubicacion->area->nombre_area ?? 'N/A') }}
-                            </span>
-                        </td>
-                        {{-- Columna Recepción: solo ADMIN puede marcar/desmarcar --}}
+                        <td>{{ strtoupper($ubicacion->area->nombre_area ?? 'N/A') }}</td>
                         <td class="text-center">
                             @if(Auth::user()->esAdmin())
                                 @if($ubicacion->es_recepcion_inicial)
-                                    <span class="badge badge-success mb-1 d-block">
-                                        <i class="fas fa-check-circle"></i> ACTIVA
-                                    </span>
-                                    <button class="btn btn-xs btn-warning btn-desmarcar"
+                                    <button class="btn btn-sm btn-outline-warning btn-desmarcar"
                                             data-id="{{ $ubicacion->id_ubicacion }}"
                                             data-nombre="{{ $ubicacion->nombre_sede }}"
-                                            title="Desmarcar">
-                                        <i class="fas fa-times"></i>
+                                            title="Desmarcar recepción">
+                                        <i class="fas fa-check-circle text-success"></i> Activa
                                     </button>
                                 @else
-                                    <button class="btn btn-xs btn-success btn-marcar"
+                                    <button class="btn btn-sm btn-outline-secondary btn-marcar"
                                             data-id="{{ $ubicacion->id_ubicacion }}"
                                             data-nombre="{{ $ubicacion->nombre_sede }}"
                                             title="Marcar como recepción">
-                                        <i class="fas fa-check"></i> Marcar
+                                        <i class="fas fa-circle"></i> Marcar
                                     </button>
                                 @endif
                             @else
                                 @if($ubicacion->es_recepcion_inicial)
-                                    <span class="badge badge-success">
-                                        <i class="fas fa-check-circle"></i> ACTIVA
-                                    </span>
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> Activa</span>
                                 @else
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted">—</span>
                                 @endif
                             @endif
                         </td>
@@ -167,7 +156,7 @@
                     </tr>
                     @empty
                     <tr id="filaVacia">
-                        <td colspan="{{ Auth::user()->esAdmin() ? 8 : 7 }}" class="text-center text-muted py-4">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 7 : 6 }}" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                             No hay ubicaciones registradas
                         </td>
@@ -498,7 +487,7 @@ $(document).ready(function() {
         const tbody = $('#tablaBody');
         tbody.empty();
 
-        const totalCols = esAdmin ? 8 : 7;
+        const totalCols = esAdmin ? 7 : 6;
 
         if (ubicaciones.length === 0) {
             tbody.append(`
@@ -529,30 +518,27 @@ $(document).ready(function() {
             if (esAdmin) {
                 if (u.es_recepcion_inicial) {
                     recepcionHTML = `
-                        <span class="badge badge-success mb-1 d-block">
-                            <i class="fas fa-check-circle"></i> ACTIVA
-                        </span>
-                        <button class="btn btn-xs btn-warning btn-desmarcar"
+                        <button class="btn btn-sm btn-outline-warning btn-desmarcar"
                                 data-id="${u.id_ubicacion}"
                                 data-nombre="${u.nombre_sede}"
-                                title="Desmarcar">
-                            <i class="fas fa-times"></i>
+                                title="Desmarcar recepción">
+                            <i class="fas fa-check-circle text-success"></i> Activa
                         </button>
                     `;
                 } else {
                     recepcionHTML = `
-                        <button class="btn btn-xs btn-success btn-marcar"
+                        <button class="btn btn-sm btn-outline-secondary btn-marcar"
                                 data-id="${u.id_ubicacion}"
                                 data-nombre="${u.nombre_sede}"
                                 title="Marcar como recepción">
-                            <i class="fas fa-check"></i> Marcar
+                            <i class="fas fa-circle"></i> Marcar
                         </button>
                     `;
                 }
             } else {
                 recepcionHTML = u.es_recepcion_inicial
-                    ? `<span class="badge badge-success"><i class="fas fa-check-circle"></i> ACTIVA</span>`
-                    : `<span class="text-muted">-</span>`;
+                    ? `<span class="text-success"><i class="fas fa-check-circle"></i> Activa</span>`
+                    : `<span class="text-muted">—</span>`;
             }
 
             const checkboxCol = esAdmin
@@ -565,11 +551,10 @@ $(document).ready(function() {
             tbody.append(`
                 <tr id="row-${u.id_ubicacion}" class="${rowClass}" ${rowData}>
                     ${checkboxCol}
-                    <td class="text-center"><strong>${u.id_ubicacion}</strong></td>
-                    <td><strong>${u.nombre_sede.toUpperCase()}</strong></td>
+                    <td>${u.nombre_sede.toUpperCase()}</td>
                     <td>${u.ambiente.toUpperCase()}</td>
                     <td class="text-center">${u.piso_ubicacion.toUpperCase()}</td>
-                    <td><span class="badge badge-info">${areaNombre}</span></td>
+                    <td>${areaNombre}</td>
                     <td class="text-center">${recepcionHTML}</td>
                     <td class="text-center">${fecha}</td>
                 </tr>

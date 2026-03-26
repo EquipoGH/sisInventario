@@ -247,6 +247,30 @@ class MovimientoController extends Controller
                 if ($tiposActivos->isNotEmpty()) {
                     $query->whereIn('tipo_mvto', $tiposActivos);
                 }
+
+                // ⭐ EXCLUIR filas de REGISTRO si el bien ya tiene ASIGNACIÓN vigente
+                // (evita confusión visual de ver REGISTRO + ASIGNACION del mismo bien)
+                $tiposRegistro = TipoMvto::where(function($q) {
+                    $q->where('tipo_mvto', 'ILIKE', '%registro%')
+                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%');
+                })->pluck('id_tipo_mvto');
+
+                $tiposAsignacion = TipoMvto::where('tipo_mvto', 'ILIKE', '%asignaci%')
+                    ->pluck('id_tipo_mvto');
+
+                if ($tiposRegistro->isNotEmpty() && $tiposAsignacion->isNotEmpty()) {
+                    $query->where(function($q) use ($tiposRegistro, $tiposAsignacion) {
+                        $q->whereNotIn('tipo_mvto', $tiposRegistro)
+                          ->orWhere(function($q2) use ($tiposRegistro, $tiposAsignacion) {
+                              // Es REGISTRO pero el bien NO tiene asignación vigente
+                              $q2->whereIn('tipo_mvto', $tiposRegistro)
+                                 ->whereDoesntHave('bien.movimientos', function($q3) use ($tiposAsignacion) {
+                                     $q3->whereIn('tipo_mvto', $tiposAsignacion)
+                                        ->where('anulado', false);
+                                 });
+                          });
+                    });
+                }
             } elseif ($request->tipo_mvto === '') {
                 // ✅ OPCIÓN "TODOS LOS MOVIMIENTOS" → SIN FILTRO (muestra TODO)
                 // No aplicar filtro de tipo, incluye BAJA
@@ -264,6 +288,28 @@ class MovimientoController extends Controller
 
             if ($tiposActivos->isNotEmpty()) {
                 $query->whereIn('tipo_mvto', $tiposActivos);
+            }
+
+            // ⭐ EXCLUIR filas de REGISTRO si el bien ya tiene ASIGNACIÓN vigente
+            $tiposRegistro = TipoMvto::where(function($q) {
+                $q->where('tipo_mvto', 'ILIKE', '%registro%')
+                  ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%');
+            })->pluck('id_tipo_mvto');
+
+            $tiposAsignacion = TipoMvto::where('tipo_mvto', 'ILIKE', '%asignaci%')
+                ->pluck('id_tipo_mvto');
+
+            if ($tiposRegistro->isNotEmpty() && $tiposAsignacion->isNotEmpty()) {
+                $query->where(function($q) use ($tiposRegistro, $tiposAsignacion) {
+                    $q->whereNotIn('tipo_mvto', $tiposRegistro)
+                      ->orWhere(function($q2) use ($tiposRegistro, $tiposAsignacion) {
+                          $q2->whereIn('tipo_mvto', $tiposRegistro)
+                             ->whereDoesntHave('bien.movimientos', function($q3) use ($tiposAsignacion) {
+                                 $q3->whereIn('tipo_mvto', $tiposAsignacion)
+                                    ->where('anulado', false);
+                             });
+                      });
+                });
             }
         }
 

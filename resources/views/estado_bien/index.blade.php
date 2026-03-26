@@ -71,10 +71,7 @@
                             </div>
                         </th>
                         @endif
-                        <th width="12%" class="sortable" data-column="id" style="cursor:pointer;">
-                            ID <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th width="50%" class="sortable" data-column="nombre" style="cursor:pointer;">
+                        <th width="62%" class="sortable" data-column="nombre" style="cursor:pointer;">
                             Nombre Estado <i class="fas fa-sort sort-icon"></i>
                         </th>
                         <th width="30%" class="sortable" data-column="fecha" style="cursor:pointer;">
@@ -95,19 +92,18 @@
                             </div>
                         </td>
                         @endif
-                        <td>{{ $estado->id_estado }}</td>
                         <td class="{{ Auth::user()->esAdmin() ? 'editable-cell' : '' }}"
                             data-id="{{ $estado->id_estado }}"
                             data-nombre="{{ $estado->nombre_estado }}"
                             style="{{ Auth::user()->esAdmin() ? 'cursor: pointer;' : '' }}"
                             title="{{ Auth::user()->esAdmin() ? 'Doble click para editar' : '' }}">
-                            <strong>{{ $estado->nombre_estado }}</strong>
+                            {{ $estado->nombre_estado }}
                         </td>
                         <td>{{ $estado->created_at->format('d/m/Y H:i') }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ Auth::user()->esAdmin() ? 4 : 3 }}" class="text-center text-muted">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 3 : 2 }}" class="text-center text-muted">
                             <i class="fas fa-inbox fa-2x mb-2"></i>
                             <p>No hay registros disponibles</p>
                         </td>
@@ -357,14 +353,13 @@ $(document).ready(function() {
             const nombreCell = esAdmin
                 ? `<td class="editable-cell" data-id="${e.id_estado}" data-nombre="${e.nombre_estado}"
                        style="cursor:pointer" title="Doble click para editar">
-                       <strong>${e.nombre_estado.toUpperCase()}</strong>
+                       ${e.nombre_estado.toUpperCase()}
                    </td>`
-                : `<td><strong>${e.nombre_estado.toUpperCase()}</strong></td>`;
+                : `<td>${e.nombre_estado.toUpperCase()}</td>`;
 
             tbody.append(`
                 <tr id="row-${e.id_estado}" class="fade-in">
                     ${checkboxCol}
-                    <td>${e.id_estado}</td>
                     ${nombreCell}
                     <td>${fecha}</td>
                 </tr>

@@ -112,8 +112,8 @@
                                     </div>
                                 </td>
                                 <td>{{ $doc->id_documento }}</td>
-                                <td><strong>{{ $doc->tipo_documento }}</strong></td>
-                                <td><span class="badge badge-info">{{ $doc->numero_documento }}</span></td>
+                                <td>{{ $doc->tipo_documento }}</td>
+                                <td>{{ $doc->numero_documento }}</td>
                                 <td>{{ \Carbon\Carbon::parse($doc->fecha_documento)->format('d/m/Y') }}</td>
                                 <!-- ⭐ NUEVA CELDA: Cantidad de bienes -->
                                 <td class="text-center">
@@ -182,17 +182,16 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="tipo_documento">Tipo de Documento <span class="text-danger">*</span></label>
-                        <select name="tipo_documento" id="tipo_documento" class="form-control" required>
-                            <option value="">Seleccione...</option>
-                            <option value="FACTURA">Factura</option>
-                            <option value="BOLETA">Boleta</option>
-                            <option value="GUIA REMISION">Guía de Remisión</option>
-                            <option value="ORDEN COMPRA">Orden de Compra</option>
-                            <option value="ACTA">Acta</option>
-                            <option value="RECIBO">Recibo</option>
-                            <option value="NEA">NEA</option>
-                            <option value="OTRO">Otro</option>
-                        </select>
+                        <input type="text"
+                               name="tipo_documento"
+                               id="tipo_documento"
+                               class="form-control"
+                               required
+                               maxlength="50"
+                               placeholder="Ej: FACTURA, BOLETA, NEA, ACTA..."
+                               autocomplete="off"
+                               style="text-transform:uppercase;">
+                        <small class="form-text text-muted">Ingresa el tipo de documento libremente</small>
                         <span class="text-danger error-tipo_documento d-block mt-1"></span>
                     </div>
 
@@ -265,17 +264,16 @@
 
                     <div class="form-group">
                         <label for="edit_tipo_documento">Tipo de Documento <span class="text-danger">*</span></label>
-                        <select name="tipo_documento" id="edit_tipo_documento" class="form-control" required>
-                            <option value="">Seleccione...</option>
-                            <option value="FACTURA">Factura</option>
-                            <option value="BOLETA">Boleta</option>
-                            <option value="GUIA REMISION">Guía de Remisión</option>
-                            <option value="ORDEN COMPRA">Orden de Compra</option>
-                            <option value="ACTA">Acta</option>
-                            <option value="RECIBO">Recibo</option>
-                            <option value="NEA">NEA</option>
-                            <option value="OTRO">Otro</option>
-                        </select>
+                        <input type="text"
+                               name="tipo_documento"
+                               id="edit_tipo_documento"
+                               class="form-control"
+                               required
+                               maxlength="50"
+                               placeholder="Ej: FACTURA, BOLETA, NEA, ACTA..."
+                               autocomplete="off"
+                               style="text-transform:uppercase;">
+                        <small class="form-text text-muted">Ingresa el tipo de documento libremente</small>
                         <span class="text-danger error-edit-tipo_documento d-block mt-1"></span>
                     </div>
 
@@ -519,8 +517,8 @@ $(document).ready(function() {
                         </div>
                     </td>
                     <td>${doc.id_documento}</td>
-                    <td><strong>${doc.tipo_documento.toUpperCase()}</strong></td>
-                    <td><span class="badge badge-info">${doc.numero_documento}</span></td>
+                    <td>${doc.tipo_documento.toUpperCase()}</td>
+                    <td>${doc.numero_documento}</td>
                     <td>${fechaDoc}</td>
                     <td class="text-center">${bienesHtml}</td>
                     <td>${fechaReg}</td>

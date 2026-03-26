@@ -107,6 +107,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('ubicacion.porArea');
 
             Route::resource('ubicacion', UbicacionController::class);
+            Route::get('responsable-area/historial/{dni}', [ResponsableAreaController::class, 'historial'])
+                ->name('responsable-area.historial');
             Route::resource('responsable-area', ResponsableAreaController::class);
         });
 
@@ -123,6 +125,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('ubicacion.desmarcar-recepcion');
         Route::get('ubicacion/por-area', [UbicacionController::class, 'porArea'])->name('ubicacion.porArea');
         Route::resource('ubicacion', UbicacionController::class)->names('ubicacion');
+        Route::get('responsable-area/historial/{dni}', [ResponsableAreaController::class, 'historial'])
+            ->name('responsable-area.historial-legacy');
         Route::resource('responsable-area', ResponsableAreaController::class)->names('responsable-area');
 
         // ==================== MOVIMIENTO ====================

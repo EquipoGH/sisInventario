@@ -71,10 +71,7 @@
                             </div>
                         </th>
                         @endif
-                        <th width="12%" class="sortable" data-column="id" style="cursor:pointer;">
-                            ID <i class="fas fa-sort sort-icon"></i>
-                        </th>
-                        <th width="50%" class="sortable" data-column="nombre" style="cursor:pointer;">
+                        <th width="62%" class="sortable" data-column="nombre" style="cursor:pointer;">
                             Tipo de Movimiento <i class="fas fa-sort sort-icon"></i>
                         </th>
                         <th width="30%" class="sortable" data-column="fecha" style="cursor:pointer;">
@@ -95,19 +92,18 @@
                             </div>
                         </td>
                         @endif
-                        <td>{{ $tipo->id_tipo_mvto }}</td>
                         <td class="{{ Auth::user()->esAdmin() ? 'editable-cell' : '' }}"
                             data-id="{{ $tipo->id_tipo_mvto }}"
                             data-nombre="{{ $tipo->tipo_mvto }}"
                             style="{{ Auth::user()->esAdmin() ? 'cursor: pointer;' : '' }}"
                             title="{{ Auth::user()->esAdmin() ? 'Doble click para editar' : '' }}">
-                            <strong>{{ $tipo->tipo_mvto }}</strong>
+                            {{ $tipo->tipo_mvto }}
                         </td>
                         <td>{{ $tipo->created_at->format('d/m/Y H:i') }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ Auth::user()->esAdmin() ? 4 : 3 }}" class="text-center text-muted">
+                        <td colspan="{{ Auth::user()->esAdmin() ? 3 : 2 }}" class="text-center text-muted">
                             <i class="fas fa-inbox fa-2x mb-2"></i>
                             <p>No hay registros disponibles</p>
                         </td>
@@ -357,14 +353,13 @@ $(document).ready(function() {
             const nombreCell = esAdmin
                 ? `<td class="editable-cell" data-id="${t.id_tipo_mvto}" data-nombre="${t.tipo_mvto}"
                        style="cursor:pointer" title="Doble click para editar">
-                       <strong>${t.tipo_mvto.toUpperCase()}</strong>
+                       ${t.tipo_mvto.toUpperCase()}
                    </td>`
-                : `<td><strong>${t.tipo_mvto.toUpperCase()}</strong></td>`;
+                : `<td>${t.tipo_mvto.toUpperCase()}</td>`;
 
             tbody.append(`
                 <tr id="row-${t.id_tipo_mvto}" class="fade-in">
                     ${checkboxCol}
-                    <td>${t.id_tipo_mvto}</td>
                     ${nombreCell}
                     <td>${fecha}</td>
                 </tr>

@@ -17,7 +17,8 @@ class ResponsableArea extends Model
     protected $fillable = [
         'dni_responsable',
         'idarea',
-        'fecha_asignacion'
+        'fecha_asignacion',
+        'periodo_anio'
     ];
 
     protected $dates = ['fecha_asignacion'];
@@ -72,10 +73,12 @@ class ResponsableArea extends Model
     /**
      * Verificar si ya existe la asignación
      */
-    public static function existeAsignacion($dni, $areaId)
+    public static function existeAsignacion($dni, $areaId, $anio = null)
     {
+        $anio = $anio ?? date('Y');
         return self::where('dni_responsable', $dni)
                    ->where('idarea', $areaId)
+                   ->where('periodo_anio', $anio)
                    ->exists();
     }
 

@@ -3,8 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use App\Models\ResponsableArea;
 
 class ResponsableAreaRequest extends FormRequest
 {
@@ -26,6 +24,12 @@ class ResponsableAreaRequest extends FormRequest
                 'required',
                 'integer',
                 'exists:area,id_area'
+            ],
+            'periodo_anio' => [
+                'required',
+                'integer',
+                'min:2020',
+                'max:2099'
             ]
         ];
     }
@@ -34,31 +38,15 @@ class ResponsableAreaRequest extends FormRequest
     {
         return [
             'dni_responsable.required' => 'Debe seleccionar un responsable',
-            'dni_responsable.size' => 'El DNI debe tener 8 dígitos',
-            'dni_responsable.exists' => 'El responsable seleccionado no existe',
-
-            'idarea.required' => 'Debe seleccionar un área',
-            'idarea.integer' => 'El área seleccionada no es válida',
-            'idarea.exists' => 'El área seleccionada no existe'
+            'dni_responsable.size'     => 'El DNI debe tener 8 dígitos',
+            'dni_responsable.exists'   => 'El responsable seleccionado no existe',
+            'idarea.required'          => 'Debe seleccionar un área',
+            'idarea.integer'           => 'El área seleccionada no es válida',
+            'idarea.exists'            => 'El área seleccionada no existe',
+            'periodo_anio.required'    => 'Debe seleccionar el período/año',
+            'periodo_anio.integer'     => 'El período debe ser un año válido',
+            'periodo_anio.min'         => 'El año mínimo es 2020',
+            'periodo_anio.max'         => 'El año máximo es 2099',
         ];
-    }
-
-    /**
-     * Validación adicional después de las reglas básicas
-     */
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            // Verificar si ya existe la asignación
-            if (ResponsableArea::existeAsignacion(
-                $this->dni_responsable,
-                $this->idarea
-            )) {
-                $validator->errors()->add(
-                    'duplicado',
-                    'Este responsable ya está asignado a esta área'
-                );
-            }
-        });
     }
 }
