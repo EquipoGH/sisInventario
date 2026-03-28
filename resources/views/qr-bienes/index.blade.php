@@ -25,44 +25,7 @@
     </div>
 @endif
 
-{{-- ESTADÍSTICAS --}}
-<div class="row">
-    <div class="col-lg-4 col-md-6">
-        <div class="small-box bg-info">
-            <div class="inner">
-                <h3 id="stat-total">{{ $totalBienes }}</h3>
-                <p>Total de Bienes Activos</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-box"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4 col-md-6">
-        <div class="small-box bg-success">
-            <div class="inner">
-                <h3 id="stat-con-movimiento">{{ $bienesConMovimiento }}</h3>
-                <p>Bienes con Movimientos</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4 col-md-6">
-        <div class="small-box bg-warning">
-            <div class="inner">
-                <h3 id="stat-sin-movimiento">{{ $totalBienes - $bienesConMovimiento }}</h3>
-                <p>Bienes Sin Asignar</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-        </div>
-    </div>
-</div>
+{{-- ESTADÍSTICAS (Banners superiores removidos a petición del usuario) --}}
 
 {{-- FORMULARIO DE GENERACIÓN --}}
 {{-- FORMULARIO DE GENERACIÓN AVANZADO --}}

@@ -61,6 +61,7 @@ class ReporteMovimientosController extends Controller
             ->leftJoin('tipo_mvto as tm', 'tm.id_tipo_mvto', '=', 'm.tipo_mvto')
             ->leftJoin('ubicacion as u', 'u.id_ubicacion', '=', 'm.idubicacion')
             ->leftJoin('area as a', 'a.id_area', '=', 'u.idarea')
+            ->leftJoin('users as usr', 'usr.id', '=', 'm.idusuario')
             ->where(function ($w) {
                 // ✅ PostgreSQL usa boolean: false, no 0
                 $w->whereNull('m.anulado')->orWhere('m.anulado', false);
@@ -75,6 +76,7 @@ class ReporteMovimientosController extends Controller
                 'a.nombre_area as area',
                 'u.nombre_sede',
                 'u.ambiente',
+                'usr.name as usuario_nombre',
             ])
             ->when($desde, function ($q, $desde) {
                 $q->whereDate('m.fecha_mvto', '>=', $desde);

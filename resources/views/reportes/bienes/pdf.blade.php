@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Reporte de Bienes</title>
   <style>
-    @page { margin: 12mm 8mm 18mm 8mm; }
+    @page { margin: 12mm 8mm 35mm 8mm; }
     * { box-sizing: border-box; }
 
     body{
@@ -109,15 +109,16 @@
     /* ===== Pie ===== */
     .footer{
       position: fixed;
-      left: 8mm;
-      right: 8mm;
-      bottom: 6mm;
+      left: 0;
+      right: 0;
+      bottom: -28mm;
+      height: 25mm;
       font-size: 7px;
       color:#555;
     }
 
     .firmas{
-      margin-top: 12px;
+      margin-top: 15px;
       width:100%;
       border-collapse: collapse;
     }
@@ -136,7 +137,7 @@
   @php
     // ✅ Tipos de reporte correctos (igual que el controlador)
     $tipoTxt = match($reporte ?? 'inventario_general') {
-      'inventario_general'      => 'Inventario General (por año)',
+      'inventario_general'      => 'Inventario General ' . now()->format('Y'),
       'inventario_area'         => 'Inventario por Área y Ubicación',
       'inventario_estado_admin' => 'Inventario por Estado de Conservación' . (!empty($filtros['estado_bien_nombre']) ? ' (' . $filtros['estado_bien_nombre'] . ')' : ' (Todos)'),
       'bienes_responsable'      => 'Bienes por Responsable' . (!empty($filtros['responsable_nombre']) ? ' (' . $filtros['responsable_nombre'] . ')' : ' (Todos)'),
@@ -162,7 +163,7 @@
     if (!empty($filtros['area_nombre']))          $filtroPartes[] = "Área: {$filtros['area_nombre']}";
     if (!empty($filtros['ubicacion_nombre']))     $filtroPartes[] = "Ubic.: {$filtros['ubicacion_nombre']}";
     if (!empty($filtros['tipo_bien_nombre']))     $filtroPartes[] = "Tipo: {$filtros['tipo_bien_nombre']}";
-    $periodoTxt = !empty($filtroPartes) ? implode(' | ', $filtroPartes) : 'Todos los registros';
+    $periodoTxt = !empty($filtroPartes) ? implode(' | ', $filtroPartes) : '';
 
     // Usuario que genera el reporte
     $u = $usuario ?? auth()->user();
@@ -210,8 +211,10 @@
           </td>
 
           <td style="width:34%;">
-            <span class="meta-label">Filtros:</span>
-            <span class="meta-value">{{ $periodoTxt }}</span>
+            @if($periodoTxt)
+              <span class="meta-label">Filtros:</span>
+              <span class="meta-value">{{ $periodoTxt }}</span>
+            @endif
           </td>
 
           <td style="width:16%; text-align:right;">
@@ -230,62 +233,80 @@
     </div>
   </div>
 
-  <table class="table-datos">
-    <thead>
-      <tr>
-        <th class="col-n" width="3%"  style="width:3%;">#</th>
-        <th width="10%"  style="width:10%;">CÓDIGO</th>
-        <th width="24%"  style="width:24%;">DENOMINACIÓN</th>
-        <th width="9%"   style="width:9%;">TIPO</th>
-        <th width="7%"   style="width:7%;">MARCA</th>
-        <th width="7%"   style="width:7%;">MODELO</th>
-        <th width="9%"   style="width:9%;">SERIE</th>
-        <th width="12%"  style="width:12%;">ÁREA</th>
-        <th width="19%"  style="width:19%;">UBICACIÓN</th>
-      </tr>
-    </thead>
+  @php
+    $bienesOrdenados = $bienes->sortBy(function($b) {
+      $area = $b->latestMovimiento?->ubicacion?->area;
+      $areaName = $area ? strtoupper($area->nombre_area) : 'ZZZ_SIN_AREA';
+      $registrador = $b->registradoPor ? strtoupper($b->registradoPor->name) : 'ZZZ_SISTEMA';
+      return $areaName . '|' . $registrador;
+    });
 
-    <tbody>
-      @forelse($bienes as $i => $b)
-        @php
-          $lm = $b->latestMovimiento;
-          $ubic = $lm?->ubicacion;
-          $area = $ubic?->area;
+    $bienesAgrupados = $bienesOrdenados->groupBy(function($b) {
+      $area = $b->latestMovimiento?->ubicacion?->area;
+      return $area ? strtoupper($area->nombre_area) : 'SIN ÁREA';
+    });
+  @endphp
 
-          // Estado de conservación desde el último movimiento
-          $estadoCons = $lm?->estadoConservacion?->nombre_estado;
+  @forelse($bienesAgrupados as $grupoLlave => $listaBienes)
+    <div style="font-size: 9px; font-weight: bold; margin-bottom: 4px; margin-top: 15px; text-transform: uppercase;">
+      {{ $grupoLlave }}
+    </div>
 
-          $ubicTxtRow = null;
-          if ($ubic) {
-            $partsU = array_filter([
-              $ubic->nombre_sede ?? null,
-              $ubic->ambiente    ?? null,
-            ]);
-            $ubicTxtRow = implode(' - ', $partsU);
-          }
-        @endphp
-
+    <table class="table-datos">
+      <thead>
         <tr>
-          <td class="c col-n nowrap" width="3%"  style="width:3%;"><span class="num">{{ $i + 1 }}</span></td>
-          <td class="c nowrap"       width="10%"  style="width:10%;"><span class="clip-2">{{ $b->codigo_patrimonial }}</span></td>
-
-          <td width="24%" style="width:24%;"><span class="clip-3">{{ mb_strtoupper($b->denominacion_bien ?? '') }}</span></td>
-          <td width="9%"  style="width:9%;"><span  class="clip-2">{{ optional($b->tipoBien)->nombre_tipo }}</span></td>
-
-          <td width="7%"  style="width:7%;"><span  class="clip-2">{{ $b->marca_bien }}</span></td>
-          <td width="7%"  style="width:7%;"><span  class="clip-2">{{ $b->modelo_bien }}</span></td>
-          <td width="9%"  style="width:9%;"><span  class="clip-2">{{ $b->nserie_bien }}</span></td>
-
-          <td width="12%" style="width:12%;"><span  class="clip-2">{{ $area?->nombre_area }}</span></td>
-          <td width="19%" style="width:19%;"><span class="clip-2">{{ $ubicTxtRow }}</span></td>
+          <th width="4%"   style="width:4%;">#</th>
+          <th width="11%"  style="width:11%;">CÓDIGO</th>
+          <th width="28%"  style="width:28%;">DENOMINACIÓN</th>
+          <th width="10%"  style="width:10%;">TIPO</th>
+          <th width="8%"   style="width:8%;">MARCA</th>
+          <th width="7%"   style="width:7%;">MODELO</th>
+          <th width="10%"  style="width:10%;">SERIE</th>
+          <th width="22%"  style="width:22%;">UBICACIÓN</th>
         </tr>
-      @empty
+      </thead>
+      <tbody>
+        @foreach($listaBienes as $i => $b)
+          @php
+            $lm = $b->latestMovimiento;
+            $ubic = $lm?->ubicacion;
+            $area = $ubic?->area;
+
+            $ubicTxtRow = null;
+            if ($ubic) {
+              $partsU = array_filter([
+                $ubic->nombre_sede ?? null,
+                $ubic->ambiente    ?? null,
+              ]);
+              $ubicTxtRow = implode(' - ', $partsU);
+            }
+          @endphp
+
+          <tr>
+            <td class="c num" width="4%" style="width:4%;">{{ $loop->iteration }}</td>
+            <td class="c nowrap" width="11%" style="width:11%;"><span class="clip-2">{{ $b->codigo_patrimonial }}</span></td>
+
+            <td width="28%" style="width:28%;"><span class="clip-3">{{ mb_strtoupper($b->denominacion_bien ?? '') }}</span></td>
+            <td width="10%" style="width:10%;"><span class="clip-2">{{ optional($b->tipoBien)->nombre_tipo }}</span></td>
+
+            <td width="8%"  style="width:8%;"><span class="clip-2">{{ $b->marca_bien }}</span></td>
+            <td width="7%"  style="width:7%;"><span class="clip-2">{{ $b->modelo_bien }}</span></td>
+            <td width="10%" style="width:10%;"><span class="clip-2">{{ $b->nserie_bien }}</span></td>
+
+            <td width="22%" style="width:22%;"><span class="clip-2">{{ $ubicTxtRow }}</span></td>
+          </tr>
+        @endforeach
+      </tbody>
+    </table>
+  @empty
+    <table class="table-datos">
+      <tbody>
         <tr>
-          <td colspan="9" class="c">No hay registros</td>
+          <td colspan="7" class="c">No hay registros</td>
         </tr>
-      @endforelse
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  @endforelse
 
   <div class="footer">
     @if(!empty($settings['pie_reportes']))

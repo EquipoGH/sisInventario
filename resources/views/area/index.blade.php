@@ -232,6 +232,12 @@ $(document).ready(function() {
     // Establecer icono inicial de ordenamiento
     actualizarIconosOrdenamiento();
 
+    // ==================== INICIALIZAR PAGINACIÓN ====================
+    actualizarPaginacion({
+        current_page: {{ $areas->currentPage() }},
+        last_page: {{ $areas->lastPage() }}
+    }, terminoBusqueda);
+
     // ==================== BÚSQUEDA CON DEBOUNCE ====================
     let searchTimeout;
 

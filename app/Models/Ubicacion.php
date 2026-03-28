@@ -61,7 +61,10 @@ class Ubicacion extends Model
     protected function ubicacionCompleta(): Attribute
     {
         return Attribute::make(
-            get: fn () => strtoupper("{$this->nombre_sede} - {$this->ambiente} - Piso {$this->piso_ubicacion}"),
+            get: function () {
+                $areaNombre = $this->area ? $this->area->nombre_area : 'SIN ÁREA';
+                return strtoupper("{$areaNombre} - {$this->nombre_sede} - {$this->ambiente} - Piso {$this->piso_ubicacion}");
+            }
         );
     }
 

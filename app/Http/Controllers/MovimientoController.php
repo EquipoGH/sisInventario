@@ -172,7 +172,13 @@ class MovimientoController extends Controller
                     ]);
             }
 
-
+        // ⭐⭐⭐ RESTRICCIÓN USUARIO: MOSTRAR SOLO EL ÚLTIMO MOVIMIENTO POR BIEN ⭐⭐⭐
+        // Esto evita mostrar el historial completo en la grilla y confundir al operador
+        $query->whereIn('movimiento.id_movimiento', function($q) {
+            $q->select(\Illuminate\Support\Facades\DB::raw('MAX(id_movimiento)'))
+              ->from('movimiento')
+              ->groupBy('idbien');
+        });
 
         // ✅ FILTRO DE ESTADO DEL BIEN
         if ($request->filled('estado_bien')) {

@@ -64,11 +64,15 @@ class QRBienController extends Controller
     public function generarPDFMasivo(Request $request)
     {
         try {
+            // ⭐ Aumentar límites para grandes volúmenes de QRs
+            set_time_limit(0); 
+            ini_set('memory_limit', '2048M');
+
             $filtro = $request->input('filtro', 'todos');
 
-            // ⭐ CONFIGURACIÓN FIJA PARA GRID 3x3
-            $tamanoQR = 120; // Tamaño óptimo para 3x3 en A4
-            $qrPorPagina = 9; // 3 filas × 3 columnas
+            // ⭐ CONFIGURACIÓN FIJA PARA GRID 4x4
+            $tamanoQR = 90; // Tamaño óptimo para 4x4 en A4
+            $qrPorPagina = 16; // 4 filas × 4 columnas
 
             // ⭐ CONSULTAR BIENES SEGÚN FILTRO
             $query = Bien::with([
@@ -181,12 +185,36 @@ class QRBienController extends Controller
             // ⭐ AGRUPAR EN PÁGINAS DE 9 QR (values() garantiza índices 0, 1, 2...)
             $paginas = $bienesConQR->chunk($qrPorPagina)->values();
 
+            // Construir texto de filtros avanzados
+            $filtroPartes = [];
+            if ($request->filled('area_id')) {
+                $area = \App\Models\Area::find($request->area_id);
+                if($area) $filtroPartes[] = "Área: {$area->nombre_area}";
+            }
+            if ($request->filled('ubicacion_id')) {
+                $ubic = \Illuminate\Support\Facades\DB::table('ubicacion')->where('id_ubicacion', $request->ubicacion_id)->first();
+                if($ubic) $filtroPartes[] = "Ubic.: {$ubic->ambiente}";
+            }
+            if ($request->filled('tipo_bien')) {
+                $tipo = \App\Models\TipoBien::find($request->tipo_bien);
+                if($tipo) $filtroPartes[] = "Tipo: {$tipo->nombre_tipo}";
+            }
+            if ($request->filled('estado_bien_id')) {
+                $est = \App\Models\EstadoBien::find($request->estado_bien_id);
+                if($est) $filtroPartes[] = "Estado: {$est->nombre_estado}";
+            }
+            if ($request->filled('anio')) {
+                $filtroPartes[] = "Año: {$request->anio}";
+            }
+            
+            $filtroTexto = !empty($filtroPartes) ? implode(' | ', $filtroPartes) : "Filtro principal: " . $this->getNombreFiltro($filtro);
+
             // ⭐ GENERAR PDF CON VISTA GRID
             $pdf = Pdf::loadView('qr-bienes.pdf-grid', [
                 'paginas' => $paginas,
                 'total'   => $bienes->count(),
                 'fecha'   => now()->format('d/m/Y H:i'),
-                'filtro'  => $this->getNombreFiltro($filtro),
+                'filtro'  => $filtroTexto,
             ])
             ->setPaper('a4', 'portrait')
             ->setOption('isHtml5ParserEnabled', true)

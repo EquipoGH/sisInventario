@@ -185,15 +185,19 @@ class ReporteBienController extends Controller
     {
         $estado = $this->estadoFromRequest($request);
 
-        $q = Bien::query()
+        $q = \App\Helpers\PermisosHelper::getBienesQuery()
             ->with([
                 'tipoBien',
                 // Esto NO se muestra en tabla, pero sirve en PDF/Excel si lo usas allá:
                 'documentoSustento',
                 'latestMovimiento.tipoMovimiento',
-                'latestMovimiento.ubicacion.area',
+                'latestMovimiento.ubicacion.area.responsableAreas' => function($query) {
+                    $query->orderBy('periodo_anio', 'desc')->orderBy('fecha_asignacion', 'desc');
+                },
+                'latestMovimiento.ubicacion.area.responsableAreas.responsable',
                 'latestMovimiento.usuario',             // Usuario del sistema que registró el movimiento
                 'latestMovimiento.estadoConservacion',  // Estado de conservación del bien (viene del último movimiento)
+                'registradoPor',                        // Usuario que registró el bien
             ]);
 
         // Activos/Inactivos/Todos (robusto)
@@ -226,6 +230,17 @@ class ReporteBienController extends Controller
 
         if ($request->filled('area_id')) {
             $q->whereHas('latestMovimiento.ubicacion', fn($u) => $u->where('idarea', $request->area_id));
+        }
+
+        // Filtro por Estado de Asignación (Buscar por NOMBRE del tipo de movimiento)
+        $estadoAsignacion = $request->input('estado_asignacion', 'asignados');
+        
+        if ($estadoAsignacion === 'asignados') {
+            // Buscamos que el último movimiento sea de algún tipo que contenga "asignacion" en su nombre
+            $q->whereHas('latestMovimiento.tipoMovimiento', fn($t) => $t->where('tipo_mvto', 'ILIKE', '%asignaci%'));
+        } elseif ($estadoAsignacion === 'sin_asignar') {
+            // Buscamos que el último movimiento NO sea asignación, o que simplemente no tenga movimientos
+            $q->whereDoesntHave('latestMovimiento.tipoMovimiento', fn($t) => $t->where('tipo_mvto', 'ILIKE', '%asignaci%'));
         }
 
         // Búsqueda global (tu scopeBuscar en Bien)
@@ -428,6 +443,7 @@ class ReporteBienController extends Controller
         $filtros['tipo_bien_nombre'] = $tipoBienNombre;
         $filtros['estado_bien_nombre'] = $estadoBienNombre;
         $filtros['responsable_nombre'] = $responsableNombre;
+        $filtros['estado_asignacion'] = $request->input('estado_asignacion', 'asignados');
 
         return Pdf::loadView('reportes.bienes.pdf', [
             'bienes' => $bienes,
@@ -490,6 +506,7 @@ class ReporteBienController extends Controller
         $filtros['tipo_bien_nombre'] = $tipoBienNombre;
         $filtros['estado_bien_nombre'] = $estadoBienNombre;
         $filtros['responsable_nombre'] = $responsableNombre;
+        $filtros['estado_asignacion'] = $request->input('estado_asignacion', 'asignados');
 
         return Excel::download(
             new BienesExport($bienes, $settings, $filtros, $reporte),

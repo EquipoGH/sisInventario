@@ -332,6 +332,12 @@ $(document).ready(function() {
 
     actualizarIconosOrdenamiento();
 
+    // ==================== INICIALIZAR PAGINACIÓN ====================
+    actualizarPaginacion({
+        current_page: {{ $documentos->currentPage() }},
+        last_page: {{ $documentos->lastPage() }}
+    }, '');
+
     // ===============================
     // ORDENAMIENTO
     // ===============================

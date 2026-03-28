@@ -609,8 +609,7 @@
             </select>
         </div>
 
-        {{-- Filtro: Ubicación (12%) --}}
-        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+        <div class="col-xl-2 col-lg-3 col-md-4 col-12 mb-2">
             <label class="filter-label-inline">
                 <i class="fas fa-map-marker-alt text-danger"></i> UBICACIÓN
             </label>
@@ -618,8 +617,9 @@
                 <option value="">Todas</option>
                 @foreach($ubicaciones as $ubicacion)
                     <option value="{{ $ubicacion->id_ubicacion }}"
-                            data-area="{{ $ubicacion->idarea ?? '' }}">
-                        {{ Str::limit($ubicacion->nombre_sede, 20) }}
+                            data-area="{{ $ubicacion->idarea ?? '' }}"
+                            title="{{ $ubicacion->ubicacion_completa }}">
+                        {{ $ubicacion->ambiente }}
                     </option>
                 @endforeach
             </select>
@@ -641,18 +641,7 @@
             <input type="date" id="filtroFechaHasta" class="form-control form-control-sm custom-date-filter">
         </div>
 
-        {{-- ⭐⭐⭐ NUEVO: Filtro Ver Anulados (SOLO ADMIN) ⭐⭐⭐ --}}
-        @if(Auth::user()->esAdmin())
-        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
-            <label class="filter-label-inline">
-                <i class="fas fa-eye-slash text-secondary"></i> ANULADOS
-            </label>
-            <select id="filtroAnulados" class="form-control form-control-sm custom-select-filter">
-                <option value="0" selected>Activos</option>
-                <option value="1">Anulados</option>
-            </select>
-        </div>
-        @endif
+
 
 
         {{-- Botón Aplicar Filtros (8%) --}}
@@ -702,30 +691,11 @@
     {{-- Separador --}}
     <hr class="mb-3 mt-2" style="border-top: 2px solid #e3e6f0;">
 
-    {{-- ⭐⭐⭐ LEYENDA HORIZONTAL + INFO (DEBAJO DE LA TABLA) ⭐⭐⭐ --}}
-    <div class="leyenda-horizontal-container">
-        {{-- Leyenda de colores inline --}}
-        <div class="leyenda-inline">
-            <span class="leyenda-item">
-                <span class="dot-inline sin-asignar"></span>
-                <span class="text-leyenda">sin asignar</span>
-            </span>
-
-            <span class="leyenda-item">
-                <span class="dot-inline asignacion"></span>
-                <span class="text-leyenda">asignación</span>
-            </span>
-            <span class="leyenda-item">
-                <span class="dot-inline baja"></span>
-                <span class="text-leyenda">baja</span>
-            </span>
-        </div>
-
-        {{-- Texto de información --}}
-        <div class="info-edicion">
-            <i class="fas fa-info-circle"></i>
-            Doble clic en la fila para editar
-        </div>
+    {{-- Texto de información reubicado --}}
+    <div class="d-flex justify-content-end mb-2">
+        <span class="text-muted small">
+            <i class="fas fa-info-circle text-primary"></i> Doble clic en la fila para editar
+        </span>
     </div>
 
 
@@ -1151,7 +1121,7 @@
                                     <option value="">Sin ubicación</option>
                                     @foreach($ubicaciones as $ubicacion)
                                         <option value="{{ $ubicacion->id_ubicacion }}">
-                                            {{ $ubicacion->ubicacion_completa }}
+                                            {{ $ubicacion->ambiente }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -1249,7 +1219,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="form-group">
                                     <label for="asignar_fecha_mvto">Fecha <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="asignar_fecha_mvto" name="fecha_mvto" required>
@@ -1259,12 +1229,24 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
+                                    <label for="asignar_idarea_masivo">Área <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="asignar_idarea_masivo" required>
+                                        <option value="">Seleccione un Área primero</option>
+                                        @foreach($areas as $area)
+                                            <option value="{{ $area->id_area }}">{{ Str::limit($area->nombre_area, 40) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
                                     <label for="asignar_idubicacion">Ubicación <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="asignar_idubicacion" name="idubicacion" required>
+                                    <select class="form-control" id="asignar_idubicacion" name="idubicacion" required disabled>
                                         <option value="">Seleccione ubicación</option>
                                         @foreach($ubicaciones as $ubicacion)
-                                            <option value="{{ $ubicacion->id_ubicacion }}">
-                                                {{ $ubicacion->ubicacion_completa }}
+                                            <option value="{{ $ubicacion->id_ubicacion }}" data-area="{{ $ubicacion->idarea ?? '' }}" class="d-none">
+                                                {{ $ubicacion->ambiente }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -1571,7 +1553,68 @@
 <script>
 $(document).ready(function() {
 
+        // ==========================================
+        // FILTRO EN CASCADA: ÁREA -> UBICACIÓN
+        // ==========================================
+        const $filtroArea = $('#filtroArea');
+        const $filtroUbicacion = $('#filtroUbicacion');
+        
+        // Guardar copia de todas las opciones originales de ubicación
+        const opcionesUbicacionOriginales = $filtroUbicacion.find('option').clone();
 
+        $filtroArea.on('change', function() {
+            const areaSeleccionada = $(this).val();
+            const ubicacionSeleccionadaActual = $filtroUbicacion.val();
+
+            // Limpiar dropdown de ubicaciones
+            $filtroUbicacion.empty();
+
+            if (!areaSeleccionada) {
+                // Si no hay área seleccionada ("Todas las áreas" o vacío)
+                $filtroUbicacion.append('<option value="">Seleccione un Área primero</option>');
+                $filtroUbicacion.prop('disabled', true);
+            } else {
+                // Si hay un área específica seleccionada
+                $filtroUbicacion.prop('disabled', false);
+                $filtroUbicacion.append('<option value="">Todas las ubicaciones del área</option>');
+
+                let existeSeleccionPrevia = false;
+
+                // Filtrar las opciones clonadas y agregarlas si coinciden con el área
+                opcionesUbicacionOriginales.each(function() {
+                    const valorOp = $(this).val();
+                    const areaOp = $(this).data('area');
+
+                    if (valorOp === "") return; // Ignorar el "Todas" original
+
+                    // Agregar opciones cuyo data-area coincide con el área seleccionada
+                    if (areaOp == areaSeleccionada) {
+                        $filtroUbicacion.append($(this).clone());
+                        
+                        if (valorOp === ubicacionSeleccionadaActual) {
+                            existeSeleccionPrevia = true;
+                        }
+                    }
+                });
+
+                // Restaurar la ubicación previamente seleccionada si aún es válida
+                if (existeSeleccionPrevia && ubicacionSeleccionadaActual !== "") {
+                    $filtroUbicacion.val(ubicacionSeleccionadaActual);
+                } else {
+                    $filtroUbicacion.val('');
+                }
+            }
+        });
+
+        // Disparar el cambio en la carga de la página para que aplique el bloqueo inicial
+        $filtroArea.trigger('change');
+
+        // Agregar evento para el botón "Aplicar Filtros"
+        $('#btnAplicarFiltros').on('click', function(e) {
+            e.preventDefault();
+            paginaActual = 1;
+            cargarMovimientos();
+        });
 
         // ==========================================
         // VARIABLES GLOBALES
@@ -3531,10 +3574,33 @@ $(document).ready(function() {
 
 
 
+    // ==========================================
+    // ⭐⭐⭐ LÓGICA DE ÁREA -> UBICACIÓN (ASIGNACIÓN MASIVA)
+    // ==========================================
+    const $asigArea = $('#asignar_idarea_masivo');
+    const $asigUbicacion = $('#asignar_idubicacion');
+    const asigUbicacionOriginalOptions = $asigUbicacion.find('option[data-area]').clone();
 
+    $asigArea.on('change', function() {
+        const selectedArea = $(this).val();
+        
+        // Limpiar opciones actuales manteniendo el placeholder
+        $asigUbicacion.empty().append('<option value="">Seleccione ubicación</option>');
+        
+        if (!selectedArea) {
+            $asigUbicacion.prop('disabled', true);
+        } else {
+            $asigUbicacion.prop('disabled', false);
+            // Agregar las opciones que corresponden al área
+            asigUbicacionOriginalOptions.each(function() {
+                if ($(this).data('area') == selectedArea) {
+                    $asigUbicacion.append($(this).clone().removeClass('d-none'));
+                }
+            });
+        }
+    });
 
 }); // ✅ CIERRE ÚNICO DE $(document).ready()
-
 </script>
 @stop
 

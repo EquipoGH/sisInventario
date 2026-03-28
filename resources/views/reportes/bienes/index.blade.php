@@ -112,6 +112,18 @@
         <input type="hidden" name="estado" id="estado" value="activos">
         @endif
 
+        {{-- NUEVO FILTRO DE ASIGNACIÓN --}}
+        <div class="col-lg-2 col-md-4">
+          <div class="form-group">
+            <label class="text-muted">Asignación</label>
+            <select class="form-control" name="estado_asignacion" id="estado_asignacion">
+              <option value="asignados" selected>Asignados</option>
+              <option value="sin_asignar">Sin asignar</option>
+              <option value="todos">Todos</option>
+            </select>
+          </div>
+        </div>
+
         <div class="col-lg-2 col-md-4" id="wrapAnio">
           <div class="form-group">
             <label class="text-muted">Año</label>
@@ -152,11 +164,8 @@
         <div class="col-lg-4 col-md-6">
           <div class="form-group">
             <label class="text-muted">Ubicación</label>
-            <select class="form-control" name="ubicacion_id" id="ubicacion_id">
-              <option value="">-- Todas --</option>
-              @foreach($ubicaciones as $u)
-                <option value="{{ $u->id_ubicacion }}">{{ $u->nombre_sede }} - {{ $u->ambiente }}</option>
-              @endforeach
+            <select class="form-control" name="ubicacion_id" id="ubicacion_id" disabled>
+              <option value="">Seleccione un Área primero</option>
             </select>
           </div>
         </div>
@@ -264,6 +273,7 @@ $(function () {
 
   const $reporte = $('#reporte');
   const $estado = $('#estado');
+  const $estadoAsignacion = $('#estado_asignacion');
   const $anio = $('#anio');
   const $tipoBien = $('#tipo_bien');
   const $area = $('#area_id');
@@ -275,6 +285,7 @@ $(function () {
   function qsObj() {
     return {
       estado: $estado.val(),
+      estado_asignacion: $estadoAsignacion.val(),
       reporte: $reporte.val(),
       anio: $anio.val(),
       tipo_bien: $tipoBien.val(),
@@ -317,10 +328,10 @@ $(function () {
   async function cargarUbicacionesPorArea() {
     const areaId = $area.val();
 
-    // Si no hay área, dejamos la ubicación como "Todas" y no forzamos AJAX
+    // Si no hay área, se bloquea el select
     if (!areaId) {
-      $ubic.removeClass('loading-select').prop('disabled', false)
-          .html('<option value="">-- Todas --</option>');
+      $ubic.removeClass('loading-select').prop('disabled', true)
+          .html('<option value="">Seleccione un Área primero</option>');
       refreshExportLinks();
       return;
     }
@@ -332,15 +343,19 @@ $(function () {
     try {
       const res = await $.get("{{ route('ubicacion.porArea') }}", { area_id: areaId });
       const data = res?.data || [];
+      const areaNombre = $area.find('option:selected').text().trim();
 
-      let html = '<option value="">-- Todas --</option>';
+      let html = '<option value="">Todas las ubicaciones del área</option>';
       data.forEach(u => {
-        html += `<option value="${u.id_ubicacion}">${u.nombre_sede} - ${u.ambiente}</option>`;
+        // Formatear igual que ubicacionCompleta
+        const pisoText = u.piso_ubicacion ? ` - Piso ${u.piso_ubicacion}` : '';
+        const textoCompleto = `${areaNombre} - ${u.nombre_sede} - ${u.ambiente}${pisoText}`;
+        html += `<option value="${u.id_ubicacion}" title="${textoCompleto}">${textoCompleto}</option>`;
       });
 
       $ubic.html(html).prop('disabled', false).removeClass('loading-select');
     } catch (e) {
-      $ubic.html('<option value="">-- Todas --</option>').prop('disabled', false).removeClass('loading-select');
+      $ubic.html('<option value="">Seleccione un Área primero</option>').prop('disabled', true).removeClass('loading-select');
     } finally {
       setExportEnabled(true);
       refreshExportLinks();
@@ -366,8 +381,8 @@ $(function () {
     order: [[0, 'desc']],
 
     columns: [
-      { data:'codigo_patrimonial', render: (d)=> `<span class="badge badge-info badge-code font-weight-bold">${d || '-'}</span>` },
-      { data:'denominacion_bien',  render: (d)=> `<span class="font-weight-bold">${d || '-'}</span>` },
+      { data:'codigo_patrimonial', render: (d)=> d || '-' },
+      { data:'denominacion_bien',  render: (d)=> d || '-' },
       { data:'tipo_bien',          render: (d)=> d || '-' },
       { data:'marca_bien',         render: (d)=> d || '-' },
       { data:'modelo_bien',        render: (d)=> d || '-' },
@@ -396,6 +411,11 @@ $(function () {
   // INIT
   refreshExportLinks();
   toggleFiltersByReporte();
+  if ($area.val()) {
+    cargarUbicacionesPorArea();
+  } else {
+    $ubic.prop('disabled', true).html('<option value="">Seleccione un Área primero</option>');
+  }
 
   // Eventos
   let t;
@@ -422,17 +442,14 @@ $(function () {
 
   $reporte.on('change', function () {
     toggleFiltersByReporte();
-    table.ajax.reload();
   });
 
   $area.on('change', async function () {
     await cargarUbicacionesPorArea();
-    table.ajax.reload();
   });
 
-  $('#estado,#anio,#tipo_bien,#ubicacion_id,#estado_bien_id,#responsable_id').on('change', function () {
+  $('#estado,#estado_asignacion,#anio,#tipo_bien,#ubicacion_id,#estado_bien_id,#responsable_id').on('change', function () {
     refreshExportLinks();
-    table.ajax.reload();
   });
 
   $('#btnLimpiar').on('click', async function () {

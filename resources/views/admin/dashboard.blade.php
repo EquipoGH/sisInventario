@@ -33,88 +33,48 @@
     $rolDisplay = strtoupper(Auth::user()->rol_usuario);
     $nombreUsuario = Auth::user()->name ?? Auth::user()->email;
 @endphp
-<div class="welcome-hero mb-4">
-    {{-- Orbes decorativos de fondo --}}
-    <div class="hero-orb hero-orb-1"></div>
-    <div class="hero-orb hero-orb-2"></div>
-    <div class="hero-orb hero-orb-3"></div>
-
-    <div class="hero-left">
-        <p class="hero-greeting">{{ $saludo }}, {{ $emoji }}</p>
-        <h2 class="hero-name">{{ $nombreUsuario }}</h2>
-        <p class="hero-sub">
-            @if($esAdmin)
-                Tienes acceso completo al sistema de inventario.
-            @else
-                Bienvenido a tu panel de gestión de inventario.
-            @endif
-        </p>
-        <div class="hero-pills">
-            <span class="hero-pill hero-pill-role">
+<div class="welcome-card mb-4 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 45%, #8b5cf6 100%); border-radius: 20px; box-shadow: 0 12px 30px rgba(59,130,246,0.25);">
+    <!-- background decorative shapes -->
+    <div style="position:absolute; top:-60px; left:-60px; width:220px; height:220px; background:rgba(255,255,255,0.12); border-radius:50%; filter:blur(24px); pointer-events: none;"></div>
+    <div style="position:absolute; bottom:-120px; right:-60px; width:350px; height:350px; background:rgba(255,255,255,0.08); border-radius:50%; filter:blur(30px); pointer-events: none;"></div>
+    <div class="welcome-bg-pattern" style="opacity: 0.04;"></div>
+    
+    <div class="dash-card-body d-flex flex-wrap align-items-center justify-content-between position-relative z-index-1" style="padding: 34px 42px !important;">
+        <div class="hero-left pe-lg-4">
+            <h3 class="fw-bold mb-2 text-white">{{ $saludo }}, {{ $nombreUsuario }} {{ $emoji }}</h3>
+            <p class="text-white-50 mb-4 fs-6">
                 @if($esAdmin)
-                    <i class="fas fa-shield-alt"></i> {{ $rolDisplay }}
+                    Tienes acceso completo al sistema de inventario. Aquí tienes el resumen de hoy.
                 @else
-                    <i class="fas fa-user-circle"></i> {{ $rolDisplay }}
+                    Bienvenido a tu panel de gestión de inventario.
                 @endif
-            </span>
-            <span class="hero-pill hero-pill-date">
-                <i class="fas fa-calendar-check"></i>
-                {{ now()->locale('es')->isoFormat('dddd, D MMM YYYY') }}
-            </span>
-            <span class="hero-pill hero-pill-time" id="heroClock">
-                <i class="fas fa-clock"></i>
-                {{ now()->format('H:i') }}
-            </span>
+            </p>
+            <div class="d-flex flex-wrap gap-2 align-items-center pt-2">
+                <span class="badge" style="background: rgba(255,255,255,0.25); color: #fff; padding: 7px 16px; border-radius: 50px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; backdrop-filter: blur(4px);">
+                    @if($esAdmin)
+                        <i class="fas fa-shield-alt me-1"></i> {{ $rolDisplay }}
+                    @else
+                        <i class="fas fa-user-circle me-1"></i> {{ $rolDisplay }}
+                    @endif
+                </span>
+                <span class="badge" style="background: rgba(255,255,255,0.12); color: #fff; padding: 7px 16px; border-radius: 50px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px);">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    {{ now()->locale('es')->isoFormat('dddd, D MMM YYYY') }}
+                </span>
+                <span class="badge" id="heroClock" style="background: rgba(16, 185, 129, 0.35); color: #fff; padding: 7px 16px; border-radius: 50px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; border: 1px solid rgba(16, 185, 129, 0.4); backdrop-filter: blur(4px);">
+                    <i class="fas fa-clock me-1"></i>
+                    {{ now()->format('H:i') }}
+                </span>
+            </div>
         </div>
-    </div>
 
-    <div class="hero-right">
-        {{-- SVG decorativo: inventario --}}
-        <svg class="hero-svg" viewBox="0 0 260 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Fondo suave -->
-            <ellipse cx="130" cy="170" rx="100" ry="18" fill="rgba(255,255,255,0.08)"/>
-
-            <!-- Caja grande (base) -->
-            <rect x="50" y="110" width="80" height="70" rx="8" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-            <rect x="56" y="116" width="68" height="58" rx="5" fill="rgba(255,255,255,0.08)"/>
-            <!-- Líneas en caja -->
-            <line x1="65" y1="128" x2="105" y2="128" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round"/>
-            <line x1="65" y1="140" x2="95" y2="140" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="65" y1="152" x2="100" y2="152" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-linecap="round"/>
-
-            <!-- Caja pequeña (encima a la derecha) -->
-            <rect x="140" y="130" width="60" height="50" rx="6" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
-            <rect x="146" y="136" width="48" height="38" rx="4" fill="rgba(255,255,255,0.06)"/>
-            <line x1="153" y1="146" x2="183" y2="146" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="153" y1="156" x2="178" y2="156" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/>
-
-            <!-- Portapapeles (clip superior) -->
-            <rect x="75" y="70" width="56" height="50" rx="6" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
-            <rect x="88" y="63" width="30" height="12" rx="6" fill="rgba(255,255,255,0.35)" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
-            <line x1="85" y1="88" x2="117" y2="88" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
-            <line x1="85" y1="98" x2="110" y2="98" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="85" y1="108" x2="114" y2="108" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
-            <!-- Check -->
-            <circle cx="122" cy="88" r="7" fill="rgba(52,211,153,0.7)"/>
-            <polyline points="118,88 121,91 126,84" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-            <!-- Estrella decorativa -->
-            <circle cx="195" cy="75" r="12" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-            <text x="195" y="80" text-anchor="middle" font-size="14">📦</text>
-
-            <!-- Puntos flotantes -->
-            <circle cx="45" cy="85" r="4" fill="rgba(255,255,255,0.3)"/>
-            <circle cx="215" cy="120" r="3" fill="rgba(255,255,255,0.25)"/>
-            <circle cx="60" cy="150" r="2.5" fill="rgba(255,255,255,0.2)"/>
-            <circle cx="220" cy="90" r="5" fill="rgba(255,255,255,0.15)"/>
-        </svg>
-
-        {{-- Tarjeta de stat flotante --}}
-        <div class="hero-stat-card">
-            <div class="hero-stat-icon"><i class="fas fa-boxes"></i></div>
-            <div>
-                <div class="hero-stat-num">{{ $totalBienes }}</div>
-                <div class="hero-stat-label">Bienes Activos</div>
+        <div class="hero-right d-none d-lg-flex align-items-center mt-3 mt-lg-0">
+            <div class="welcome-stats me-4 text-end">
+                <h3 class="fw-bold text-white mb-0">{{ $totalBienes }}</h3>
+                <p class="text-white-50 fw-semibold fs-7 text-uppercase tracking-wide mb-0">Bienes Activos</p>
+            </div>
+            <div class="illustration-wrap" style="background: rgba(255,255,255,0.15); border-radius: 20px; width: 75px; height: 75px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
+                <i class="fas fa-box-open text-white floating-icon" style="font-size: 2.2rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));"></i>
             </div>
         </div>
     </div>
@@ -123,122 +83,132 @@
 {{-- ============ KPI CARDS ============ --}}
 <div class="row kpi-row mb-4">
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="kpi-card kpi-blue">
-            <div class="kpi-icon-wrap"><i class="fas fa-boxes"></i></div>
+        <div class="kpi-card">
             <div class="kpi-body">
-                <div class="kpi-number counter" data-target="{{ $totalBienes }}">0</div>
-                <div class="kpi-label">Total de Bienes</div>
-                <div class="kpi-sub text-white-50 mt-1" style="font-size:.75rem;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="kpi-label text-secondary text-uppercase fw-bold tracking-wide" style="font-size: 0.75rem;">Total de Bienes</div>
+                    <div class="kpi-icon-wrap vibrant-primary">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="kpi-number text-dark fw-bolder mb-1 counter" data-target="{{ $totalBienes }}" style="font-size: 2.2rem; letter-spacing: -1px;">0</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
                     @if($bienesSinMovimiento > 0)
-                        <i class="fas fa-exclamation-circle"></i> {{ $bienesSinMovimiento }} sin movimientos
+                        <span class="badge bg-warning-subtle text-warning px-2 py-1"><i class="fas fa-exclamation-circle"></i> {{ $bienesSinMovimiento }} sin mod</span>
                     @else
-                        <i class="fas fa-check-circle"></i> Todos con actividad
+                        <span class="badge bg-success-subtle text-success px-2 py-1"><i class="fas fa-check-circle"></i> 100% activos</span>
                     @endif
+                    <a href="{{ route('bien.index') }}" class="text-primary fs-7 fw-bold text-decoration-none">Ver <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
-            <div class="kpi-spark-wrap">
-                <canvas id="sparkBienes" class="kpi-spark"></canvas>
-            </div>
-            <a href="{{ route('bien.index') }}" class="kpi-link">Ver bienes <i class="fas fa-arrow-right"></i></a>
-            <div class="kpi-glow"></div>
         </div>
     </div>
+    
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="kpi-card kpi-emerald">
-            <div class="kpi-icon-wrap"><i class="fas fa-building"></i></div>
+        <div class="kpi-card">
             <div class="kpi-body">
-                <div class="kpi-number counter" data-target="{{ $totalAreas }}">0</div>
-                <div class="kpi-label">{{ $esAdmin ? 'Áreas Activas' : 'Mis Áreas' }}</div>
-                <div class="kpi-sub text-white-50 mt-1" style="font-size:.75rem;">
-                    <i class="fas fa-map-marker-alt"></i> {{ $totalUbicaciones }} ubicaciones
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="kpi-label text-secondary text-uppercase fw-bold tracking-wide" style="font-size: 0.75rem;">{{ $esAdmin ? 'Áreas Activas' : 'Mis Áreas' }}</div>
+                    <div class="kpi-icon-wrap vibrant-success">
+                        <i class="fas fa-building"></i>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="kpi-number text-dark fw-bolder mb-1 counter" data-target="{{ $totalAreas }}" style="font-size: 2.2rem; letter-spacing: -1px;">0</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <span class="badge bg-light text-secondary px-2 py-1 border"><i class="fas fa-map-marker-alt"></i> {{ $totalUbicaciones }} const</span>
+                    <a href="{{ route('area.index') }}" class="text-success fs-7 fw-bold text-decoration-none">Ver <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
-            <div class="kpi-spark-wrap">
-                <canvas id="sparkAreas" class="kpi-spark"></canvas>
-            </div>
-            <a href="{{ route('area.index') }}" class="kpi-link">Ver áreas <i class="fas fa-arrow-right"></i></a>
-            <div class="kpi-glow"></div>
         </div>
     </div>
+    
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="kpi-card kpi-violet">
-            <div class="kpi-icon-wrap"><i class="fas fa-tags"></i></div>
+        <div class="kpi-card">
             <div class="kpi-body">
-                <div class="kpi-number counter" data-target="{{ $totalTiposBien }}">0</div>
-                <div class="kpi-label">Tipos de Bien</div>
-                <div class="kpi-sub text-white-50 mt-1" style="font-size:.75rem;">
-                    <i class="fas fa-layer-group"></i> Categorías registradas
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="kpi-label text-secondary text-uppercase fw-bold tracking-wide" style="font-size: 0.75rem;">Tipos de Bien</div>
+                    <div class="kpi-icon-wrap vibrant-purple">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="kpi-number text-dark fw-bolder mb-1 counter" data-target="{{ $totalTiposBien }}" style="font-size: 2.2rem; letter-spacing: -1px;">0</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <span class="badge bg-light text-secondary px-2 py-1 border"><i class="fas fa-layer-group"></i> Categorías</span>
+                    <a href="{{ route('tipo-bien.index') }}" class="text-purple fs-7 fw-bold text-decoration-none">Ver <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
-            <div class="kpi-spark-wrap">
-                <canvas id="sparkTipos" class="kpi-spark"></canvas>
-            </div>
-            <a href="{{ route('tipo-bien.index') }}" class="kpi-link">Ver tipos <i class="fas fa-arrow-right"></i></a>
-            <div class="kpi-glow"></div>
         </div>
     </div>
+    
     <div class="col-xl-3 col-md-6 mb-3">
-        <div class="kpi-card kpi-amber">
-            <div class="kpi-icon-wrap"><i class="fas fa-exchange-alt"></i></div>
+        <div class="kpi-card">
             <div class="kpi-body">
-                <div class="kpi-number counter" data-target="{{ $movimientosHoy }}">0</div>
-                <div class="kpi-label">Movimientos Hoy</div>
-                <div class="kpi-sub text-white-50 mt-1" style="font-size:.75rem;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="kpi-label text-secondary text-uppercase fw-bold tracking-wide" style="font-size: 0.75rem;">Movto. Hoy</div>
+                    <div class="kpi-icon-wrap vibrant-warning">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="kpi-number text-dark fw-bolder mb-1 counter" data-target="{{ $movimientosHoy }}" style="font-size: 2.2rem; letter-spacing: -1px;">0</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
                     @php $tend = $tendenciaMovimientos; @endphp
                     @if($tend > 0)
-                        <i class="fas fa-arrow-trend-up"></i> +{{ $tend }}% vs mes anterior
+                        <span class="badge bg-success-subtle text-success px-2 py-1"><i class="fas fa-arrow-trend-up"></i> +{{ $tend }}%</span>
                     @elseif($tend < 0)
-                        <i class="fas fa-arrow-trend-down"></i> {{ $tend }}% vs mes anterior
+                        <span class="badge bg-danger-subtle text-danger px-2 py-1"><i class="fas fa-arrow-trend-down"></i> {{ $tend }}%</span>
                     @else
-                        <i class="fas fa-minus"></i> Sin cambio vs mes anterior
+                        <span class="badge bg-light text-secondary px-2 py-1 border"><i class="fas fa-minus"></i> 0%</span>
                     @endif
+                    <a href="{{ route('movimiento.index') }}" class="text-warning fs-7 fw-bold text-decoration-none" style="color:#d97706!important;">Ver <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
-            <div class="kpi-spark-wrap">
-                <canvas id="sparkMovimientos" class="kpi-spark"></canvas>
-            </div>
-            <a href="{{ route('movimiento.index') }}" class="kpi-link">Ver movimientos <i class="fas fa-arrow-right"></i></a>
-            <div class="kpi-glow"></div>
         </div>
     </div>
 </div>
 
-{{-- ============ FILA: BARRA DE COMPARATIVO MES ============ --}}
 <div class="row mb-4">
     <div class="col-12">
-        <div class="trend-bar">
-            <div class="trend-bar-section-label">
-                <i class="fas fa-exchange-alt"></i> Resumen de Movimientos
+        <div class="trend-bar" style="background: rgba(var(--primary-rgb), 0.03); border: 1px solid rgba(var(--primary-rgb), 0.1);">
+            <div class="trend-bar-section-label text-primary">
+                <i class="fas fa-exchange-alt me-1"></i> Resumen
             </div>
-            <div class="trend-divider"></div>
+            <div class="trend-divider" style="background: rgba(var(--primary-rgb), 0.1);"></div>
             <div class="trend-bar-item">
-                <span class="trend-label"><i class="fas fa-calendar-alt"></i> Mes Actual</span>
-                <span class="trend-value text-blue fw-bold">{{ $movimientosMesActual }}</span>
+                <span class="trend-label text-dark fw-bold">Mes Actual</span>
+                <span class="trend-value text-primary fw-bolder">{{ $movimientosMesActual }}</span>
                 <span class="trend-sublabel">movimientos</span>
             </div>
-            <div class="trend-divider"></div>
+            <div class="trend-divider" style="background: rgba(var(--primary-rgb), 0.1);"></div>
             <div class="trend-bar-item">
-                <span class="trend-label"><i class="fas fa-history"></i> Mes Anterior</span>
-                <span class="trend-value text-muted fw-bold">{{ $movimientosMesAnterior }}</span>
+                <span class="trend-label text-secondary fw-bold">Mes Anterior</span>
+                <span class="trend-value text-dark fw-bolder">{{ $movimientosMesAnterior }}</span>
                 <span class="trend-sublabel">movimientos</span>
             </div>
-            <div class="trend-divider"></div>
+            <div class="trend-divider" style="background: rgba(var(--primary-rgb), 0.1);"></div>
             <div class="trend-bar-item">
-                <span class="trend-label"><i class="fas fa-chart-line"></i> Esta Semana</span>
-                <span class="trend-value text-emerald fw-bold">{{ $movimientosSemana }}</span>
+                <span class="trend-label text-success fw-bold">Esta Semana</span>
+                <span class="trend-value text-success fw-bolder">{{ $movimientosSemana }}</span>
                 <span class="trend-sublabel">movimientos</span>
             </div>
-            <div class="trend-divider"></div>
+            <div class="trend-divider" style="background: rgba(var(--primary-rgb), 0.1);"></div>
             <div class="trend-bar-item">
-                <span class="trend-label"><i class="fas fa-sun"></i> Hoy</span>
-                <span class="trend-value text-amber fw-bold">{{ $movimientosHoy }}</span>
+                <span class="trend-label text-warning fw-bold">Hoy</span>
+                <span class="trend-value text-warning fw-bolder">{{ $movimientosHoy }}</span>
                 <span class="trend-sublabel">movimientos</span>
             </div>
-            <div class="trend-divider"></div>
+            <div class="trend-divider" style="background: rgba(var(--primary-rgb), 0.1);"></div>
             <div class="trend-bar-item">
-                <span class="trend-label"><i class="fas fa-arrow-{{ $tendenciaMovimientos >= 0 ? 'up' : 'down' }} {{ $tendenciaMovimientos >= 0 ? 'text-emerald' : 'text-rose' }}"></i> Tendencia</span>
-                <span class="trend-value fw-bold {{ $tendenciaMovimientos >= 0 ? 'text-emerald' : 'text-rose' }}">
-                    {{ $tendenciaMovimientos >= 0 ? '+' : '' }}{{ $tendenciaMovimientos }}%
+                <span class="trend-label text-dark fw-bold">Tendencia</span>
+                <span class="trend-value fw-bolder {{ $tendenciaMovimientos >= 0 ? 'text-success' : 'text-danger' }}">
+                    @if($tendenciaMovimientos >= 0)<i class="fas fa-arrow-up fs-6"></i>@else<i class="fas fa-arrow-down fs-6"></i>@endif {{ abs($tendenciaMovimientos) }}%
                 </span>
                 <span class="trend-sublabel">vs mes anterior</span>
             </div>
@@ -580,180 +550,80 @@
 @section('css')
 <style>
 :root {
-    --blue:    #3b82f6; --emerald: #10b981; --violet: #8b5cf6;
-    --amber:   #f59e0b; --rose:    #f43f5e; --indigo: #6366f1;
-    --radius:  16px;
-    --shadow:  0 4px 24px rgba(0,0,0,0.08);
-    --shadow-lg: 0 8px 40px rgba(0,0,0,0.13);
-    --tr: all 0.3s cubic-bezier(.4,0,.2,1);
+    --primary: #6366f1; /* Premium Indigo */
+    --primary-rgb: 99, 102, 241;
+    --secondary: #64748b;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #0ea5e9;
+    --purple: #8b5cf6;
+    --dark: #1e293b;
+    --light: #f8fafc;
+    --bg-color: #f1f5f9;
+    --radius: 12px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    --tr: all 0.2s ease-in-out;
 }
 
-/* ====== WELCOME HERO BANNER ====== */
-.welcome-hero {
-    position: relative;
-    overflow: hidden;
-    border-radius: 20px;
-    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 45%, #8b5cf6 100%);
-    padding: 36px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 180px;
-    box-shadow: 0 12px 40px rgba(59,130,246,0.35);
-    animation: fadeUp .5s ease both;
-}
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--bg-color); color: var(--secondary); }
 
-/* Orbes de fondo */
-.hero-orb {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.07);
-    pointer-events: none;
-    animation: floatOrb 6s ease-in-out infinite;
-}
-.hero-orb-1 { width:260px; height:260px; top:-80px; right:200px; animation-delay:0s; }
-.hero-orb-2 { width:180px; height:180px; bottom:-60px; left:30%;  animation-delay:2s; }
-.hero-orb-3 { width:120px; height:120px; top:20px;   right:180px; animation-delay:4s; background:rgba(255,255,255,0.05); }
-@keyframes floatOrb { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+/* UTIL COLORS */
+.text-primary { color: var(--primary) !important; }
+.text-secondary { color: var(--secondary) !important; }
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-purple { color: var(--purple) !important; }
+.text-dark { color: var(--dark) !important; }
 
-/* Lado izquierdo */
-.hero-left  { z-index:2; flex:1; }
-.hero-greeting {
-    font-size: .88rem;
-    font-weight: 600;
-    color: rgba(255,255,255,0.75);
-    letter-spacing: .5px;
-    margin: 0 0 4px;
-    text-transform: uppercase;
-}
-.hero-name {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #fff;
-    margin: 0 0 8px;
-    letter-spacing: -0.5px;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.15);
-}
-.hero-sub {
-    font-size: .88rem;
-    color: rgba(255,255,255,0.72);
-    margin: 0 0 18px;
-}
+.bg-primary-subtle { background-color: rgba(var(--primary-rgb), 0.1) !important; }
+.bg-success-subtle { background-color: rgba(16, 185, 129, 0.1) !important; }
+.bg-warning-subtle { background-color: rgba(245, 158, 11, 0.1) !important; }
+.bg-danger-subtle { background-color: rgba(239, 68, 68, 0.1) !important; }
+.bg-purple-subtle { background-color: rgba(139, 92, 246, 0.1) !important; }
+
+/* UTILS TYPOGRAPHY */
+.fs-7 { font-size: 0.82rem; }
+.tracking-wide { letter-spacing: 0.5px; }
+
+/* ====== WELCOME CARD ====== */
+.welcome-card { position: relative; overflow: hidden; border: none; background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%); border-radius: 16px; box-shadow: 0 12px 30px rgba(99,102,241,0.25); }
+.welcome-bg-pattern { position: absolute; inset: 0; opacity: 0.1; background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 24px 24px; pointer-events: none; }
+.illustration-wrap .floating-icon { animation: floatIcon 4s ease-in-out infinite; }
+@keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .hero-pills { display:flex; flex-wrap:wrap; gap:8px; }
-.hero-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 14px;
-    border-radius: 50px;
-    font-size: .75rem;
-    font-weight: 600;
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: #fff;
-    letter-spacing: .2px;
-}
-.hero-pill-role { background: rgba(255,255,255,0.2); }
-.hero-pill-date { background: rgba(255,255,255,0.12); }
-.hero-pill-time { background: rgba(52,211,153,0.25); border-color:rgba(52,211,153,0.4); }
-
-/* Lado derecho */
-.hero-right {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: flex-end;
-    gap: 16px;
-    flex-shrink: 0;
-}
-.hero-svg {
-    width: 220px;
-    height: 170px;
-    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.12));
-    animation: floatSvg 4s ease-in-out infinite;
-}
-@keyframes floatSvg { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-
-/* Tarjeta flotante de stat */
-.hero-stat-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 14px;
-    padding: 14px 18px;
-    min-width: 130px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    animation: fadeUp .7s .2s ease both;
-}
-.hero-stat-icon {
-    width: 38px; height: 38px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.2);
-    display: flex; align-items:center; justify-content:center;
-    font-size: 1.1rem;
-    color: #fff;
-}
-.hero-stat-num   { font-size: 1.5rem; font-weight: 800; color: #fff; line-height:1; }
-.hero-stat-label { font-size: .72rem; color: rgba(255,255,255,0.72); font-weight:500; margin-top:2px; }
-
-/* Responsive */
-@media (max-width:768px) {
-    .hero-right  { display:none; }
-    .welcome-hero { padding:24px 24px; }
-    .hero-name   { font-size:1.5rem; }
-}
-
 
 /* TOP */
 .dash-topbar  { padding: 4px 0 12px; }
-.dash-title   { font-size:1.7rem; font-weight:800; color:#0f172a; margin:0; letter-spacing:-0.5px; }
-.dash-icon-title { background:linear-gradient(135deg,#3b82f6,#8b5cf6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-right:8px; }
-.dash-subtitle { color:#64748b; font-size:.87rem; margin:2px 0 0; text-transform:capitalize; }
+.dash-title   { font-size:1.6rem; font-weight:800; color:var(--dark); margin:0; letter-spacing:-0.5px; }
+.dash-icon-title { color: var(--primary); margin-right:8px; }
+.dash-subtitle { color:var(--secondary); font-size:.87rem; margin:2px 0 0; text-transform:capitalize; }
 
 /* PILLS */
 .pill         { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:50px; font-size:.78rem; font-weight:600; }
-.pill-admin   { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; }
-.pill-area    { background:linear-gradient(135deg,#3b82f6,#6366f1); color:#fff; }
-.pill-time    { background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; }
+.pill-admin   { background:rgba(239,68,68,0.1); color:var(--danger); }
+.pill-area    { background:rgba(var(--primary-rgb),0.1); color:var(--primary); }
+.pill-time    { background:#f8fafc; color:#475569; border:1px solid #e2e8f0; }
 .dot-live     { width:8px; height:8px; background:#10b981; border-radius:50%; display:inline-block; animation:blink 1.4s infinite; }
 @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
 
-/* QUICK ACTIONS */
-.quick-actions { display:flex; flex-wrap:wrap; gap:10px; }
-.qa-btn {
-    display:inline-flex; align-items:center; gap:8px;
-    padding:10px 18px; border-radius:50px; font-size:.82rem; font-weight:600;
-    text-decoration:none; transition:var(--tr); white-space:nowrap;
-    border:2px solid transparent;
-}
-.qa-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.15); text-decoration:none; }
-.qa-blue   { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; } .qa-blue:hover   { background:#1d4ed8; color:#fff; }
-.qa-emerald{ background:#ecfdf5; color:#065f46; border-color:#a7f3d0; } .qa-emerald:hover{ background:#059669; color:#fff; }
-.qa-violet { background:#f5f3ff; color:#5b21b6; border-color:#ddd6fe; } .qa-violet:hover { background:#7c3aed; color:#fff; }
-.qa-amber  { background:#fffbeb; color:#92400e; border-color:#fde68a; } .qa-amber:hover  { background:#d97706; color:#fff; }
-.qa-rose   { background:#fff1f2; color:#be123c; border-color:#fecdd3; } .qa-rose:hover   { background:#e11d48; color:#fff; }
-.qa-indigo { background:#eef2ff; color:#3730a3; border-color:#c7d2fe; } .qa-indigo:hover { background:#4338ca; color:#fff; }
+/* KPI CARDS */
+.kpi-card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.04); transition: var(--tr); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.kpi-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.06); transform: translateY(-4px); }
+.kpi-body { padding: 24px; flex: 1; z-index: 2; }
+.kpi-icon-wrap { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; color: #fff; }
 
-/* KPI */
-.kpi-card { position:relative; border-radius:var(--radius); padding:28px 24px 20px; overflow:hidden; cursor:pointer; transition:var(--tr); box-shadow:var(--shadow); display:flex; flex-direction:column; min-height:180px; color:#fff; }
-.kpi-card:hover { transform:translateY(-6px); box-shadow:var(--shadow-lg); }
-.kpi-blue    { background:linear-gradient(135deg,#1d4ed8,#3b82f6,#60a5fa); }
-.kpi-emerald { background:linear-gradient(135deg,#059669,#10b981,#34d399); }
-.kpi-violet  { background:linear-gradient(135deg,#6d28d9,#8b5cf6,#a78bfa); }
-.kpi-amber   { background:linear-gradient(135deg,#d97706,#f59e0b,#fbbf24); }
-.kpi-icon-wrap { position:absolute; top:20px; right:20px; width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; font-size:1.6rem; backdrop-filter:blur(4px); transition:var(--tr); }
-.kpi-card:hover .kpi-icon-wrap { transform:rotate(-8deg) scale(1.1); background:rgba(255,255,255,.25); }
-.kpi-body { flex:1; }
-.kpi-number { font-size:3rem; font-weight:900; line-height:1; letter-spacing:-2px; text-shadow:0 2px 8px rgba(0,0,0,.15); }
-.kpi-label  { font-size:.85rem; font-weight:500; opacity:.88; margin-top:6px; }
-.kpi-link   { display:inline-flex; align-items:center; gap:6px; font-size:.78rem; font-weight:600; color:rgba(255,255,255,.85); text-decoration:none; margin-top:12px; border-top:1px solid rgba(255,255,255,.2); padding-top:10px; transition:color .2s; }
-.kpi-link:hover { color:#fff; }
-.kpi-glow   { position:absolute; bottom:-30px; right:-30px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.08); pointer-events:none; }
-.kpi-spark-wrap { width:100%; height:52px; position:relative; margin-top:8px; margin-bottom:4px; }
-.kpi-spark { width:100%!important; height:52px!important; display:block; opacity:.75; }
+.vibrant-primary { background: linear-gradient(135deg, var(--primary) 0%, #38bdf8 100%); box-shadow: 0 8px 16px rgba(99,102,241,0.25); }
+.vibrant-success { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); box-shadow: 0 8px 16px rgba(16,185,129,0.25); }
+.vibrant-purple  { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); box-shadow: 0 8px 16px rgba(139,92,246,0.25); }
+.vibrant-warning { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); box-shadow: 0 8px 16px rgba(245,158,11,0.25); }
+
+.kpi-number { transition: color 0.3s; }
+.kpi-spark-wrap { width: 100%; height: 45px; opacity: 0.25; overflow: hidden; position: absolute; bottom: 0; left: 0; right: 0; z-index: 1; margin-bottom: -10px; }
+.kpi-spark { width: 100% !important; height: 55px !important; }
 
 /* TREND BAR */
 .trend-bar { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 28px; display:flex; align-items:center; flex-wrap:wrap; gap:0; border:1px solid rgba(0,0,0,.06); }
@@ -796,30 +666,38 @@
 .progress-slim-bar { height:100%; border-radius:99px; transition:width 1s ease; }
 
 /* TABLA RECIENTE */
-.recent-table .table thead th { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#94a3b8; padding:10px 16px; border:none; background:#f8fafc; }
-.recent-table .table tbody td { padding:11px 16px; vertical-align:middle; font-size:.85rem; border-color:#f1f5f9; color:#334155; }
-.recent-row:hover { background:#f8fafc; }
-.code-badge { font-family:monospace; font-size:.78rem; font-weight:700; background:#f1f5f9; padding:3px 8px; border-radius:6px; color:#334155; }
-.type-pill  { font-size:.72rem; font-weight:600; background:#eff6ff; color:var(--blue); padding:3px 9px; border-radius:50px; }
-.empty-state { text-align:center; padding:32px; color:#94a3b8; font-size:.9rem; }
+.recent-table .table { margin-bottom: 0; }
+.recent-table .table thead th { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--secondary); padding:14px 20px; border-bottom:1px solid #e2e8f0; background:#f8fafc; }
+.recent-table .table tbody td { padding:14px 20px; vertical-align:middle; font-size:.85rem; border-color:#f1f5f9; color:var(--dark); }
+.recent-row { transition: var(--tr); }
+.recent-row:hover { background-color: rgba(var(--primary-rgb), 0.02); }
+.code-badge { font-family:'Inter', monospace; font-size:.75rem; font-weight:600; background:#f1f5f9; padding:4px 10px; border-radius:6px; color:var(--secondary); border: 1px solid #e2e8f0; }
+.type-pill  { font-size:.7rem; font-weight:600; background:rgba(var(--primary-rgb),0.1); color:var(--primary); padding:4px 12px; border-radius:50px; }
+.empty-state { text-align:center; padding:40px 20px; color:var(--secondary); font-size:.9rem; }
 
-/* FEED */
-.activity-feed { list-style:none; margin:0; padding:0; }
-.feed-item     { display:flex; gap:14px; padding:14px 20px; border-bottom:1px solid #f1f5f9; transition:background .15s; }
-.feed-item:hover { background:#f8fafc; }
-.feed-item:last-child { border-bottom:none; }
-.feed-dot { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.75rem; flex-shrink:0; color:#fff; }
-.bg-emerald{background:var(--emerald)} .bg-blue{background:var(--blue)}
-.bg-rose{background:var(--rose)}       .bg-amber{background:var(--amber)} .bg-indigo{background:var(--indigo)}
-.feed-content { flex:1; min-width:0; }
-.feed-top     { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-.feed-badge   { font-size:.68rem; font-weight:700; letter-spacing:.4px; padding:2px 9px; border-radius:50px; }
-.feed-badge-emerald{background:#d1fae5;color:#065f46} .feed-badge-blue{background:#dbeafe;color:#1d4ed8}
-.feed-badge-rose{background:#ffe4e6;color:#be123c}    .feed-badge-amber{background:#fef3c7;color:#92400e}
-.feed-badge-indigo{background:#e0e7ff;color:#3730a3}
-.feed-time { font-size:.72rem; color:#94a3b8; white-space:nowrap; }
-.feed-desc { font-size:.83rem; color:#1e293b; font-weight:600; margin-top:3px; }
-.feed-meta { font-size:.75rem; color:#64748b; margin-top:2px; }
+/* FEED / TIMELINE */
+.activity-feed { list-style:none; margin:0; padding: 20px; position: relative; }
+.activity-feed::before { content: ''; position: absolute; left: 36px; top: 30px; bottom: 30px; width: 1px; background: #e2e8f0; }
+.feed-item     { display:flex; gap:20px; padding:12px 0 20px 0; position: relative; z-index: 2; transition: transform .15s; }
+.feed-item:last-child { padding-bottom: 0; }
+.feed-dot { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.75rem; flex-shrink:0; background: #fff; box-shadow: 0 0 0 4px #fff, 0 2px 6px rgba(0,0,0,0.08); z-index: 3; color: var(--primary); }
+.feed-dot.bg-emerald { color: var(--success); background: rgba(16, 185, 129, 0.1); }
+.feed-dot.bg-blue    { color: var(--info); }
+.feed-dot.bg-rose    { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+.feed-dot.bg-amber   { color: var(--warning); background: rgba(245, 158, 11, 0.1); }
+.feed-dot.bg-indigo  { color: var(--primary); background: rgba(var(--primary-rgb), 0.1); }
+.feed-content { flex:1; min-width:0; background: #f8fafc; padding: 14px 18px; border-radius: 12px; border: 1px solid #f1f5f9; transition: var(--tr); }
+.feed-content:hover { background: #fff; box-shadow: var(--shadow-sm); border-color: #e2e8f0; }
+.feed-top     { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom: 6px; }
+.feed-badge   { font-size:.65rem; font-weight:700; letter-spacing:.5px; padding:3px 10px; border-radius:50px; text-transform: uppercase; }
+.feed-badge-emerald{background:rgba(16, 185, 129, 0.1);color:var(--success)} 
+.feed-badge-blue{background:rgba(14, 165, 233, 0.1);color:var(--info)}
+.feed-badge-rose{background:rgba(239, 68, 68, 0.1);color:var(--danger)}    
+.feed-badge-amber{background:rgba(245, 158, 11, 0.1);color:var(--warning)}
+.feed-badge-indigo{background:rgba(var(--primary-rgb), 0.1);color:var(--primary)}
+.feed-time { font-size:.72rem; color:var(--secondary); white-space:nowrap; font-weight: 500; }
+.feed-desc { font-size:.85rem; color:var(--dark); font-weight:600; margin-top:2px; line-height: 1.4; }
+.feed-meta { font-size:.76rem; color:var(--secondary); margin-top:6px; display: flex; align-items: center; gap: 4px; }
 
 /* ====== WIDGET ESTADO DEL INVENTARIO ====== */
 .inv-widget {
@@ -1016,14 +894,14 @@
 <script>
 $(document).ready(function(){
 
-    // ── Paleta ──
+    // ── Primary Palette ──
     const pal = {
-        blue:   ['rgba(59,130,246,.85)','rgba(59,130,246,1)'],
+        blue:   ['rgba(99,102,241,.85)','rgba(99,102,241,1)'], /* Indigo instead of blue */
         emerald:['rgba(16,185,129,.85)','rgba(16,185,129,1)'],
         violet: ['rgba(139,92,246,.85)','rgba(139,92,246,1)'],
         amber:  ['rgba(245,158,11,.85)','rgba(245,158,11,1)'],
         rose:   ['rgba(244,63,94,.85)', 'rgba(244,63,94,1)'],
-        indigo: ['rgba(99,102,241,.85)','rgba(99,102,241,1)'],
+        indigo: ['rgba(56,189,248,.85)','rgba(56,189,248,1)'], /* Sky Blue */
     };
     const colors = Object.values(pal);
 

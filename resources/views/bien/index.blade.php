@@ -830,6 +830,12 @@ $(document).ready(function() {
     // 🔥 ESTABLECER ICONO INICIAL
     actualizarIconosOrdenamiento();
 
+    // ==================== INICIALIZAR PAGINACIÓN ====================
+    actualizarPaginacion({
+        current_page: {{ $bienes->currentPage() }},
+        last_page: {{ $bienes->lastPage() }}
+    }, '');
+
     // ===============================
     // 🔥 ORDENAMIENTO AL HACER CLICK EN COLUMNAS
     // ===============================

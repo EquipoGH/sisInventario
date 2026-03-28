@@ -424,6 +424,12 @@ $(document).ready(function() {
 
     actualizarIconosOrdenamiento();
 
+    // ==================== INICIALIZAR PAGINACIÓN ====================
+    actualizarPaginacion({
+        current_page: {{ $ubicaciones->currentPage() }},
+        last_page: {{ $ubicaciones->lastPage() }}
+    }, terminoBusqueda);
+
     // ==================== BÚSQUEDA CON DEBOUNCE ====================
     let searchTimeout;
 

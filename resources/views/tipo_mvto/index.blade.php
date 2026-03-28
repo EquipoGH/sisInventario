@@ -243,6 +243,12 @@ $(document).ready(function() {
     // 🔥 ESTABLECER ICONO INICIAL
     actualizarIconosOrdenamiento();
 
+    // ==================== INICIALIZAR PAGINACIÓN ====================
+    actualizarPaginacion({
+        current_page: {{ $tiposMvto->currentPage() }},
+        last_page: {{ $tiposMvto->lastPage() }}
+    }, '');
+
     // ===============================
     // 🔥 ORDENAMIENTO AL HACER CLICK EN COLUMNAS
     // ===============================

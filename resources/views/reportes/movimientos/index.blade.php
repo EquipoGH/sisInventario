@@ -249,7 +249,7 @@ $(function () {
     columns: [
   { data: 'num' },
   { data: 'codigo' },
-  { data: 'denominacion', render: (d)=> d ? `<span class="td-clip font-weight-bold">${d}</span>` : '-' },
+  { data: 'denominacion', render: (d)=> d ? `<span class="td-clip">${d}</span>` : '-' },
   { data: 'tipo_bien', render: (d)=> d || '-' },
   { data: 'fecha_mov', render: (d)=> d || '-' },   // puedes dejar la key fecha_mov
   { data: 'tipo_mov', render: (d)=> d || '-' },

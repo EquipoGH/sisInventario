@@ -132,53 +132,64 @@
   </div>
 </div>
 
-{{-- ✅ 8 columnas: #, Código, Denominación, Tipo bien, Fecha, Movimiento, Área, Ubicación --}}
-<table class="table-datos">
-  <thead>
-    <tr>
-      <th width="3%">#</th>
-      <th width="12%">CÓDIGO</th>
-      <th width="26%">DENOMINACIÓN</th>
-      <th width="12%">TIPO BIEN</th>
-      <th width="10%">FECHA</th>
-      <th width="13%">MOVIMIENTO</th>
-      <th width="12%">ÁREA</th>
-      <th width="12%">UBICACIÓN</th>
-    </tr>
-  </thead>
+@php
+  $movsAgrupados = $rows->groupBy(function($r) {
+    return $r->usuario_nombre ? $r->usuario_nombre : 'Sistema / Desconocido';
+  });
+@endphp
 
-  <tbody>
-    @forelse($rows as $i => $r)
-      @php
-        // ✅ Aliases correctos del SELECT en baseQuery()
-        $ubicTxt = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
-        if ($ubicTxt === '' || $ubicTxt === '-') $ubicTxt = '-';
+@forelse($movsAgrupados as $nombreUsuario => $listaMovs)
+  <div style="font-size: 9px; font-weight: bold; margin-bottom: 4px; margin-top: 15px; text-transform: uppercase;">
+    RESPONSABLE DEL MOVIMIENTO: {{ $nombreUsuario }} ({{ $listaMovs->count() }} movimientos)
+  </div>
 
-        $fechaTxt = '-';
-        if (!empty($r->fecha_mvto)) {
-          try { $fechaTxt = \Carbon\Carbon::parse($r->fecha_mvto)->format('d/m/Y'); }
-          catch (\Throwable $e) { $fechaTxt = (string) $r->fecha_mvto; }
-        }
-      @endphp
-
+  <table class="table-datos">
+    <thead>
       <tr>
-        <td class="c nowrap"><span class="num">{{ $i + 1 }}</span></td>
-        {{-- ✅ código_patrimonial (con underscore, alias del SELECT) --}}
-        <td class="c nowrap"><span class="clip-2">{{ $r->codigo_patrimonial ?? '-' }}</span></td>
-        {{-- ✅ denominacion_bien (con underscore, alias del SELECT) --}}
-        <td><span class="clip-3">{{ mb_strtoupper($r->denominacion_bien ?? '') }}</span></td>
-        <td><span class="clip-2">{{ $r->tipo_bien ?? '-' }}</span></td>
-        <td class="c nowrap">{{ $fechaTxt }}</td>
-        <td><span class="clip-2">{{ $r->tipo_mov ?? '-' }}</span></td>
-        <td><span class="clip-2">{{ $r->area ?? '-' }}</span></td>
-        <td><span class="clip-2">{{ $ubicTxt }}</span></td>
+        <th width="3%">#</th>
+        <th width="12%">CÓDIGO</th>
+        <th width="26%">DENOMINACIÓN</th>
+        <th width="12%">TIPO BIEN</th>
+        <th width="10%">FECHA</th>
+        <th width="13%">MOVIMIENTO</th>
+        <th width="12%">ÁREA</th>
+        <th width="12%">UBICACIÓN</th>
       </tr>
-    @empty
-      {{-- ✅ colspan correcto: 8 columnas --}}
+    </thead>
+
+    <tbody>
+      @foreach($listaMovs as $i => $r)
+        @php
+          $ubicTxt = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
+          if ($ubicTxt === '' || $ubicTxt === '-') $ubicTxt = '-';
+
+          $fechaTxt = '-';
+          if (!empty($r->fecha_mvto)) {
+            try { $fechaTxt = \Carbon\Carbon::parse($r->fecha_mvto)->format('d/m/Y'); }
+            catch (\Throwable $e) { $fechaTxt = (string) $r->fecha_mvto; }
+          }
+        @endphp
+
+        <tr>
+          <td class="c nowrap"><span class="num">{{ $i + 1 }}</span></td>
+          <td class="c nowrap"><span class="clip-2">{{ $r->codigo_patrimonial ?? '-' }}</span></td>
+          <td><span class="clip-3">{{ mb_strtoupper($r->denominacion_bien ?? '') }}</span></td>
+          <td><span class="clip-2">{{ $r->tipo_bien ?? '-' }}</span></td>
+          <td class="c nowrap">{{ $fechaTxt }}</td>
+          <td><span class="clip-2">{{ $r->tipo_mov ?? '-' }}</span></td>
+          <td><span class="clip-2">{{ $r->area ?? '-' }}</span></td>
+          <td><span class="clip-2">{{ $ubicTxt }}</span></td>
+        </tr>
+      @endforeach
+    </tbody>
+  </table>
+@empty
+  <table class="table-datos">
+    <tbody>
       <tr><td colspan="8" class="c">No hay registros</td></tr>
-    @endforelse
-  </tbody>
-</table>
+    </tbody>
+  </table>
+@endforelse
 
 <div class="footer">
   @if(!empty($settings['pie_reportes']))

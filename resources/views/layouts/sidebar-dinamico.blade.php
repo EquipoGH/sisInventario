@@ -11,6 +11,8 @@
   @php
     $mod = $pm->modulo;
     if (!$mod) continue;
+    if (strtolower(trim($mod->nommodulo)) === 'movimientos') continue;
+
 
     $perms = $pm->permisos ?? collect();
     $open = false;
@@ -45,6 +47,9 @@
 
     <ul class="nav nav-treeview" style="{{ $open ? 'display: block;' : 'display: none;' }}">
       @forelse($perms as $perm)
+        @if(str_contains(strtolower(trim($perm->nombpermiso)), 'movimiento') && strtolower(trim($mod->nommodulo)) === 'reportes')
+            @continue
+        @endif
         @php
           $routeName = $perm->route_name;
           $hasRoute = $routeName && \Illuminate\Support\Facades\Route::has($routeName);
