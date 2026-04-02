@@ -58,8 +58,8 @@ class UpdateSystemSettingRequest extends FormRequest
                 'max:2048',
                 'dimensions:min_width=64,min_height=64,max_width=2000,max_height=2000',
             ],
-            // Favicon: si aceptas .ico, deja file+mimes (image puede fallar con ico)
-            'favicon' => ['nullable', 'file', 'mimes:png,ico', 'max:1024'],
+            // Favicon: mimetypes acepta image/x-icon e image/vnd.microsoft.icon (.ico)
+            'favicon' => ['nullable', 'file', 'mimetypes:image/png,image/x-icon,image/vnd.microsoft.icon,image/ico', 'max:1024'],
 
             // Reportes: pon mínimo razonable (para que no suban uno enano y se vea feo en PDF)
             'logo_reportes' => [
@@ -86,7 +86,7 @@ class UpdateSystemSettingRequest extends FormRequest
             'logo.dimensions' => 'El logo debe tener un tamaño razonable (mín 64x64 y máx 2000x2000).',
             'logo_reportes.dimensions' => 'El logo de reportes debe tener un tamaño mínimo (mín 200x80) para verse bien en PDF.',
 
-            'favicon.mimes' => 'El favicon debe ser PNG o ICO.',
+            'favicon.mimetypes' => 'El favicon debe ser PNG o ICO.',
         ];
     }
 }

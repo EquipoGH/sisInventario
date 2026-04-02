@@ -48,9 +48,14 @@
     }
 </style>
 
-@php $fav = setting('favicon_path'); @endphp
+@php
+    $fav = setting('favicon_path');
+    $favExt = $fav ? strtolower(pathinfo($fav, PATHINFO_EXTENSION)) : '';
+    $favMime = ($favExt === 'ico') ? 'image/x-icon' : 'image/png';
+@endphp
 @if($fav)
-    <link rel="icon" type="image/png" href="{{ asset('storage/'.$fav) }}">
+    <link rel="icon" type="{{ $favMime }}" href="{{ asset('storage/'.$fav) }}?v={{ filemtime(storage_path('app/public/'.$fav)) }}">
+    <link rel="shortcut icon" type="{{ $favMime }}" href="{{ asset('storage/'.$fav) }}?v={{ filemtime(storage_path('app/public/'.$fav)) }}">
 @endif
 
 
@@ -187,12 +192,18 @@
         <!-- Brand Logo -->
         @php
     $logo = setting('logo_path');
+    $logoStoragePath = $logo ? storage_path('app/public/' . $logo) : null;
+    $logoExists = $logoStoragePath && file_exists($logoStoragePath);
     $nombreSistema = setting('nombre_sistema', 'GesInventario');
 @endphp
 
 <a href="{{ route('dashboard') }}" class="brand-link">
-    @if($logo)
-        <img src="{{ asset('storage/'.$logo) }}" class="brand-image img-circle elevation-3" style="opacity:.9" alt="Logo">
+    @if($logo && $logoExists)
+        <img src="{{ asset('storage/'.$logo) }}?v={{ filemtime(storage_path('app/public/'.$logo)) }}"
+             class="brand-image img-circle elevation-3"
+             style="opacity:.9; width:33px; height:33px; object-fit:cover;"
+             alt="Logo"
+             onerror="this.style.display='none';">
     @else
         <i class="fas fa-box-open brand-image" style="opacity:.9"></i>
     @endif
