@@ -55,26 +55,10 @@ class MovimientoController extends Controller
             $queryEstadisticas->where('b.activo', true);
         }
 
-        // ✅ APLICAR FILTRO DE TIPO DE MOVIMIENTO A ESTADÍSTICAS
-        if ($request->filled('tipo_mvto')) {
-            if ($request->tipo_mvto === 'activos') {
-                // Filtrar solo SIN ASIGNAR y ASIGNACIÓN
-                $tiposActivos = TipoMvto::where(function($q) {
-                    $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
-                      ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
-                })->pluck('id_tipo_mvto');
-
-                if ($tiposActivos->isNotEmpty()) {
-                    $queryEstadisticas->whereIn('m1.tipo_mvto', $tiposActivos);
-                }
-            } elseif ($request->tipo_mvto !== '') {
-                // Filtro específico por ID
-                $queryEstadisticas->where('m1.tipo_mvto', $request->tipo_mvto);
-            }
-            // Si es '', no aplica filtro (todos los tipos)
-        } else {
-            // Por defecto: solo SIN ASIGNAR y ASIGNACIÓN
+        // ✅ APLICAR FILTRO DE VISTA A ESTADÍSTICAS
+        $vista = $request->get('vista', 'activos');
+        
+        if ($vista === 'activos') {
             $tiposActivos = TipoMvto::where(function($q) {
                 $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
                   ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
@@ -84,6 +68,11 @@ class MovimientoController extends Controller
             if ($tiposActivos->isNotEmpty()) {
                 $queryEstadisticas->whereIn('m1.tipo_mvto', $tiposActivos);
             }
+        }
+
+        // ✅ APLICAR FILTRO DE TIPO DE MOVIMIENTO BD A ESTADÍSTICAS
+        if ($request->filled('tipo_mvto')) {
+            $queryEstadisticas->where('m1.tipo_mvto', $request->tipo_mvto);
         }
 
         // ✅ APLICAR FILTRO DE UBICACIÓN A ESTADÍSTICAS
@@ -240,52 +229,11 @@ class MovimientoController extends Controller
         }
 
         // 📊 FILTROS ADICIONALES
-        // ✅ FILTRO DE TIPO DE MOVIMIENTO (CORREGIDO - BUENAS PRÁCTICAS UX)
-        if ($request->filled('tipo_mvto')) {
-            if ($request->tipo_mvto === 'activos') {
-                // ✅ OPCIÓN "MOVIMIENTOS ACTIVOS" → SIN ASIGNAR + ASIGNACIÓN
-                $tiposActivos = TipoMvto::where(function($q) {
-                    $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
-                      ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
-                })->pluck('id_tipo_mvto');
-
-                if ($tiposActivos->isNotEmpty()) {
-                    $query->whereIn('tipo_mvto', $tiposActivos);
-                }
-
-                // ⭐ EXCLUIR filas de REGISTRO si el bien ya tiene ASIGNACIÓN vigente
-                // (evita confusión visual de ver REGISTRO + ASIGNACION del mismo bien)
-                $tiposRegistro = TipoMvto::where(function($q) {
-                    $q->where('tipo_mvto', 'ILIKE', '%registro%')
-                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%');
-                })->pluck('id_tipo_mvto');
-
-                $tiposAsignacion = TipoMvto::where('tipo_mvto', 'ILIKE', '%asignaci%')
-                    ->pluck('id_tipo_mvto');
-
-                if ($tiposRegistro->isNotEmpty() && $tiposAsignacion->isNotEmpty()) {
-                    $query->where(function($q) use ($tiposRegistro, $tiposAsignacion) {
-                        $q->whereNotIn('tipo_mvto', $tiposRegistro)
-                          ->orWhere(function($q2) use ($tiposRegistro, $tiposAsignacion) {
-                              // Es REGISTRO pero el bien NO tiene asignación vigente
-                              $q2->whereIn('tipo_mvto', $tiposRegistro)
-                                 ->whereDoesntHave('bien.movimientos', function($q3) use ($tiposAsignacion) {
-                                     $q3->whereIn('tipo_mvto', $tiposAsignacion)
-                                        ->where('anulado', false);
-                                 });
-                          });
-                    });
-                }
-            } elseif ($request->tipo_mvto === '') {
-                // ✅ OPCIÓN "TODOS LOS MOVIMIENTOS" → SIN FILTRO (muestra TODO)
-                // No aplicar filtro de tipo, incluye BAJA
-            } else {
-                // ✅ FILTRO ESPECÍFICO POR ID (un tipo individual)
-                $query->where('tipo_mvto', $request->tipo_mvto);
-            }
-        } else {
-            // ✅ POR DEFECTO AL CARGAR: MOVIMIENTOS ACTIVOS (SIN ASIGNAR + ASIGNACIÓN)
+        // ✅ FILTRO DE VISTA (ACTIVOS vs TODOS)
+        $vista = $request->get('vista', 'activos'); // Por defecto 'activos'
+        
+        if ($vista === 'activos') {
+            // ✅ OPCIÓN "MOVIMIENTOS ACTIVOS" → SIN ASIGNAR + ASIGNACIÓN
             $tiposActivos = TipoMvto::where(function($q) {
                 $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
                   ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
@@ -317,6 +265,11 @@ class MovimientoController extends Controller
                       });
                 });
             }
+        }
+
+        // ✅ FILTRO DE TIPO DE MOVIMIENTO BD
+        if ($request->filled('tipo_mvto')) {
+            $query->where('tipo_mvto', $request->tipo_mvto);
         }
 
         if ($request->filled('bien_id')) {

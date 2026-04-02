@@ -17,21 +17,24 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'password_movil',   // 🔐 Contraseña exclusiva app móvil
         'dni_usuario',
         'rol_usuario',
         'estado_usuario',
-        'id_responsable', // ⭐ NUEVO
+        'id_responsable',
     ];
 
     protected $hidden = [
         'password',
+        'password_movil',   // 🔐 Nunca exponer en respuestas JSON
         'remember_token',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'ultimo_acceso' => 'datetime',
+        'password'         => 'hashed',
+        'password_movil'   => 'hashed', // 🔐 Se hashea automáticamente igual que password
+        'ultimo_acceso'    => 'datetime',
     ];
 
     public function sendPasswordResetNotification($token)

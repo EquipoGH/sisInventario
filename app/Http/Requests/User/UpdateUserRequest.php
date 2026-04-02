@@ -37,43 +37,47 @@ class UpdateUserRequest extends FormRequest
         $id = $this->route('user')?->id;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
+            'name'           => ['required', 'string', 'max:255'],
+            'email'          => [
                 'required', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($id),
             ],
-            'password' => ['nullable', 'confirmed', Password::defaults()],
-            'dni_usuario' => [
+            'password'         => ['nullable', 'confirmed', Password::defaults()],
+            'password_movil'   => ['nullable', 'confirmed', Password::min(6)], // 🔐 opcional al editar
+            'dni_usuario'      => [
                 'nullable',
                 'digits:8',
                 Rule::unique('users', 'dni_usuario')->ignore($id),
             ],
-            'rol_usuario' => ['nullable', 'string', 'max:50'],
+            'rol_usuario'    => ['nullable', 'string', 'max:50'],
             'estado_usuario' => ['required', Rule::in(['A','I'])],
-            'id_responsable' => ['nullable', 'string', 'exists:responsable,dni_responsable'], // ⭐ NUEVO
+            'id_responsable' => ['nullable', 'string', 'exists:responsable,dni_responsable'],
         ];
     }
 
     public function attributes(): array
     {
         return [
-            'name' => 'nombre',
-            'email' => 'correo',
-            'password' => 'contraseña',
-            'dni_usuario' => 'DNI',
-            'rol_usuario' => 'rol',
+            'name'           => 'nombre',
+            'email'          => 'correo',
+            'password'       => 'contraseña web',
+            'password_movil' => 'contraseña móvil',
+            'dni_usuario'    => 'DNI',
+            'rol_usuario'    => 'rol',
             'estado_usuario' => 'estado',
-            'id_responsable' => 'responsable', // ⭐ NUEVO
+            'id_responsable' => 'responsable',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'email.unique' => 'Ese correo ya está registrado.',
-            'dni_usuario.unique' => 'Ese DNI ya está registrado.',
-            'estado_usuario.in' => 'El estado debe ser A (Activo) o I (Inactivo).',
-            'id_responsable.exists' => 'El responsable seleccionado no existe.', // ⭐ NUEVO
+            'email.unique'               => 'Ese correo ya está registrado.',
+            'dni_usuario.unique'         => 'Ese DNI ya está registrado.',
+            'estado_usuario.in'          => 'El estado debe ser A (Activo) o I (Inactivo).',
+            'id_responsable.exists'      => 'El responsable seleccionado no existe.',
+            'password_movil.confirmed'   => 'La confirmación de la contraseña móvil no coincide.',
+            'password_movil.min'         => 'La contraseña móvil debe tener al menos 6 caracteres.',
         ];
     }
 }

@@ -170,6 +170,11 @@ class UserController extends Controller
             unset($data['password']);
         }
 
+        // Si password_movil viene vacío/null, no tocarlo
+        if (!array_key_exists('password_movil', $data) || $data['password_movil'] === null || $data['password_movil'] === '') {
+            unset($data['password_movil']);
+        }
+
         $user->update($data);
 
         if ($request->ajax() || $request->wantsJson()) {

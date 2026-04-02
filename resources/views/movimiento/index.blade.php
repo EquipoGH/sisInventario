@@ -559,24 +559,27 @@
             </div>
         </div>
 
-        {{-- Filtro: Tipo de Movimiento (12%) --}}
-        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
-            <label class="filter-label-inline">
-                <i class="fas fa-filter text-primary"></i> TIPO MOVIMIENTO
+        {{-- Filtro: Tipo de Movimiento VISTA --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline" style="font-size: 0.70rem;">
+                <i class="fas fa-eye text-primary"></i> VISTA
             </label>
-            <select id="filtroTipo" class="form-control form-control-sm custom-select-filter">
-                <option value="activos" selected>Movimientos activos</option>
+            <select id="filtroVista" class="form-control form-control-sm custom-select-filter">
+                <option value="activos" selected>Activos</option>
+                <option value="todos">Todos</option>
+            </select>
+        </div>
+
+        {{-- Filtro: Tipo de Mvto BD --}}
+        <div class="col-xl-2 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline" style="font-size: 0.70rem;">
+                <i class="fas fa-tags text-primary"></i> TIPO MVTO
+            </label>
+            <select id="filtroTipoMvto" class="form-control form-control-sm custom-select-filter">
+                <option value="" selected>Todos los tipos</option>
                 @foreach($tiposMovimiento as $tipo)
                     <option value="{{ $tipo->id_tipo_mvto }}">
-                        @if(stripos($tipo->tipo_mvto, 'ASIGNACION') !== false || stripos($tipo->tipo_mvto, 'ASIGNACIÓN') !== false)
-                            {{ $tipo->tipo_mvto }}
-                        @elseif(stripos($tipo->tipo_mvto, 'REGISTRO') !== false)
-                            {{ $tipo->tipo_mvto }}
-                        @elseif(stripos($tipo->tipo_mvto, 'BAJA') !== false)
-                            {{ $tipo->tipo_mvto }}
-                        @else
-                            {{ $tipo->tipo_mvto }}
-                        @endif
+                        {{ $tipo->tipo_mvto }}
                     </option>
                 @endforeach
             </select>
@@ -3173,8 +3176,9 @@ $(document).ready(function() {
     // ⭐ CARGAR MOVIMIENTOS (CORREGIDO CON CARDS DINÁMICOS + ÁREA)
     // ==========================================
     function cargarMovimientos() {
-        // ✅ OBTENER VALOR DEL FILTRO DE TIPO (sin conversión especial)
-        let filtroTipoValor = $('#filtroTipo').val();
+        // ✅ OBTENER VALORES DE FILTROS DE TIPO
+        let filtroVistaValor = $('#filtroVista').val();
+        let filtroTipoMvtoValor = $('#filtroTipoMvto').val();
 
         // ✅ PARÁMETROS PARA ENVIAR AL BACKEND
         const params = {
@@ -3182,7 +3186,8 @@ $(document).ready(function() {
             orden: ordenActual,
             direccion: direccionActual,
             page: paginaActual,
-            tipo_mvto: filtroTipoValor,
+            vista: filtroVistaValor,           // ⭐ RENOMBRADO A vista
+            tipo_mvto: filtroTipoMvtoValor,    // ⭐ NUEVO (el BD)
             estado_bien: $('#filtroEstadoBien').val(),
             area: $('#filtroArea').val(),
             ubicacion: $('#filtroUbicacion').val(),
@@ -3400,7 +3405,8 @@ $(document).ready(function() {
     // ⭐ VERIFICAR FILTROS ACTIVOS (CON ÁREA)
     // ==========================================
     function verificarFiltrosActivos() {
-        const tipoSeleccionado = $('#filtroTipo').val();
+        const vistaSeleccionada = $('#filtroVista').val();
+        const tipoMvtoSeleccionado = $('#filtroTipoMvto').val();
         const estadoBien = $('#filtroEstadoBien').val();
         const areaSeleccionada = $('#filtroArea').val();  // ⭐ NUEVO
         const ubicacionSeleccionada = $('#filtroUbicacion').val();
@@ -3409,12 +3415,15 @@ $(document).ready(function() {
 
         let filtrosTexto = [];
 
+        // ✅ FILTRO DE VISTA
+        if (vistaSeleccionada && vistaSeleccionada !== 'activos') {
+            const textoVista = $('#filtroVista option:selected').text();
+            filtrosTexto.push(`Vista: ${textoVista}`);
+        }
+
         // ✅ FILTRO DE TIPO DE MOVIMIENTO
-        if (tipoSeleccionado && tipoSeleccionado !== '' && tipoSeleccionado !== 'activos') {
-            // Solo mostrar si NO es el filtro por defecto
-            const textoTipo = $('#filtroTipo option:selected').text()
-                .replace(/📋|📂|✅|📝|❌/g, '') // Quitar emojis
-                .trim();
+        if (tipoMvtoSeleccionado && tipoMvtoSeleccionado !== '') {
+            const textoTipo = $('#filtroTipoMvto option:selected').text().trim();
             filtrosTexto.push(`Tipo: ${textoTipo}`);
         }
 
@@ -3457,7 +3466,7 @@ $(document).ready(function() {
     }
 
     // ✅ DETECTAR CAMBIOS EN FILTROS
-        $('#filtroTipo, #filtroEstadoBien, #filtroArea, #filtroUbicacion, #filtroFechaDesde, #filtroFechaHasta').on('change', function() {
+        $('#filtroVista, #filtroTipoMvto, #filtroEstadoBien, #filtroArea, #filtroUbicacion, #filtroFechaDesde, #filtroFechaHasta').on('change', function() {
         verificarFiltrosActivos();
     });
 
@@ -3524,7 +3533,8 @@ $(document).ready(function() {
     // ✅ LIMPIAR FILTROS (CORREGIDO)
     $('#btnLimpiarFiltros').click(function() {
         // 1. RESTAURAR VALORES POR DEFECTO
-        $('#filtroTipo').val('activos'); // ← Volver a "Movimientos activos"
+        $('#filtroVista').val('activos'); 
+        $('#filtroTipoMvto').val('');
         $('#filtroEstadoBien').val('1');
         $('#filtroArea').val('');  // ⭐ NUEVO
         $('#filtroUbicacion').val('');

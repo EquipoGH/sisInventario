@@ -274,16 +274,45 @@
 
             <div class="col-md-6">
               <div class="form-group">
-                <label>Contraseña <span class="text-danger">*</span></label>
-                <input type="password" name="password" id="password" class="form-control" required>
+                <label>Contraseña web <span class="text-danger">*</span></label>
+                <input type="password" name="password" id="password" class="form-control" required
+                       autocomplete="new-password">
                 <span class="text-danger error-password"></span>
               </div>
             </div>
 
             <div class="col-md-6">
               <div class="form-group">
-                <label>Confirmar contraseña <span class="text-danger">*</span></label>
-                <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required>
+                <label>Confirmar contraseña web <span class="text-danger">*</span></label>
+                <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required
+                       autocomplete="new-password">
+              </div>
+            </div>
+
+            {{-- SEPARADOR APP MÓVIL --}}
+            <div class="col-md-12">
+              <div class="alert alert-info py-2 mb-2" style="border-left:4px solid #17a2b8;border-radius:4px;">
+                <i class="fas fa-mobile-alt mr-1"></i>
+                <strong>Contraseña App Móvil</strong> — Exclusiva para ingresar desde la aplicación Android.
+                Si no la configuras ahora, el usuario no podrá iniciar sesión en la app móvil.
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-group">
+                <label><i class="fas fa-mobile-alt text-info"></i> Contraseña Móvil</label>
+                <input type="password" name="password_movil" id="password_movil" class="form-control"
+                       autocomplete="new-password" placeholder="Mín. 6 caracteres">
+                <small class="text-muted">Dejar vacío si no deseas configurarla ahora.</small>
+                <span class="text-danger error-password_movil"></span>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-group">
+                <label><i class="fas fa-mobile-alt text-info"></i> Confirmar Contraseña Móvil</label>
+                <input type="password" name="password_movil_confirmation" id="password_movil_confirmation" class="form-control"
+                       autocomplete="new-password">
               </div>
             </div>
 
@@ -386,16 +415,44 @@
 
             <div class="col-md-6">
               <div class="form-group">
-                <label>Nueva contraseña (opcional)</label>
-                <input type="password" name="password" id="edit_password" class="form-control">
+                <label>Nueva contraseña web (opcional)</label>
+                <input type="password" name="password" id="edit_password" class="form-control"
+                       autocomplete="new-password">
                 <span class="text-danger error-edit-password"></span>
               </div>
             </div>
 
             <div class="col-md-6">
               <div class="form-group">
-                <label>Confirmar nueva contraseña</label>
-                <input type="password" name="password_confirmation" id="edit_password_confirmation" class="form-control">
+                <label>Confirmar nueva contraseña web</label>
+                <input type="password" name="password_confirmation" id="edit_password_confirmation" class="form-control"
+                       autocomplete="new-password">
+              </div>
+            </div>
+
+            {{-- SEPARADOR APP MÓVIL --}}
+            <div class="col-md-12">
+              <div class="alert alert-info py-2 mb-2" style="border-left:4px solid #17a2b8;border-radius:4px;">
+                <i class="fas fa-mobile-alt mr-1"></i>
+                <strong>Contraseña App Móvil</strong> — Exclusiva para ingresar desde la aplicación Android.
+                Dejar vacío para no cambiarla.
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-group">
+                <label><i class="fas fa-mobile-alt text-info"></i> Nueva Contraseña Móvil (opcional)</label>
+                <input type="password" name="password_movil" id="edit_password_movil" class="form-control"
+                       autocomplete="new-password" placeholder="Dejar vacío para no cambiar">
+                <span class="text-danger error-edit-password_movil"></span>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-group">
+                <label><i class="fas fa-mobile-alt text-info"></i> Confirmar Contraseña Móvil</label>
+                <input type="password" name="password_movil_confirmation" id="edit_password_movil_confirmation" class="form-control"
+                       autocomplete="new-password">
               </div>
             </div>
 
