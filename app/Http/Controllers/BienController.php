@@ -44,18 +44,19 @@ class BienController extends Controller
 
         // 🔍 BÚSQUEDA AVANZADA
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('id_bien', 'LIKE', "%{$search}%")
-                ->orWhere('codigo_patrimonial', 'ILIKE', "%{$search}%")
-                ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%")
-                ->orWhere('marca_bien', 'ILIKE', "%{$search}%")
-                ->orWhere('modelo_bien', 'ILIKE', "%{$search}%")
-                ->orWhere('NumDoc', 'ILIKE', "%{$search}%")
-                ->orWhereHas('tipoBien', function($q) use ($search) {
-                    $q->where('nombre_tipo', 'ILIKE', "%{$search}%");
+                ->orWhereRaw('LOWER(codigo_patrimonial) LIKE ?', ["%{$searchLower}%"])
+                ->orWhereRaw('LOWER(denominacion_bien) LIKE ?', ["%{$searchLower}%"])
+                ->orWhereRaw('LOWER(marca_bien) LIKE ?', ["%{$searchLower}%"])
+                ->orWhereRaw('LOWER(modelo_bien) LIKE ?', ["%{$searchLower}%"])
+                ->orWhereRaw('LOWER(NumDoc) LIKE ?', ["%{$searchLower}%"])
+                ->orWhereHas('tipoBien', function($q) use ($searchLower) {
+                    $q->whereRaw('LOWER(nombre_tipo) LIKE ?', ["%{$searchLower}%"]);
                 })
-                ->orWhereHas('documentoSustento', function($q) use ($search) {
-                    $q->where('numero_documento', 'ILIKE', "%{$search}%");
+                ->orWhereHas('documentoSustento', function($q) use ($searchLower) {
+                    $q->whereRaw('LOWER(numero_documento) LIKE ?', ["%{$searchLower}%"]);
                 });
             });
         }
@@ -78,6 +79,7 @@ class BienController extends Controller
 
         $bienes = $query->paginate($perPage);
         $tiposBien = TipoBien::orderBy('nombre_tipo')->get();
+        $estadosConservacion = \App\Models\EstadoConservacion::orderBy('nombre_conservacion')->get();
 
         // ⭐ PETICIÓN AJAX
         if ($request->ajax()) {
@@ -97,6 +99,10 @@ class BienController extends Controller
                     'foto_bien' => $bien->foto_bien,
                     'NumDoc' => $bien->NumDoc,
                     'activo' => $bien->activo,
+                    'id_estado_conservacion' => $bien->id_estado_conservacion,
+                    'estado_conservacion' => $bien->estadoConservacion
+                        ? $bien->estadoConservacion->nombre_conservacion
+                        : null,
                     'tipo_bien' => $bien->tipoBien ? [
                         'id_tipo_bien' => $bien->tipoBien->id_tipo_bien,
                         'nombre_tipo' => $bien->tipoBien->nombre_tipo
@@ -123,7 +129,7 @@ class BienController extends Controller
             ]);
         }
 
-        return view('bien.index', compact('bienes', 'tiposBien', 'total'));
+        return view('bien.index', compact('bienes', 'tiposBien', 'total', 'estadosConservacion'));
     }
 
     /**
@@ -164,11 +170,39 @@ class BienController extends Controller
                 $data['public_id'] = $uploadedFile->getPublicId();
             }
 
-            // ⭐⭐⭐ GUARDAR QUIÉN REGISTRÓ EL BIEN ⭐⭐⭐
+            // ⭐⭐ Asignar estado administrativo AUTO → Activo
+            $idActivo = \App\Models\EstadoBien::obtenerIdPorNombreNullable(\App\Models\EstadoBien::ACTIVO);
+            $data['id_estado_bien'] = $idActivo;
+            $data['activo'] = true;
+
+            // ⭐⭐ GUARDAR QUIÉN REGISTRÓ EL BIEN ⭐⭐
             $data['registrado_por'] = Auth::id();
 
             $bien = Bien::create($data);
-            $bien->load('documentoSustento', 'tipoBien');
+            $bien->load('documentoSustento', 'tipoBien', 'estadoConservacion');
+
+            // ⭐⭐⭐ CREAR MOVIMIENTO AUTOMÁTICO DE ALTA ⭐⭐⭐
+            // Buscar el tipo de movimiento ALTA (insensible a mayúsculas)
+            $tipoAlta = TipoMvto::whereRaw("UPPER(TRIM(tipo_mvto)) = 'ALTA'")->first();
+
+            // Si no existe, crearlo
+            if (!$tipoAlta) {
+                $tipoAlta = TipoMvto::create(['tipo_mvto' => 'ALTA']);
+            }
+
+            // ⭐ Obtener la ubicación de recepción inicial configurada
+            $ubicacionRecepcion = \App\Models\Ubicacion::getUbicacionRecepcion();
+
+            Movimiento::create([
+                'idbien'                      => $bien->id_bien,
+                'tipo_mvto'                   => $tipoAlta->id_tipo_mvto,
+                'fecha_mvto'                  => $bien->fecha_registro ?? now(),
+                'detalle_tecnico'             => 'REGISTRO DE ALTA — ' . $bien->denominacion_bien,
+                'id_estado_conservacion_bien' => $bien->id_estado_conservacion,
+                'idubicacion'                 => $ubicacionRecepcion?->id_ubicacion,
+                'idusuario'                   => Auth::id(),
+                'anulado'                     => false,
+            ]);
 
             DB::commit();
 
@@ -229,22 +263,24 @@ class BienController extends Controller
             ], 403);
         }
 
-        $bien->load(['tipoBien', 'documentoSustento']);
+        $bien->load(['tipoBien', 'documentoSustento', 'estadoConservacion']);
 
         return response()->json([
-            'id_bien' => $bien->id_bien,
-            'codigo_patrimonial' => $bien->codigo_patrimonial,
-            'denominacion_bien' => $bien->denominacion_bien,
-            'id_tipobien' => $bien->id_tipobien,
-            'id_documento' => $bien->id_documento,
-            'modelo_bien' => $bien->modelo_bien,
-            'marca_bien' => $bien->marca_bien,
-            'color_bien' => $bien->color_bien,
-            'dimensiones_bien' => $bien->dimensiones_bien,
-            'nserie_bien' => $bien->nserie_bien,
-            'fecha_registro' => $bien->fecha_registro,
-            'foto_bien' => $bien->foto_bien,
-            'NumDoc' => $bien->NumDoc,
+            'id_bien'                => $bien->id_bien,
+            'codigo_patrimonial'     => $bien->codigo_patrimonial,
+            'denominacion_bien'      => $bien->denominacion_bien,
+            'id_tipobien'            => $bien->id_tipobien,
+            'id_documento'           => $bien->id_documento,
+            'modelo_bien'            => $bien->modelo_bien,
+            'marca_bien'             => $bien->marca_bien,
+            'color_bien'             => $bien->color_bien,
+            'dimensiones_bien'       => $bien->dimensiones_bien,
+            'nserie_bien'            => $bien->nserie_bien,
+            'fecha_registro'         => $bien->fecha_registro,
+            'foto_bien'              => $bien->foto_bien,
+            'NumDoc'                 => $bien->NumDoc,
+            // ⭐ Condición física
+            'id_estado_conservacion' => $bien->id_estado_conservacion,
         ]);
     }
 
@@ -395,8 +431,9 @@ class BienController extends Controller
                 ->eliminados()
                 ->when($search, function($query, $search) {
                     $query->where(function($q) use ($search) {
-                        $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
-                          ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%");
+                        $searchLower = strtolower($search);
+                        $q->whereRaw('LOWER(codigo_patrimonial) LIKE ?', ["%{$searchLower}%"])
+                          ->orWhereRaw('LOWER(denominacion_bien) LIKE ?', ["%{$searchLower}%"]);
                     });
                 })
                 ->orderBy('eliminado_en', 'desc')
@@ -518,7 +555,7 @@ class BienController extends Controller
                     'tipo' => $ultimoMov->tipoMovimiento->tipo_mvto ?? 'N/A',
                     'tipo_badge' => $this->getBadgeTipoMovimiento($ultimoMov->tipoMovimiento->tipo_mvto ?? ''),
                     'area' => $ultimoMov->ubicacion->area->nombre_area ?? 'Sin área',
-                    'ubicacion' => $ultimoMov->ubicacion->nombre_sede ?? 'Sin ubicación',
+                    'ubicacion' => $ultimoMov->ubicacion->ambiente ?? 'Sin ubicación',
                     'estado_conservacion' => $ultimoMov->estadoConservacion->nombre_estado ?? 'Sin estado',
                     'estado_badge' => $this->getBadgeEstadoConservacion($ultimoMov->estadoConservacion->nombre_estado ?? ''),
                     'fecha' => \Carbon\Carbon::parse($ultimoMov->fecha_mvto)->format('d/m/Y H:i'),

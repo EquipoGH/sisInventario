@@ -19,14 +19,14 @@ class MovimientoService
         try {
             // ⭐⭐⭐ CAMBIO CRÍTICO: Buscar "SIN ASIGNAR" ⭐⭐⭐
             $tipoSinAsignar = TipoMvto::where(function($query) {
-                $query->where('tipo_mvto', 'ILIKE', 'SIN ASIGNAR')
-                      ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
-                      ->orWhere('tipo_mvto', 'ILIKE', '%sin_asignar%')
-                      ->orWhere('tipo_mvto', 'ILIKE', 'REGISTRO'); // Fallback
+                $query->whereRaw("LOWER(tipo_mvto) = 'sin asignar'")
+                      ->orWhereRaw("LOWER(tipo_mvto) LIKE '%sin asignar%'")
+                      ->orWhereRaw("LOWER(tipo_mvto) LIKE '%sin_asignar%'")
+                      ->orWhereRaw("LOWER(tipo_mvto) = 'registro'"); // Fallback
             })->first();
 
             if (!$tipoSinAsignar) {
-                throw new \Exception('Tipo de movimiento "SIN ASIGNAR" no encontrado en la BD. Ejecuta: UPDATE tipo_mvto SET tipo_mvto = \'SIN ASIGNAR\' WHERE tipo_mvto ILIKE \'%registro%\'');
+                throw new \Exception('Tipo de movimiento "SIN ASIGNAR" no encontrado en la BD. Ejecuta: UPDATE tipo_mvto SET tipo_mvto = \'SIN ASIGNAR\' WHERE LOWER(tipo_mvto) LIKE \'%registro%\'');
             }
 
             // ⭐⭐⭐ OBTENER UBICACIÓN DE RECEPCIÓN AUTOMÁTICAMENTE ⭐⭐⭐
@@ -35,14 +35,14 @@ class MovimientoService
             if (!$ubicacionRecepcion) {
                 // FALLBACK: Buscar por nombre
                 $ubicacionRecepcion = \App\Models\Ubicacion::where(function($q) {
-                    $q->where('nombre_sede', 'ILIKE', '%abastecimiento%')
-                      ->orWhere('nombre_sede', 'ILIKE', '%almacen%')
-                      ->orWhere('nombre_sede', 'ILIKE', '%almacén%');
+                    $q->whereRaw("LOWER(nombre_sede) LIKE '%abastecimiento%'")
+                      ->orWhereRaw("LOWER(nombre_sede) LIKE '%almacen%'")
+                      ->orWhereRaw("LOWER(nombre_sede) LIKE '%almacén%'");
                 })
                 ->orWhereHas('area', function($q) {
-                    $q->where('nombre_area', 'ILIKE', '%abastecimiento%')
-                      ->orWhere('nombre_area', 'ILIKE', '%almacen%')
-                      ->orWhere('nombre_area', 'ILIKE', '%logistica%');
+                    $q->whereRaw("LOWER(nombre_area) LIKE '%abastecimiento%'")
+                      ->orWhereRaw("LOWER(nombre_area) LIKE '%almacen%'")
+                      ->orWhereRaw("LOWER(nombre_area) LIKE '%logistica%'");
                 })
                 ->first();
             }
@@ -51,7 +51,7 @@ class MovimientoService
             $estadoBueno = EstadoBien::whereRaw("UPPER(TRIM(nombre_estado)) = 'BUENO'")->first();
 
             if (!$estadoBueno) {
-                $estadoBueno = EstadoBien::where('nombre_estado', 'ILIKE', '%bueno%')->first();
+                $estadoBueno = EstadoBien::whereRaw("LOWER(nombre_estado) LIKE '%bueno%'")->first();
             }
 
             if (!$estadoBueno) {
@@ -130,28 +130,28 @@ class MovimientoService
     {
         // Si cambió la ubicación
         if (isset($cambios['idubicacion'])) {
-            return TipoMvto::where('tipo_mvto', 'ILIKE', '%TRASLADO%')
-                           ->orWhere('tipo_mvto', 'ILIKE', '%UBICACION%')
+            return TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%traslado%'")
+                           ->orWhereRaw("LOWER(tipo_mvto) LIKE '%ubicacion%'")
                            ->first();
         }
 
         // Si cambió el estado de conservación
         if (isset($cambios['id_estado_conservacion_bien'])) {
-            return TipoMvto::where('tipo_mvto', 'ILIKE', '%MANTENIMIENTO%')
-                           ->orWhere('tipo_mvto', 'ILIKE', '%ESTADO%')
+            return TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%mantenimiento%'")
+                           ->orWhereRaw("LOWER(tipo_mvto) LIKE '%estado%'")
                            ->first();
         }
 
         // Si cambió el área
         if (isset($cambios['idarea'])) {
-            return TipoMvto::where('tipo_mvto', 'ILIKE', '%ASIGNACION%')
-                           ->orWhere('tipo_mvto', 'ILIKE', '%AREA%')
+            return TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%asignacion%'")
+                           ->orWhereRaw("LOWER(tipo_mvto) LIKE '%area%'")
                            ->first();
         }
 
         // Movimiento genérico de actualización
-        return TipoMvto::where('tipo_mvto', 'ILIKE', '%ACTUALIZACION%')
-                       ->orWhere('tipo_mvto', 'ILIKE', '%MODIFICACION%')
+        return TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%actualizacion%'")
+                       ->orWhereRaw("LOWER(tipo_mvto) LIKE '%modificacion%'")
                        ->first();
     }
 

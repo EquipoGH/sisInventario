@@ -109,10 +109,11 @@ class Ubicacion extends Model
      */
     public function scopeBuscar($query, $termino)
     {
-        return $query->where(function($q) use ($termino) {
-            $q->where('nombre_sede', 'ILIKE', "%{$termino}%")
-              ->orWhere('ambiente', 'ILIKE', "%{$termino}%")
-              ->orWhere('piso_ubicacion', 'ILIKE', "%{$termino}%");
+        $termLower = strtolower($termino);
+        return $query->where(function($q) use ($termLower) {
+            $q->whereRaw('LOWER(nombre_sede) LIKE ?', ["%{$termLower}%"])
+              ->orWhereRaw('LOWER(ambiente) LIKE ?', ["%{$termLower}%"])
+              ->orWhereRaw('LOWER(piso_ubicacion) LIKE ?', ["%{$termLower}%"]);
         });
     }
 

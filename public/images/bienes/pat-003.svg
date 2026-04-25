@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="100%" height="100%" fill="#fbfdff"/>
+  <rect x="120" y="120" width="960" height="560" rx="16" fill="#fff" stroke="#eef6ff" />
+  <g transform="translate(180,200)">
+    <rect width="300" height="220" rx="8" fill="#e8f4ff" />
+    <rect x="340" y="10" width="360" height="18" rx="6" fill="#f1f5f9" />
+    <text x="0" y="260" font-family="DM Sans, Arial" font-size="22" fill="#0a0f1e">Escritorio</text>
+  </g>
+  <text x="96" y="720" font-family="DM Sans, Arial" font-size="18" fill="#4a5568">PAT-003 · Escritorio</text>
+</svg>

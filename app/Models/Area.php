@@ -144,6 +144,6 @@ class Area extends Model
      */
     public function scopeBuscar($query, $termino)
     {
-        return $query->where('nombre_area', 'ILIKE', "%{$termino}%");
+        return $query->whereRaw('LOWER(nombre_area) LIKE ?', ['%' . strtolower($termino) . '%']);
     }
 }

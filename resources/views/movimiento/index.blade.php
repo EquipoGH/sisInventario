@@ -523,17 +523,12 @@
                 </button>
                 @if(Auth::user()->esAdmin())
                     <button type="button" class="btn btn-warning btn-action" id="btnBajaSeleccionados">
-                        <i class="fas fa-times-circle"></i>
-                        <span class="d-none d-sm-inline">Dar de baja mov</span>
+                        <i class="fas fa-ban"></i>
+                        <span class="d-none d-sm-inline">Anular Movimiento</span>
                         <span class="badge badge-light ml-1" id="contadorBaja">0</span>
                     </button>
                 @endif
 
-                <button type="button" class="btn btn-info btn-action" id="btnRevertirBajaSeleccionados">
-                    <i class="fas fa-undo-alt"></i>
-                    <span class="d-none d-sm-inline">Revertir Baja</span>
-                    <span class="badge badge-light ml-1" id="contadorRevertir">0</span>
-                </button>
 
 
             </div>
@@ -781,7 +776,7 @@
                         {{-- UBICACIÓN --}}
                         <td>
                             @if($movimiento->ubicacion)
-                                <small><i class="fas fa-map-marker-alt text-muted"></i> {{ $movimiento->ubicacion->nombre_sede }}</small>
+                                <small><i class="fas fa-map-marker-alt text-muted"></i> {{ $movimiento->ubicacion->ambiente }}</small>
                             @else
                                 <span class="text-muted">-</span>
                             @endif
@@ -790,7 +785,7 @@
                         {{-- ESTADO CONSERVACIÓN --}}
                         <td>
                             @if($movimiento->estadoConservacion)
-                                {{ $movimiento->estadoConservacion->nombre_estado }}
+                                {{ $movimiento->estadoConservacion->nombre_conservacion }}
                             @else
                                 <span class="text-muted">-</span>
                             @endif
@@ -1138,7 +1133,7 @@
                                 <select class="form-control" id="edit_id_estado_conservacion_bien" name="id_estado_conservacion_bien">
                                     <option value="">Sin estado</option>
                                     @foreach($estadosConservacion as $estado)
-                                        <option value="{{ $estado->id_estado }}">{{ $estado->nombre_estado }}</option>
+                                        <option value="{{ $estado->id_estado_conservacion }}">{{ $estado->nombre_conservacion }}</option>
                                     @endforeach
                                 </select>
                                 <span class="text-danger error-edit-id_estado_conservacion_bien d-block mt-1"></span>
@@ -1266,9 +1261,9 @@
                                     <select class="form-control" id="asignar_id_estado_conservacion_bien" name="id_estado_conservacion_bien">
                                         <option value="">Sin estado</option>
                                         @foreach($estadosConservacion as $estado)
-                                            <option value="{{ $estado->id_estado }}"
-                                                    @if(strtoupper(trim($estado->nombre_estado)) === 'BUENO') data-default="true" @endif>
-                                                {{ $estado->nombre_estado }}
+                                            <option value="{{ $estado->id_estado_conservacion }}"
+                                                    @if(strtoupper(trim($estado->nombre_conservacion)) === 'BUENO') data-default="true" @endif>
+                                                {{ $estado->nombre_conservacion }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -1327,51 +1322,40 @@
 
 
 {{-- ==========================================
-     ⭐⭐⭐ MODAL BAJA MASIVA (NUEVO) ⭐⭐⭐
+     ⭐⭐⭐ MODAL ANULAR MASIVAMENTE (CORREGIDO) ⭐⭐⭐
      ========================================== --}}
-<div class="modal fade" id="modalBajaMasivo" tabindex="-1" role="dialog">
+<div class="modal fade" id="modalAnularMasivo" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">
-                    <i class="fas fa-times-circle"></i> Dar de Baja Bienes Masivamente
+                    <i class="fas fa-ban"></i> Anular Movimientos Seleccionados
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
-            <form id="formBajaMasivo">
+            <form id="formAnularMasivo">
                 @csrf
-                <input type="hidden" id="baja_bienes_ids" name="bienes_ids">
+                <input type="hidden" id="anular_movimientos_ids" name="movimientos_ids">
                 <div class="modal-body">
                     <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Se darán de <strong>BAJA</strong> <strong id="cantidadBaja">0</strong> bienes seleccionados.
-                    <br>
-                    <small class="text-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Los bienes heredarán la ubicación de su última asignación y se marcarán como estado "MALO".</strong>
-                    </small>
-                </div>
-
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Se <strong>ANULARÁN</strong> los movimientos de <strong id="cantidadAnular">0</strong> bien(es) seleccionado(s).
+                        <br>
+                        <small class="text-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Regla:</strong> Los bienes retornarán automáticamente a su ubicación y estado del movimiento válido anterior.
+                        </small>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label for="baja_fecha_mvto">Fecha de Baja <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="baja_fecha_mvto" name="fecha_mvto" required>
-                                <span class="text-danger error-baja-fecha_mvto d-block mt-1"></span>
-                            </div>
-                        </div>
-
-
-
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="baja_detalle_tecnico">Motivo de Baja <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="baja_detalle_tecnico" name="detalle_tecnico" rows="3" maxlength="500" placeholder="Describa el motivo de la baja (obsolescencia, daño irreparable, etc.)" required></textarea>
-                                <small class="text-muted">Máximo 500 caracteres. Este campo es obligatorio.</small>
-                                <span class="text-danger error-baja-detalle_tecnico d-block mt-1"></span>
+                                <label for="masivo_motivo_anulacion">Motivo de Anulación <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="masivo_motivo_anulacion" name="motivo_anulacion" rows="3" minlength="10" maxlength="200" placeholder="Ej: Error de digitación. El bien nunca se movió a esa ubicación." required></textarea>
+                                <small class="text-muted">Mínimo 10 caracteres. Máximo 200 caracteres.</small>
+                                <span class="text-danger error-anular-motivo d-block mt-1"></span>
                             </div>
                         </div>
                     </div>
@@ -1380,8 +1364,8 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times"></i> Cancelar
                     </button>
-                    <button type="submit" class="btn btn-danger" id="btnGuardarBaja">
-                        <i class="fas fa-check"></i> Confirmar Baja
+                    <button type="submit" class="btn btn-danger" id="btnGuardarAnularMasivo">
+                        <i class="fas fa-ban"></i> Confirmar Anulación
                     </button>
                 </div>
             </form>
@@ -1389,102 +1373,6 @@
     </div>
 </div>
 
-    {{-- ==========================================
-    ⭐ MODAL REVERTIR BAJA (RESTAURA ESTADO ANTERIOR)
-    ========================================== --}}
-    <div class="modal fade" id="modalRevertirBaja" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-undo-alt"></i> Revertir Baja de Bien
-                    </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <form id="formRevertirBaja">
-                    @csrf
-                    <input type="hidden" id="revertir_bienes_ids" name="bienes_ids">
-                    <div class="modal-body">
-                        {{-- ⭐ ALERTA INFORMATIVA MEJORADA --}}
-                        <div class="alert alert-info border-left-info">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-info-circle fa-2x mr-3"></i>
-                                <div>
-                                    <strong>Se revertirá la baja de <span id="cantidadRevertir">1</span> bien seleccionado.</strong>
-                                    <br>
-                                    <small class="text-muted">
-                                        ✅ El bien volverá a su <strong>estado anterior</strong> (ubicación + estado de conservación previo a la baja).
-                                        <br>
-                                        ℹ️ Si no existía movimiento anterior, quedará sin ubicación asignada.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            {{-- ✅ Fecha de Reversión --}}
-                            <div class="col-md-12 mb-3">
-                                <label for="revertirfechamvto" class="font-weight-bold">
-                                    <i class="fas fa-calendar-alt text-info"></i>
-                                    Fecha de Reversión <span class="text-danger">*</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    class="form-control"
-                                    id="revertirfechamvto"
-                                    name="fechamvto"
-                                    required
-                                >
-                                <span class="text-danger error-revertir-fechamvto d-block mt-1"></span>
-                            </div>
-
-                            {{-- ✅ Motivo de Reversión --}}
-                            <div class="col-md-12 mb-3">
-                                <label for="revertirdetalletecnico" class="font-weight-bold">
-                                    <i class="fas fa-comment-alt text-warning"></i>
-                                    Motivo de Reversión <span class="text-danger">*</span>
-                                </label>
-                                <textarea
-                                    class="form-control"
-                                    id="revertirdetalletecnico"
-                                    name="detalletecnico"
-                                    rows="3"
-                                    maxlength="200"
-                                    placeholder="Ej: Bien dado de baja por error. Se requiere reactivar para continuar su uso operativo."
-                                    required
-                                ></textarea>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-exclamation-triangle"></i> Máximo 200 caracteres. Este campo es obligatorio.
-                                </small>
-                                <span class="text-danger error-revertir-detalletecnico d-block mt-1"></span>
-                            </div>
-
-
-                        </div>
-
-                        {{-- ⭐ NOTA IMPORTANTE --}}
-                        <div class="alert alert-warning border-left-warning mt-2">
-                            <small>
-                                <i class="fas fa-exclamation-circle"></i>
-                                <strong>Nota:</strong> Esta acción creará un nuevo movimiento de tipo "REVERSIÓN DE BAJA"
-                                y restaurará el bien al último estado registrado antes de la baja.
-                            </small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            <i class="fas fa-times"></i> Cancelar
-                        </button>
-                        <button type="submit" class="btn btn-info" id="btnGuardarRevertir">
-                            <i class="fas fa-check"></i> Confirmar Reversión
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
 
 
@@ -1627,6 +1515,7 @@ $(document).ready(function() {
         let direccionActual = 'desc';
         let busquedaActual = '';
         let bienesSeleccionados = [];
+        let movimientosIdsParaAnular = []; // ✅ Global: IDs de movimientos para anular masivamente
         let currentBienIdForTrazabilidad = null;
 
 
@@ -1719,535 +1608,196 @@ $(document).ready(function() {
         });
 
         function actualizarBienesSeleccionados() {
-        bienesSeleccionados = [];
-        let tieneBaja = false;
-        let totalBaja = 0;
-        let tieneRegistroOAsignacion = false;
-        let todosSonRegistroSinAsignacion = true; // para ocultar btn dar de baja
+            bienesSeleccionados = [];
+            movimientosIdsParaAnular = []; // ✅ Reiniciar array global
 
-        $('.checkbox-item:checked').each(function() {
-            const bienId = $(this).data('bien-id');
-            if (bienId && !bienesSeleccionados.includes(bienId)) {
-                bienesSeleccionados.push(bienId);
-            }
+            let tieneBaja = false;
+            let todosConTipoAlta = true;     // true si TODOS son tipo ALTA/REGISTRO
+            let algunoEsAsignacion = false;  // true si al menos UNO es ASIGNACION
 
-            // ✅ DETECTAR TIPO DE MOVIMIENTO por data attribute (sin depender de badges)
-            const tipoMvto = ($(this).data('tipo-mvto') || '').toUpperCase();
-            const tieneAsignacion = $(this).data('tiene-asignacion') === '1' || $(this).data('tiene-asignacion') === 1;
-
-            if (tipoMvto.includes('BAJA') || tipoMvto.includes('REVERSI')) {
-                tieneBaja = true;
-                totalBaja++;
-                todosSonRegistroSinAsignacion = false;
-            } else if (tipoMvto.includes('REGISTRO') || tipoMvto.includes('SIN ASIGNAR')) {
-                // Es REGISTRO: solo cuenta como "sin asignación" si el bien NO tiene asignaciones
-                if (tieneAsignacion) {
-                    // Bien ya fue asignado en algún momento
-                    tieneRegistroOAsignacion = true;
-                    todosSonRegistroSinAsignacion = false;
+            $('.checkbox-item:checked').each(function() {
+                const bienId = $(this).data('bien-id');
+                if (bienId && !bienesSeleccionados.includes(bienId)) {
+                    bienesSeleccionados.push(bienId);
                 }
-                // Si no tiene asignación, se mantiene como "soloRegistro"
+
+                // Recolectar ID del movimiento de la fila
+                const rowId = $(this).closest('tr').attr('id');
+                if (rowId) {
+                    movimientosIdsParaAnular.push(parseInt(rowId.replace('row-', '')));
+                }
+
+                const tipoMvto = ($(this).data('tipo-mvto') || '').toUpperCase();
+
+                if (tipoMvto.includes('BAJA')) {
+                    tieneBaja = true;
+                }
+
+                // Normalizar: eliminar tildes para comparación robusta
+                const tipoNorm = tipoMvto
+                    .replace(/[ÁÀÂÄ]/g, 'A')
+                    .replace(/[ÉÈÊË]/g, 'E')
+                    .replace(/[ÍÌÎÏ]/g, 'I')
+                    .replace(/[ÓÒÔÖ]/g, 'O')
+                    .replace(/[ÚÙÛÜ]/g, 'U')
+                    .replace(/Ñ/g, 'N');
+
+                // Si es ASIGNACION, TRASLADO o ACTUALIZACION → se puede anular
+                if (tipoNorm.includes('ASIGNACION') || tipoNorm.includes('TRASLADO') || tipoNorm.includes('ACTUALIZACION')) {
+                    algunoEsAsignacion = true;
+                    todosConTipoAlta = false;
+                }
+
+                // Si no es ALTA/REGISTRO, no todos son ALTA
+                if (!tipoNorm.includes('ALTA') && !tipoNorm.includes('REGISTRO')) {
+                    todosConTipoAlta = false;
+                }
+            });
+
+            const cantidad = bienesSeleccionados.length;
+
+            // ⭐ ACTUALIZAR CONTADORES
+            $('#contadorAsignar').text(cantidad);
+            $('#contadorBaja').text(cantidad);
+
+            // ⭐ MOSTRAR/OCULTAR BARRA DE ACCIONES
+            if (cantidad > 0) {
+                $('#accionesMasivas').fadeIn(300);
             } else {
-                // ASIGNACIÓN u otro tipo activo
-                tieneRegistroOAsignacion = true;
-                todosSonRegistroSinAsignacion = false;
+                $('#accionesMasivas').fadeOut(300);
             }
-        });
 
-        const cantidad = bienesSeleccionados.length;
+            // ✅ BOTÓN ASIGNAR: visible siempre que haya selección y no haya bienes de BAJA
+            if (cantidad > 0 && !tieneBaja) {
+                $('#btnAsignarSeleccionados').fadeIn(200).removeClass('d-none');
+            } else {
+                $('#btnAsignarSeleccionados').fadeOut(200).addClass('d-none');
+            }
 
-        // ⭐ ACTUALIZAR CONTADORES
-        $('#contadorAsignar').text(cantidad);
-        $('#contadorBaja').text(cantidad);
-        $('#contadorRevertir').text(totalBaja);
-        $('#contadorSeleccionados').text(cantidad);
-
-        // ⭐ MOSTRAR/OCULTAR GRUPO COMPLETO CON ANIMACIÓN
-        if (cantidad > 0) {
-            $('#accionesMasivas').fadeIn(300);
-        } else {
-            $('#accionesMasivas').fadeOut(300);
+            // ✅ BOTÓN ANULAR MOVIMIENTO:
+            // - Solo si al menos UNO es de tipo ASIGNACION/TRASLADO (no meramente ALTA)
+            // - Y NO hay bienes de BAJA seleccionados
+            if (cantidad > 0 && !tieneBaja && algunoEsAsignacion) {
+                $('#btnBajaSeleccionados').fadeIn(200).removeClass('d-none');
+            } else {
+                $('#btnBajaSeleccionados').fadeOut(200).addClass('d-none');
+            }
         }
-
-        // ✅ LÓGICA INTELIGENTE DE BOTONES
-
-        // 1. BOTÓN ASIGNAR: Solo visible si NO hay ningún bien de BAJA seleccionado
-        if (cantidad > 0 && !tieneBaja) {
-            $('#btnAsignarSeleccionados').fadeIn(200).removeClass('d-none');
-        } else {
-            $('#btnAsignarSeleccionados').fadeOut(200).addClass('d-none');
-        }
-
-        // 2. BOTÓN DAR DE BAJA MOV:
-        // - Solo si NO hay baja
-        // - Y NO son todos del tipo REGISTRO sin asignación previa
-        if (cantidad > 0 && !tieneBaja && !todosSonRegistroSinAsignacion) {
-            $('#btnBajaSeleccionados').fadeIn(200).removeClass('d-none');
-        } else {
-            $('#btnBajaSeleccionados').fadeOut(200).addClass('d-none');
-        }
-
-        // 3. BOTÓN REVERTIR BAJA: Solo visible si hay EXACTAMENTE 1 bien de tipo BAJA
-        if (cantidad === 1 && tieneBaja && !tieneRegistroOAsignacion) {
-            $('#btnRevertirBajaSeleccionados').fadeIn(200).removeClass('d-none');
-        } else {
-            $('#btnRevertirBajaSeleccionados').fadeOut(200).addClass('d-none');
-        }
-
-        // 4. BOTÓN ANULAR: Solo visible si hay selección (SOLO ADMIN)
-        if (cantidad > 0) {
-            $('#btnAnularSeleccionados').fadeIn(200).removeClass('d-none');
-        } else {
-            $('#btnAnularSeleccionados').fadeOut(200).addClass('d-none');
-        }
-
-    }
 
 
 
     // ==========================================
-    // ⭐ BOTÓN BAJA MASIVA
+    // ⭐ BOTÓN ANULAR MOVIMIENTOS SELECCIONADOS
     // ==========================================
     $('#btnBajaSeleccionados').click(function() {
-        if (bienesSeleccionados.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Sin selección',
-                text: 'Debe seleccionar al menos un bien'
-            });
+        if (movimientosIdsParaAnular.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Sin selección', text: 'Debe seleccionar al menos un movimiento' });
             return;
         }
 
-        // ✅ VALIDACIÓN: No permitir dar de baja a bienes que YA ESTÁN de BAJA
-        let hayBaja = false;
-        let bienBaja = null;
+        // Poblar el modal con los datos actuales
+        $('#cantidadAnular').text(movimientosIdsParaAnular.length);
+        $('#anular_movimientos_ids').val(JSON.stringify(movimientosIdsParaAnular));
+        $('#masivo_motivo_anulacion').val('');
+        $('.error-anular-motivo').text('');
 
-        $('.checkbox-item:checked').each(function() {
-            const fila = $(this).closest('tr');
-            const tipoBadge = fila.find('.badge-tipo-baja');
-
-            if (tipoBadge.length > 0) {
-                hayBaja = true;
-                bienBaja = fila.find('.badge-info').first().text().trim(); // Código del bien
-                return false; // break
-            }
-        });
-
-        if (hayBaja) {
-            Swal.fire({
-                icon: 'error',
-                title: '❌ Acción no permitida',
-                html: `
-                    <p>No puedes <strong>Dar de Baja</strong> a bienes que ya están de <strong>BAJA</strong>.</p>
-                    <div class="alert alert-warning mt-3 mb-3" style="font-size: 0.9rem;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Bien detectado: <strong>${bienBaja}</strong>
-                    </div>
-                    <p class="text-muted small">
-                        <i class="fas fa-info-circle"></i>
-                        El bien ya fue dado de baja anteriormente.
-                    </p>
-                `,
-                confirmButtonText: 'Entendido',
-                confirmButtonColor: '#6c757d'
-            });
-            return;
-        }
-
-        // ✅ TODO CORRECTO - CONTINUAR
-        $('#cantidadBaja').text(bienesSeleccionados.length);
-        $('#baja_bienes_ids').val(JSON.stringify(bienesSeleccionados));
-        $('#baja_fecha_mvto').val(new Date().toISOString().split('T')[0]);
-        $('#baja_detalle_tecnico').val('');
-
-        $('.text-danger').text('');
-
-        $('#modalBajaMasivo').modal('show');
+        $('#modalAnularMasivo').modal('show');
     });
 
-    $('#formBajaMasivo').submit(function(e) {
+    $('#formAnularMasivo').submit(function(e) {
         e.preventDefault();
 
+        const motivo = $('#masivo_motivo_anulacion').val().trim();
+        const cantidad = movimientosIdsParaAnular.length;
+
+        if (motivo.length < 10) {
+            $('.error-anular-motivo').text('El motivo debe tener al menos 10 caracteres.');
+            return;
+        }
+
         Swal.fire({
-            title: '⚠️ ¿Confirmar baja?',
+            title: '⚠️ ¿Confirmar Anulación?',
             html: `
-                <p>Se darán de <strong class="text-danger">BAJA</strong> ${bienesSeleccionados.length} bien(es).</p>
+                <p>Se <strong class="text-danger">ANULARÁN</strong> los movimientos de <strong>${cantidad}</strong> bien(es).</p>
                 <p class="text-muted small mt-2">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Los bienes quedarán sin ubicación ni estado de conservación.
+                    <i class="fas fa-info-circle"></i>
+                    Cada bien retornará automáticamente a su ubicación del movimiento válido anterior.
                 </p>
             `,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fas fa-check"></i> Sí, dar de baja',
+            confirmButtonText: '<i class="fas fa-ban"></i> Sí, anular movimientos',
             cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
             reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
-                enviarBajaMasivo();
+                enviarAnularMasivo();
             }
         });
     });
 
-    function enviarBajaMasivo() {
-        const formData = {
-            bienes_ids: bienesSeleccionados,
-            fecha_mvto: $('#baja_fecha_mvto').val(),
-            detalle_tecnico: $('#baja_detalle_tecnico').val()
-        };
+    function enviarAnularMasivo() {
+        const idsAnular = JSON.parse($('#anular_movimientos_ids').val() || '[]');
+        const motivo   = $('#masivo_motivo_anulacion').val().trim();
 
-        $('#btnGuardarBaja').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+        if (idsAnular.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Error', text: 'No se encontraron movimientos para anular.' });
+            return;
+        }
+
+        $('#btnGuardarAnularMasivo').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
 
         $.ajax({
-            url: '{{ route("movimiento.baja-masivo") }}',
+            url: '{{ route("movimiento.anular-masivo") }}',
             method: 'POST',
-            data: formData,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            data: {
+                movimientos_ids: idsAnular,
+                motivo_anulacion: motivo
             },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function(response) {
                 if (response.success) {
-                    $('#modalBajaMasivo').modal('hide');
-
+                    $('#modalAnularMasivo').modal('hide');
                     Swal.fire({
                         icon: 'success',
-                        title: '✅ ¡Baja exitosa!',
+                        title: '✅ ¡Anulación exitosa!',
                         html: `
                             <p>${response.message}</p>
                             <hr>
                             <small class="text-muted">
                                 <i class="fas fa-check-circle text-success"></i>
-                                ${bienesSeleccionados.length} bien(es) dado(s) de baja correctamente
+                                ${response.cantidad} movimiento(s) anulado(s). Los bienes han regresado a su ubicación anterior.
                             </small>
                         `,
-                        timer: 3500,
+                        timer: 4000,
                         timerProgressBar: true
-                    });
-
-                    cargarMovimientos();
-
-                
+                    }).then(() => { cargarMovimientos(); });
 
                     // Limpiar selección
                     $('.checkbox-item').prop('checked', false);
                     $('#checkAll').prop('checked', false);
                     bienesSeleccionados = [];
+                    movimientosIdsParaAnular = [];
                     actualizarBienesSeleccionados();
                 }
             },
             error: function(xhr) {
-                if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    $('.text-danger').text('');
-
-                    $.each(errors, function(key, value) {
-                        $(`.error-baja-${key}`).text(value[0]);
-                    });
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error de validación',
-                        text: 'Revise los campos marcados en rojo'
-                    });
-                } else if (xhr.status === 400) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: '⚠️ No se puede dar de baja',
-                        text: xhr.responseJSON?.message || 'Uno o más bienes no pueden ser dados de baja'
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: xhr.responseJSON?.message || 'Error al dar de baja los bienes'
-                    });
-                }
-            },
-            complete: function() {
-                $('#btnGuardarBaja').prop('disabled', false).html('<i class="fas fa-check"></i> Confirmar Baja');
-            }
-        });
-    }
-
-
-    // ==========================================
-    // ⭐ BOTÓN REVERTIR BAJA MASIVA
-    // ==========================================
-    $('#btnRevertirBajaSeleccionados').click(function() {
-        // ✅ VALIDAR QUE SOLO HAY 1 BIEN SELECCIONADO
-        if (bienesSeleccionados.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Sin selección',
-                text: 'Debe seleccionar exactamente UN bien para revertir la baja'
-            });
-            return;
-        }
-
-        if (bienesSeleccionados.length > 1) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Selección múltiple no permitida',
-                text: 'Solo puede revertir la baja de UN bien a la vez. Por favor seleccione solo un registro.'
-            });
-            return;
-        }
-
-        // ✅ VALIDAR QUE EL BIEN SELECCIONADO SEA DE TIPO "BAJA"
-        const checkboxSeleccionado = $('.checkbox-item:checked').first();
-        const tipoMvtoRevertir = (checkboxSeleccionado.data('tipo-mvto') || '').toUpperCase();
-
-        if (!tipoMvtoRevertir.includes('BAJA') && !tipoMvtoRevertir.includes('REVERSI')) {
-            Swal.fire({
-                icon: 'error',
-                title: '❌ No es un bien dado de baja',
-                html: `
-                    <p>El bien seleccionado no está en estado de <strong>BAJA</strong>.</p>
-                    <p class="text-muted small mt-2">
-                        <i class="fas fa-info-circle"></i>
-                        Solo puedes revertir bienes que están dados de baja.
-                    </p>
-                `,
-                confirmButtonText: 'Entendido',
-                confirmButtonColor: '#6c757d'
-            });
-            return;
-        }
-
-        // ✅ OBTENER INFO DEL BIEN PARA MOSTRAR EN EL MODAL
-        const codigoBien = checkboxSeleccionado.closest('tr').find('td').eq(3).text().trim();
-
-        // ✅ TODO CORRECTO - PROCEDER CON LA REVERSIÓN
-        $('#cantidadRevertir').text('1');
-        $('#revertir_bienes_ids').val(JSON.stringify(bienesSeleccionados));
-
-        const hoy = new Date().toISOString().split('T')[0];
-        $('#revertirfechamvto').val(hoy);
-
-        // Limpiar campos del modal
-        $('#revertirdetalletecnico').val('');
-
-        // Limpiar errores previos
-        $('.text-danger').text('');
-
-        // ✅ OPCIONAL: Actualizar título del modal con info del bien
-        $('#modalRevertirBaja .modal-title').html(`
-            <i class="fas fa-undo-alt"></i> Revertir Baja de Bien
-            <small class="d-block mt-1" style="font-size: 0.8rem; font-weight: normal;">
-                <i class="fas fa-box"></i> ${codigoBien}
-            </small>
-        `);
-
-        $('#modalRevertirBaja').modal('show');
-    });
-
-    // ==========================================
-    // ⭐ SUBMIT DEL FORMULARIO REVERTIR BAJA
-    // ==========================================
-    $('#formRevertirBaja').submit(function(e) {
-        e.preventDefault();
-
-        Swal.fire({
-            title: '¿Confirmar reversión?',
-            text: `Se revertirá la baja de ${bienesSeleccionados.length} bien(es)`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#17a2b8',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, revertir',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                enviarRevertirBaja();
-            }
-        });
-    });
-
-    /**
-     * ⭐ ENVIAR REVERSIÓN DE BAJA
-     * Procesa la reversión de un movimiento de baja
-     */
-    /**
-     * ⭐ ENVIAR REVERSIÓN DE BAJA
-     * Procesa la reversión de un movimiento de baja
-     */
-    function enviarRevertirBaja() {
-        // ✅ VALIDAR UNA VEZ MÁS (por seguridad)
-        if (bienesSeleccionados.length !== 1) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de validación',
-                text: 'Debe seleccionar exactamente UN bien'
-            });
-            return;
-        }
-
-        const bienId = bienesSeleccionados[0];
-
-        // ✅✅✅ PREPARAR DATOS CON GUIONES BAJOS (PARA EL BACKEND) ✅✅✅
-        const formData = {
-            detalle_tecnico: $('#revertirdetalletecnico').val().trim(),      // ✅ CON guion bajo
-            fecha_mvto: $('#revertirfechamvto').val(),                        // ✅ CON guion bajo
-            documento_sustentatorio: $('#revertirdocumentosustentatorio').val() || null,  // ✅ CON guion bajo
-            NumDocto: $('#revertirNumDocto').val() || null
-        };
-
-        console.log('📤 Datos enviados:', formData);  // DEBUG
-
-        // ✅ VALIDAR QUE NO EXCEDA 200 CARACTERES
-        if (formData.detalle_tecnico.length > 200) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Texto demasiado largo',
-                text: 'El motivo no puede exceder los 200 caracteres'
-            });
-            return;
-        }
-
-        // ✅ VALIDAR QUE NO ESTÉ VACÍO
-        if (formData.detalle_tecnico.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Campo obligatorio',
-                text: 'Debe ingresar un motivo de reversión'
-            });
-            return;
-        }
-
-        // ✅ VALIDAR QUE LA FECHA NO ESTÉ VACÍA
-        if (!formData.fecha_mvto || formData.fecha_mvto.trim() === '') {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Campo obligatorio',
-                text: 'Debe seleccionar una fecha de reversión'
-            });
-            return;
-        }
-
-        // Deshabilitar botón con loading
-        $('#btnGuardarRevertir').prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
-
-        $.ajax({
-            url: `/movimiento/revertir-baja/${bienId}`,
-            method: 'POST',
-            data: formData,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                console.log('✅ Respuesta:', response);  // DEBUG
-
-                if (response.success) {
-                    $('#modalRevertirBaja').modal('hide');
-
-                    // ✅ MENSAJE DE ÉXITO
-                    Swal.fire({
-                        icon: 'success',
-                        title: '✅ Reversión exitosa!',
-                        html: `
-                            <p><strong>${response.message}</strong></p>
-                            <hr>
-                            <div class="text-left" style="font-size: 0.9rem;">
-                                <p class="mb-2">
-                                    <i class="fas fa-info-circle text-info"></i>
-                                    <strong>Bien:</strong> ${response.data.bien.codigo}
-                                </p>
-                                <p class="mb-2">
-                                    <i class="fas fa-barcode text-secondary"></i>
-                                    <strong>Denominación:</strong> ${response.data.bien.denominacion}
-                                </p>
-                                <p class="mb-2">
-                                    <i class="fas fa-check-circle text-success"></i>
-                                    <strong>Estado:</strong> ${response.data.estadorestaurado}
-                                </p>
-                                <p class="mb-0 text-muted">
-                                    <i class="fas fa-clock"></i>
-                                    Revertido el ${response.data.movimientooriginal.fechareversion}
-                                </p>
-                            </div>
-                        `,
-                        width: '500px',
-                        timer: 5000,
-                        timerProgressBar: true
-                    }).then(() => {
-                        // ✅✅✅ RECARGAR DATOS DESPUÉS DEL MODAL ✅✅✅
-                        cargarMovimientos();
-                       
-                    });
-
-                    // ✅ LIMPIAR FORMULARIO
-                    $('#formRevertirBaja')[0].reset();
-                    $('.text-danger').text('');
-
-                    // ✅ LIMPIAR SELECCIÓN
-                    $('.checkbox-item').prop('checked', false);
-                    $('#checkAll').prop('checked', false);
-                    bienesSeleccionados = [];
-                    actualizarBienesSeleccionados();
-                }
-            },
-            error: function(xhr) {
-                console.error('❌ Error:', xhr.responseJSON);  // DEBUG
-
-                let mensajeError = 'Error al revertir baja';
-                let tituloError = 'Error';
-                let icono = 'error';
-
-                // ✅ MANEJO DE ERRORES DETALLADO
-                if (xhr.status === 422) {
-                    const errors = xhr.responseJSON.errors;
-                    $('.text-danger').text('');
-
-                    // ✅✅✅ MAPEAR ERRORES: detalle_tecnico → detalletecnico ✅✅✅
-                    $.each(errors, function(key, value) {
-                        // Convertir: detalle_tecnico → detalletecnico
-                        const keyHtml = key.replace(/_/g, '');
-                        $(`.error-revertir-${keyHtml}`).text(value[0]);
-                        console.log(`🔴 ${key} → .error-revertir-${keyHtml}: ${value[0]}`);
-                    });
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error de validación',
-                        html: '<p>Revise los campos marcados en rojo</p>',
-                        timer: 3000
-                    });
-                    return;
-                } else if (xhr.status === 403) {
-                    tituloError = 'Acceso denegado';
-                    mensajeError = 'Solo el administrador puede revertir bajas';
-                } else if (xhr.status === 404) {
-                    tituloError = 'No encontrado';
-                    mensajeError = xhr.responseJSON?.message || 'El bien o movimiento no fue encontrado';
-                } else if (xhr.status === 400) {
-                    icono = 'warning';
-                    tituloError = 'No se puede revertir';
-                    mensajeError = xhr.responseJSON?.message || 'Este movimiento no se puede revertir';
-                } else if (xhr.status === 500) {
-                    tituloError = 'Error del servidor';
-                    mensajeError = xhr.responseJSON?.message || 'Ocurrió un error interno. Contacte al administrador.';
-                } else {
-                    mensajeError = xhr.responseJSON?.message || 'Error desconocido al procesar la reversión';
-                }
-
+                const msg = xhr.responseJSON?.message || 'Error desconocido al anular los movimientos.';
                 Swal.fire({
-                    icon: icono,
-                    title: tituloError,
-                    text: mensajeError,
-                    timer: 4000,
-                    timerProgressBar: true
+                    icon: 'error',
+                    title: xhr.status === 400 ? '⚠️ Acción no permitida' : '❌ Error',
+                    text: msg
                 });
             },
             complete: function() {
-                // ✅ REHABILITAR BOTÓN
-                $('#btnGuardarRevertir').prop('disabled', false)
-                    .html('<i class="fas fa-check"></i> Confirmar Reversión');
+                $('#btnGuardarAnularMasivo').prop('disabled', false).html('<i class="fas fa-ban"></i> Confirmar Anulación');
             }
         });
     }
+
+
 
 
 
@@ -2763,8 +2313,8 @@ $(document).ready(function() {
                     $('#ver-denominacion').text(data.bien.denominacion_bien);
                     $('#ver-tipo').text(data.tipo_movimiento.tipo_mvto);
                     $('#ver-fecha').text(typeof moment !== 'undefined' ? moment(data.fecha_mvto).format('DD/MM/YYYY HH:mm:ss') : data.fecha_mvto);
-                    $('#ver-ubicacion').text(data.ubicacion ? data.ubicacion.nombre_sede : 'Sin ubicación');
-                    $('#ver-estado').text(data.estado_conservacion ? data.estado_conservacion.nombre_estado : 'Sin estado');
+                    $('#ver-ubicacion').text(data.ubicacion ? data.ubicacion.ambiente : 'Sin ubicación');
+                    $('#ver-estado').text(data.estado_conservacion ? data.estado_conservacion.nombre_conservacion : 'Sin estado');
                     $('#ver-usuario').text(data.usuario.name);
                     $('#ver-documento').text(data.documento_sustento ?
                         `${data.documento_sustento.tipo_documento} - ${data.documento_sustento.numero_documento}` :
@@ -2935,8 +2485,8 @@ $(document).ready(function() {
                             const area = (mov.ubicacion && mov.ubicacion.area) ?
                                 mov.ubicacion.area.nombre_area : '-';
 
-                            const ubicacion = mov.ubicacion ? mov.ubicacion.nombre_sede : '-';
-                            const estado = mov.estado_conservacion ? mov.estado_conservacion.nombre_estado : '-';
+                            const ubicacion = mov.ubicacion ? mov.ubicacion.ambiente : '-';
+                            const estado = mov.estado_conservacion ? mov.estado_conservacion.nombre_conservacion : '-';
                             const documento = mov.documento_sustento ?
                                 `${mov.documento_sustento.tipo_documento} ${mov.documento_sustento.numero_documento}` : '-';
 
@@ -2968,11 +2518,24 @@ $(document).ready(function() {
                                 }
 
 
+                            // ⚠️ INDICADOR VISUAL: fila anulada
+                            const esAnulado = mov.anulado === true || mov.anulado == 1;
+                            const filaEstilo = esAnulado ? 'style="background-color:#fff5f5; opacity:0.85;"' : '';
+                            const motivoCorto = esAnulado && mov.motivo_anulacion
+                                ? mov.motivo_anulacion.substring(0, 50) + (mov.motivo_anulacion.length > 50 ? '...' : '')
+                                : '';
+                            const badgeAnulado = esAnulado
+                                ? `<span class="badge badge-danger mt-1" style="font-size:0.68rem;" title="Motivo: ${mov.motivo_anulacion || 'Sin especificar'}"><i class="fas fa-ban"></i> ANULADO</span>`
+                                : '';
+
                             $('#tablaTrazabilidad').append(`
-                                <tr>
+                                <tr ${filaEstilo}>
                                     <td class="text-center"><strong>${mov.id_movimiento}</strong></td>
                                     <td><strong>${fecha}</strong></td>
-                                    <td><span class="badge ${badgeClass}">${tipo}</span></td>
+                                    <td>
+                                        <span class="badge ${badgeClass}">${tipo}</span>
+                                        ${badgeAnulado}
+                                    </td>
                                     <td><i class="fas fa-user"></i> ${usuario}</td>
                                     <td>
                                         <i class="fas fa-building text-warning"></i>
@@ -2985,6 +2548,7 @@ $(document).ready(function() {
                                         <small class="text-muted" title="${mov.detalle_tecnico || 'Sin detalle'}">
                                             <i class="fas fa-comment-dots"></i> ${detalle}
                                         </small>
+                                        ${esAnulado && motivoCorto ? `<br><small class="text-danger"><i class="fas fa-ban"></i> <em>${motivoCorto}</em></small>` : ''}
                                     </td>
                                 </tr>
                             `);
@@ -3266,11 +2830,11 @@ $(document).ready(function() {
         const denominacion = mov.bien.denominacion_bien || '';
         const denominacionCorta = denominacion.length > 30 ? denominacion.substring(0, 30) + '...' : denominacion;
         const tipoNombre = mov.bien.tipo_bien ? mov.bien.tipo_bien.nombre_tipo : '';
-        const ubicacionNombre = mov.ubicacion ? mov.ubicacion.nombre_sede : '';
+        const ubicacionNombre = mov.ubicacion ? mov.ubicacion.ambiente : '';
         const areaNombre = (mov.ubicacion && mov.ubicacion.area) ? mov.ubicacion.area.nombre_area : '-';
 
         // Estado de conservación: texto plano
-        const estadoConservacion = mov.estado_conservacion ? mov.estado_conservacion.nombre_estado : '-';
+        const estadoConservacion = mov.estado_conservacion ? mov.estado_conservacion.nombre_conservacion : '-';
 
         // Estado movimiento: texto plano con ícono
         const estadoMovimiento = mov.anulado

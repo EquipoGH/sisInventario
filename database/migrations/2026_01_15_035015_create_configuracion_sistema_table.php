@@ -114,7 +114,7 @@ return new class extends Migration
             // CONFIGURACIONES GENERALES
             [
                 'clave' => 'nombre_sistema',
-                'valor' => 'GesInventario',
+                'valor' => 'GestInventario',
                 'tipo' => 'text',
                 'grupo' => 'general',
                 'descripcion' => 'Nombre del sistema',

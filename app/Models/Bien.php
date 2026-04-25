@@ -31,19 +31,29 @@ class Bien extends Model
         'fecha_registro',
         'foto_bien',
 
-        // ⭐ NUEVO: eliminación lógica
+        // Estado administrativo del bien (Activo, Baja, Prestado, Mantenimiento)
+        'id_estado_bien',
+
+        // Condición física actual del bien (Bueno, Regular, Malo, Chatarra)
+        'id_estado_conservacion',
+
+        // ⭐ Eliminación lógica (se mantiene por compatibilidad)
         'activo',
         'eliminado_en',
 
-        // ⭐⭐⭐ NUEVO: usuario que registró el bien ⭐⭐⭐
+        // ⭐⭐⭐ Usuario que registró el bien ⭐⭐⭐
         'registrado_por',
     ];
 
     protected $casts = [
         'fecha_registro' => 'date',
 
-        // ⭐ NUEVO
-        'activo' => 'boolean',
+        // Estado administrativo y conservación
+        'id_estado_bien'         => 'integer',
+        'id_estado_conservacion' => 'integer',
+
+        // Campo heredado
+        'activo'      => 'boolean',
         'eliminado_en' => 'datetime',
     ];
 
@@ -91,6 +101,35 @@ class Bien extends Model
     public function tipoBien()
     {
         return $this->belongsTo(TipoBien::class, 'id_tipobien', 'id_tipo_bien');
+    }
+
+    /**
+     * Estado ADMINISTRATIVO del bien
+     * (Activo, Baja, Prestado, Mantenimiento)
+     * FK: bien.id_estado_bien → estado_bien.id_estado
+     */
+    public function estadoBien()
+    {
+        return $this->belongsTo(EstadoBien::class, 'id_estado_bien', 'id_estado');
+    }
+
+    /**
+     * Condición FÍSICA actual del bien
+     * (Bueno, Regular, Malo, Chatarra)
+     * FK: bien.id_estado_conservacion → estado_conservacion.id_estado_conservacion
+     */
+    public function estadoConservacion()
+    {
+        return $this->belongsTo(EstadoConservacion::class, 'id_estado_conservacion', 'id_estado_conservacion');
+    }
+
+    /**
+     * Registro formal de baja del bien (0..1)
+     * FK: baja.id_bien → bien.id_bien (UNIQUE)
+     */
+    public function baja(): HasOne
+    {
+        return $this->hasOne(Baja::class, 'id_bien', 'id_bien');
     }
 
     public function documentoSustento()
@@ -170,20 +209,45 @@ class Bien extends Model
 
     // ==================== ELIMINACIÓN LÓGICA ====================
 
+    /**
+     * Dar de baja lógicamente (compatibilidad heredada).
+     * Usa darDeBaja() para el flujo formal con la tabla baja.
+     */
     public function eliminarLogico(): bool
     {
         return $this->forceFill([
-            'activo' => false,
-            'eliminado_en' => now(),
+            'activo'         => false,
+            'eliminado_en'   => now(),
+            'id_estado_bien' => EstadoBien::obtenerIdPorNombreNullable(EstadoBien::BAJA),
         ])->save();
     }
 
     public function restaurar(): bool
     {
         return $this->forceFill([
-            'activo' => true,
-            'eliminado_en' => null,
+            'activo'         => true,
+            'eliminado_en'   => null,
+            'id_estado_bien' => EstadoBien::obtenerIdPorNombreNullable(EstadoBien::ACTIVO),
         ])->save();
+    }
+
+    /**
+     * Verificar si el bien está dado de baja (por estado administrativo o flag heredado)
+     */
+    public function estaDadoDeBaja(): bool
+    {
+        if ($this->estadoBien) {
+            return strtolower(trim($this->estadoBien->nombre_estado)) === 'baja';
+        }
+        return !$this->activo;
+    }
+
+    /**
+     * Verificar si el bien está activo
+     */
+    public function estaActivo(): bool
+    {
+        return !$this->estaDadoDeBaja();
     }
 
     // ==================== SCOPES ====================
@@ -210,17 +274,19 @@ class Bien extends Model
 
     public function scopePorNumeroDocumento($query, $numeroDocumento)
     {
-        return $query->where('NumDoc', 'ILIKE', "%{$numeroDocumento}%");
+        $termLower = strtolower($numeroDocumento);
+        return $query->whereRaw('LOWER(NumDoc) LIKE ?', ["%{$termLower}%"]);
     }
 
     public function scopeBuscar($query, $termino)
     {
-        return $query->where(function ($q) use ($termino) {
-            $q->where('codigo_patrimonial', 'ILIKE', "%{$termino}%")
-                ->orWhere('denominacion_bien', 'ILIKE', "%{$termino}%")
-                ->orWhere('marca_bien', 'ILIKE', "%{$termino}%")
-                ->orWhere('modelo_bien', 'ILIKE', "%{$termino}%")
-                ->orWhere('NumDoc', 'ILIKE', "%{$termino}%");
+        $termLower = strtolower($termino);
+        return $query->where(function ($q) use ($termLower) {
+            $q->whereRaw('LOWER(codigo_patrimonial) LIKE ?', ["%{$termLower}%"])
+                ->orWhereRaw('LOWER(denominacion_bien) LIKE ?', ["%{$termLower}%"])
+                ->orWhereRaw('LOWER(marca_bien) LIKE ?', ["%{$termLower}%"])
+                ->orWhereRaw('LOWER(modelo_bien) LIKE ?', ["%{$termLower}%"])
+                ->orWhereRaw('LOWER(NumDoc) LIKE ?', ["%{$termLower}%"]);
         });
     }
 

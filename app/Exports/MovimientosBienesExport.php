@@ -49,8 +49,8 @@ class MovimientosBienesExport implements FromCollection, WithHeadings, WithStyle
                 catch (\Throwable $e) { $fecha = (string) $r->fecha_mvto; }
             }
 
-            $ubicacion = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
-            if ($ubicacion === '-' || $ubicacion === '') $ubicacion = null;
+            $ubicacion = trim($r->ambiente ?? '');
+            if ($ubicacion === '') $ubicacion = null;
 
             return [
                 $i + 1,

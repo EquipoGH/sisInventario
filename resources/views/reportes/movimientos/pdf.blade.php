@@ -160,8 +160,8 @@
     <tbody>
       @foreach($listaMovs as $i => $r)
         @php
-          $ubicTxt = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
-          if ($ubicTxt === '' || $ubicTxt === '-') $ubicTxt = '-';
+          $ubicTxt = trim($r->ambiente ?? '');
+          if ($ubicTxt === '') $ubicTxt = '-';
 
           $fechaTxt = '-';
           if (!empty($r->fecha_mvto)) {

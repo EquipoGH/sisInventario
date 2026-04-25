@@ -28,13 +28,14 @@ class UbicacionController extends Controller
 
         // 🔍 BÚSQUEDA
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('id_ubicacion', 'LIKE', "%{$search}%")
-                  ->orWhere('nombre_sede', 'ILIKE', "%{$search}%")
-                  ->orWhere('ambiente', 'ILIKE', "%{$search}%")
-                  ->orWhere('piso_ubicacion', 'ILIKE', "%{$search}%")
-                  ->orWhereHas('area', function($q) use ($search) {
-                      $q->where('nombre_area', 'ILIKE', "%{$search}%");
+                  ->orWhereRaw('LOWER(nombre_sede) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(ambiente) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(piso_ubicacion) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereHas('area', function($q) use ($searchLower) {
+                      $q->whereRaw('LOWER(nombre_area) LIKE ?', ["%{$searchLower}%"]);
                   });
             });
         }

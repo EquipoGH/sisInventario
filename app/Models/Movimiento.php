@@ -83,11 +83,13 @@ class Movimiento extends Model
     }
 
     /**
-     * ✅ CORREGIDO: Foreign key correcta
+     * Estado de conservación física del bien en el momento del movimiento
+     * (Bueno, Regular, Malo, Chatarra)
+     * FK: movimiento.id_estado_conservacion_bien → estado_conservacion.id_estado_conservacion
      */
     public function estadoConservacion()
     {
-        return $this->belongsTo(EstadoBien::class, 'id_estado_conservacion_bien', 'id_estado');
+        return $this->belongsTo(EstadoConservacion::class, 'id_estado_conservacion_bien', 'id_estado_conservacion');
     }
 
     public function usuario()
@@ -150,13 +152,14 @@ class Movimiento extends Model
 
     public function scopeBuscar($query, $termino)
     {
-        return $query->where(function($q) use ($termino) {
+        $termLower = strtolower($termino);
+        return $query->where(function($q) use ($termino, $termLower) {
             $q->where('id_movimiento', 'LIKE', "%{$termino}%")
-              ->orWhere('detalle_tecnico', 'ILIKE', "%{$termino}%")
-              ->orWhere('NumDocto', 'ILIKE', "%{$termino}%")
-              ->orWhereHas('bien', function($q) use ($termino) {
-                  $q->where('codigo_patrimonial', 'ILIKE', "%{$termino}%")
-                    ->orWhere('denominacion_bien', 'ILIKE', "%{$termino}%");
+              ->orWhereRaw('LOWER(detalle_tecnico) LIKE ?', ["%{$termLower}%"])
+              ->orWhereRaw('LOWER(NumDocto) LIKE ?', ["%{$termLower}%"])
+              ->orWhereHas('bien', function($q) use ($termLower) {
+                  $q->whereRaw('LOWER(codigo_patrimonial) LIKE ?', ["%{$termLower}%"])
+                    ->orWhereRaw('LOWER(denominacion_bien) LIKE ?', ["%{$termLower}%"]);
               });
         });
     }
@@ -185,7 +188,7 @@ class Movimiento extends Model
     public function scopeBajas($query)
     {
         return $query->whereHas('tipoMovimiento', function($q) {
-            $q->where('tipo_mvto', 'ILIKE', '%baja%');
+            $q->whereRaw("LOWER(tipo_mvto) LIKE '%baja%'");
         });
     }
 

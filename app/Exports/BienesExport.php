@@ -42,7 +42,7 @@ class BienesExport implements FromCollection, WithHeadings, WithStyles, WithColu
             $usuarioTxt = $lm?->usuario?->name;
 
             $ubicTxt = $ubic
-                ? trim(($ubic->nombre_sede ?? '') . ' - ' . ($ubic->ambiente ?? ''))
+                ? trim($ubic->ambiente ?? '')
                 : null;
 
             return [

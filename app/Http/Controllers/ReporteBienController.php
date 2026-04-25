@@ -236,11 +236,9 @@ class ReporteBienController extends Controller
         $estadoAsignacion = $request->input('estado_asignacion', 'asignados');
         
         if ($estadoAsignacion === 'asignados') {
-            // Buscamos que el último movimiento sea de algún tipo que contenga "asignacion" en su nombre
-            $q->whereHas('latestMovimiento.tipoMovimiento', fn($t) => $t->where('tipo_mvto', 'ILIKE', '%asignaci%'));
+            $q->whereHas('latestMovimiento.tipoMovimiento', fn($t) => $t->whereRaw("LOWER(tipo_mvto) LIKE '%asignaci%'"));
         } elseif ($estadoAsignacion === 'sin_asignar') {
-            // Buscamos que el último movimiento NO sea asignación, o que simplemente no tenga movimientos
-            $q->whereDoesntHave('latestMovimiento.tipoMovimiento', fn($t) => $t->where('tipo_mvto', 'ILIKE', '%asignaci%'));
+            $q->whereDoesntHave('latestMovimiento.tipoMovimiento', fn($t) => $t->whereRaw("LOWER(tipo_mvto) LIKE '%asignaci%'"));
         }
 
         // Búsqueda global (tu scopeBuscar en Bien)

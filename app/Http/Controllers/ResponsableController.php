@@ -24,11 +24,12 @@ class ResponsableController extends Controller
 
         // 🔍 BÚSQUEDA
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('dni_responsable', 'LIKE', "%{$search}%")
-                  ->orWhere('nombre_responsable', 'ILIKE', "%{$search}%")
-                  ->orWhere('apellidos_responsable', 'ILIKE', "%{$search}%")
-                  ->orWhere('cargo_responsable', 'ILIKE', "%{$search}%");
+                  ->orWhereRaw('LOWER(nombre_responsable) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(apellidos_responsable) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(cargo_responsable) LIKE ?', ["%{$searchLower}%"]);
             });
         }
 

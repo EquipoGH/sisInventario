@@ -32,9 +32,10 @@ class TipoBienController extends Controller
 
         // Aplicar búsqueda
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('id_tipo_bien', 'LIKE', "%{$search}%")
-                  ->orWhere('nombre_tipo', 'ILIKE', "%{$search}%");
+                  ->orWhereRaw('LOWER(nombre_tipo) LIKE ?', ["%{$searchLower}%"]);
             });
         }
 

@@ -32,18 +32,16 @@ class UserController extends Controller
 
         $query = User::query();
 
-        // Search
+        // Search (MySQL-compatible, case-insensitive)
         if ($search !== '') {
-            $driver = $query->getConnection()->getDriverName();
-            $op = $driver === 'pgsql' ? 'ilike' : 'like';
-
-            $query->where(function ($qq) use ($search, $op) {
-                $qq->where('name', $op, "%{$search}%")
-                    ->orWhere('email', $op, "%{$search}%")
-                    ->orWhere('dni_usuario', $op, "%{$search}%")
-                    ->orWhere('rol_usuario', $op, "%{$search}%")
-                    ->orWhere('estado_usuario', $op, "%{$search}%")
-                    ->orWhereRaw('CAST(id AS TEXT) ' . ($op === 'ilike' ? 'ILIKE' : 'LIKE') . ' ?', ["%{$search}%"]);
+            $searchLower = strtolower($search);
+            $query->where(function ($qq) use ($search, $searchLower) {
+                $qq->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"])
+                    ->orWhereRaw('LOWER(email) LIKE ?', ["%{$searchLower}%"])
+                    ->orWhereRaw('LOWER(dni_usuario) LIKE ?', ["%{$searchLower}%"])
+                    ->orWhereRaw('LOWER(rol_usuario) LIKE ?', ["%{$searchLower}%"])
+                    ->orWhereRaw('LOWER(estado_usuario) LIKE ?', ["%{$searchLower}%"])
+                    ->orWhereRaw('CAST(id AS CHAR) LIKE ?', ["%{$search}%"]);
             });
         }
 

@@ -33,7 +33,7 @@ class TipoMvto extends Model
     // ⭐ MÉTODO HELPER PARA OBTENER ID POR NOMBRE
     public static function obtenerIdPorNombre($nombre)
     {
-        $tipo = self::where('tipo_mvto', 'ILIKE', $nombre)->first();
+        $tipo = self::whereRaw('LOWER(tipo_mvto) = ?', [strtolower($nombre)])->first();
 
         if (!$tipo) {
             throw new \Exception("Tipo de movimiento '{$nombre}' no encontrado");

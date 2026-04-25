@@ -72,12 +72,13 @@ class ReporteKardexController extends Controller
         }
 
         if ($term !== '') {
-            $q->where(function ($w) use ($term) {
-                $w->where('b.codigo_patrimonial', 'ilike', "%{$term}%")
-                  ->orWhere('b.denominacion_bien', 'ilike', "%{$term}%")
-                  ->orWhere('m.detalle_tecnico', 'ilike', "%{$term}%")
-                  ->orWhere('d.numero_documento', 'ilike', "%{$term}%")
-                  ->orWhereRaw('CAST(m."NumDocto" AS TEXT) ILIKE ?', ["%{$term}%"]);
+            $termLower = strtolower($term);
+            $q->where(function ($w) use ($term, $termLower) {
+                $w->whereRaw('LOWER(b.codigo_patrimonial) LIKE ?', ["%{$termLower}%"])
+                  ->orWhereRaw('LOWER(b.denominacion_bien) LIKE ?', ["%{$termLower}%"])
+                  ->orWhereRaw('LOWER(m.detalle_tecnico) LIKE ?', ["%{$termLower}%"])
+                  ->orWhereRaw('LOWER(d.numero_documento) LIKE ?', ["%{$termLower}%"])
+                  ->orWhereRaw('CAST(m.NumDocto AS CHAR) LIKE ?', ["%{$term}%"]);
             });
         }
 

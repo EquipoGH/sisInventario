@@ -52,8 +52,8 @@
   @forelse($rows as $i => $r)
     @php
       // ✅ Aliases correctos según el SELECT en baseQuery()
-      $ubicTxtE = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
-      if ($ubicTxtE === '' || $ubicTxtE === '-') $ubicTxtE = '-';
+      $ubicTxtE = trim($r->ambiente ?? '');
+      if ($ubicTxtE === '') $ubicTxtE = '-';
 
       $fechaTxtE = '-';
       if (!empty($r->fecha_mvto)) {

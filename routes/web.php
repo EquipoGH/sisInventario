@@ -34,6 +34,9 @@ use App\Http\Controllers\ReporteBienController;
 use App\Http\Controllers\ReporteMovimientosController;
 
 use App\Http\Controllers\QRBienController;
+use App\Http\Controllers\CatalogoController;
+use App\Http\Controllers\BajaController;
+use App\Http\Controllers\EstadoConservacionController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -45,6 +48,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ---------- DASHBOARD (sin control por permiso si quieres que todos vean) ----------
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
+
+    // ---------- CATÁLOGO DEL SISTEMA (accesible para todos los roles) ----------
+    Route::get('/catalogo', [CatalogoController::class, 'index'])->name('catalogo.index');
 
     // ---------- PROFILE (Breeze) ----------
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -94,6 +100,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('area', AreaController::class);
             Route::resource('tipo-bien', TipoBienController::class);
             Route::resource('estado-bien', EstadoBienController::class);
+            // Nuevo catálogo: Estado de Conservación (condición física)
+            Route::resource('estado-conservacion', EstadoConservacionController::class);
             Route::resource('tipo-mvto', TipoMvtoController::class);
             Route::resource('responsable', ResponsableController::class);
 
@@ -146,6 +154,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('movimiento/bienes-eliminados', [BienController::class, 'eliminados'])->name('movimiento.bienes-eliminados');
         Route::post('movimiento/restaurar-bien/{bien}', [BienController::class, 'restaurar'])->name('movimiento.restaurar-bien');
         Route::resource('movimiento', MovimientoController::class);
+
+        // ==================== BAJAS (módulo formal) ====================
+        Route::prefix('baja')->name('baja.')->group(function () {
+            Route::post('{baja}/revertir', [BajaController::class, 'revertir'])->name('revertir');
+            Route::get('exportar/pdf',   [BajaController::class, 'exportarPDF'])  ->name('exportar.pdf');
+            Route::get('exportar/excel', [BajaController::class, 'exportarExcel'])->name('exportar.excel');
+            Route::get('buscar-bienes',  [BajaController::class, 'buscarBienes']) ->name('buscar-bienes');
+        });
+        Route::resource('baja', BajaController::class)->except(['edit', 'update']);
+
+        // ==================== CATÁLOGO ESTADO CONSERVACIÓN (legacy) ====================
+        Route::resource('estado-conservacion', EstadoConservacionController::class)->names('estado-conservacion');
 
         // ==================== SEGURIDAD ====================
         Route::get('/usuarios/responsables', [UserController::class, 'obtenerResponsables'])->name('user.responsables');

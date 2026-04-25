@@ -23,6 +23,11 @@ class BienRequest extends FormRequest
         if ($this->NumDoc === '') {
             $this->merge(['NumDoc' => null]);
         }
+
+        // ⭐ Convertir id_estado_conservacion vacío a null
+        if ($this->id_estado_conservacion === '' || $this->id_estado_conservacion === '0') {
+            $this->merge(['id_estado_conservacion' => null]);
+        }
     }
 
     public function rules(): array
@@ -52,11 +57,18 @@ class BienRequest extends FormRequest
             'NumDoc' => 'nullable|string|max:50',
 
             // ==================== CAMPOS OPCIONALES ====================
-            'modelo_bien' => 'nullable|string|max:20',
-            'marca_bien' => 'nullable|string|max:20',
-            'color_bien' => 'nullable|string|max:20',
-            'dimensiones_bien' => 'nullable|string|max:50',
-            'nserie_bien' => 'nullable|string|max:20',
+            'modelo_bien'            => 'nullable|string|max:20',
+            'marca_bien'             => 'nullable|string|max:20',
+            'color_bien'             => 'nullable|string|max:20',
+            'dimensiones_bien'       => 'nullable|string|max:50',
+            'nserie_bien'            => 'nullable|string|max:20',
+
+            // ⭐ Condición física del bien
+            'id_estado_conservacion' => [
+                'nullable',
+                'integer',
+                'exists:estado_conservacion,id_estado_conservacion',
+            ],
 
             // ⭐ Foto
             'foto' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',

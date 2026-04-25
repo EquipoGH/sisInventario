@@ -308,6 +308,28 @@
                                        class="form-control" required value="{{ date('Y-m-d') }}">
                                 <span class="text-danger error-fecha_registro"></span>
                             </div>
+
+                            <div class="form-group">
+                                <label for="id_estado_conservacion">
+                                    Condición Física
+                                    <small class="text-muted">(Opcional)</small>
+                                    <i class="fas fa-info-circle text-info" title="Estado físico actual del bien: Bueno, Regular, Malo, etc."></i>
+                                </label>
+                                <select name="id_estado_conservacion" id="id_estado_conservacion" class="form-control">
+                                    <option value="">-- Sin especificar --</option>
+                                    @foreach($estadosConservacion as $ec)
+                                        <option value="{{ $ec->id_estado_conservacion }}">
+                                            {{ $ec->nombre_conservacion }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-tag"></i>
+                                    Estado <strong>físico/material</strong> del bien al momento del registro
+                                </small>
+                                <span class="text-danger error-id_estado_conservacion"></span>
+                            </div>
+
                         </div>
 
                         <!-- COLUMNA DERECHA: Vista previa de imagen -->
@@ -479,6 +501,28 @@
                                 </small>
                                 <span class="text-danger error-edit-fecha_registro"></span>
                             </div>
+
+                            <div class="form-group">
+                                <label for="edit_id_estado_conservacion">
+                                    Condición Física
+                                    <small class="text-muted">(Opcional)</small>
+                                    <i class="fas fa-info-circle text-info" title="Estado físico actual del bien"></i>
+                                </label>
+                                <select name="id_estado_conservacion" id="edit_id_estado_conservacion" class="form-control">
+                                    <option value="">-- Sin especificar --</option>
+                                    @foreach($estadosConservacion as $ec)
+                                        <option value="{{ $ec->id_estado_conservacion }}">
+                                            {{ $ec->nombre_conservacion }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-tag"></i>
+                                    Estado <strong>físico/material</strong> actual del bien
+                                </small>
+                                <span class="text-danger error-edit-id_estado_conservacion"></span>
+                            </div>
+
                         </div>
 
                         <!-- COLUMNA DERECHA -->
@@ -1510,6 +1554,9 @@ function eliminarMultiples(ids) {
 
         // ✅ FECHA ACTUAL PARA MODIFICACIÓN (CORREGIDO)
         $('#edit_fecha_registro').val('{{ now()->format("Y-m-d") }}');
+
+        // ⭐ Pre-seleccionar condición física (estado de conservación)
+        $('#edit_id_estado_conservacion').val(data.id_estado_conservacion || '');
 
         // Cargar foto si existe
         if (data.foto_bien) {

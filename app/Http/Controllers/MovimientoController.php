@@ -4,18 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Movimiento;
 use App\Models\Bien;
+use App\Models\Baja;
 use App\Models\TipoMvto;
 use App\Models\User;
 use App\Models\Ubicacion;
 use App\Models\EstadoBien;
+use App\Models\EstadoConservacion;
 use App\Models\DocumentoSustento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use PDF; // Agregar esta línea al inicio del archivo (después de otros use)
-use Illuminate\Validation\ValidationException;  // ⭐ AGREGAR ESTO
-use App\Helpers\PermisosHelper; // ⭐⭐⭐ AGREGAR ESTO ⭐⭐⭐
+use PDF;
+use Illuminate\Validation\ValidationException;
+use App\Helpers\PermisosHelper;
 
 
 
@@ -59,14 +61,13 @@ class MovimientoController extends Controller
         $vista = $request->get('vista', 'activos');
         
         if ($vista === 'activos') {
-            $tiposActivos = TipoMvto::where(function($q) {
-                $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                  ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
-                  ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
-            })->pluck('id_tipo_mvto');
+            // ✅ INCLUIR: ASIGNACIÓN + ALTA + REGISTRO + SIN ASIGNAR (todos los tipos de bien activo)
+            // EXCLUIR: solo BAJA
+            $tiposBaja = TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%baja%'")
+                ->pluck('id_tipo_mvto');
 
-            if ($tiposActivos->isNotEmpty()) {
-                $queryEstadisticas->whereIn('m1.tipo_mvto', $tiposActivos);
+            if ($tiposBaja->isNotEmpty()) {
+                $queryEstadisticas->whereNotIn('m1.tipo_mvto', $tiposBaja);
             }
         }
 
@@ -161,11 +162,14 @@ class MovimientoController extends Controller
                     ]);
             }
 
-        // ⭐⭐⭐ RESTRICCIÓN USUARIO: MOSTRAR SOLO EL ÚLTIMO MOVIMIENTO POR BIEN ⭐⭐⭐
-        // Esto evita mostrar el historial completo en la grilla y confundir al operador
-        $query->whereIn('movimiento.id_movimiento', function($q) {
+        // ⭐⭐⭐ RESTRICCIÓN USUARIO: MOSTRAR SOLO EL ÚLTIMO MOVIMIENTO (VIGENTE O ANULADO) POR BIEN ⭐⭐⭐
+        // Esto evita mostrar el historial completo en la grilla y confundir al operador.
+        // ✅ CORRECCIÓN CRÍTICA: La subconsulta debe respetar si estamos viendo activos o anulados
+        // para que, si se anula el movimiento #10, el sistema automáticamente tome el #9 como el "actual".
+        $query->whereIn('movimiento.id_movimiento', function($q) use ($mostrarAnulados) {
             $q->select(\Illuminate\Support\Facades\DB::raw('MAX(id_movimiento)'))
               ->from('movimiento')
+              ->where('anulado', $mostrarAnulados ? true : false)
               ->groupBy('idbien');
         });
 
@@ -207,23 +211,24 @@ class MovimientoController extends Controller
 
         // 🔍 BÚSQUEDA AVANZADA
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('id_movimiento', 'LIKE', "%{$search}%")
-                  ->orWhere('detalle_tecnico', 'ILIKE', "%{$search}%")
-                  ->orWhere('NumDocto', 'ILIKE', "%{$search}%")
-                  ->orWhereHas('bien', function($q) use ($search) {
-                      $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
-                        ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%");
+                  ->orWhereRaw('LOWER(detalle_tecnico) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(NumDocto) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereHas('bien', function($q) use ($searchLower) {
+                      $q->whereRaw('LOWER(codigo_patrimonial) LIKE ?', ["%{$searchLower}%"])
+                        ->orWhereRaw('LOWER(denominacion_bien) LIKE ?', ["%{$searchLower}%"]);
                   })
-                  ->orWhereHas('tipoMovimiento', function($q) use ($search) {
-                      $q->where('tipo_mvto', 'ILIKE', "%{$search}%");
+                  ->orWhereHas('tipoMovimiento', function($q) use ($searchLower) {
+                      $q->whereRaw('LOWER(tipo_mvto) LIKE ?', ["%{$searchLower}%"]);
                   })
-                  ->orWhereHas('usuario', function($q) use ($search) {
-                      $q->where('name', 'ILIKE', "%{$search}%");
+                  ->orWhereHas('usuario', function($q) use ($searchLower) {
+                      $q->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"]);
                   })
-                  ->orWhereHas('documentoSustento', function($q) use ($search) {
-                      $q->where('numero_documento', 'ILIKE', "%{$search}%")
-                        ->orWhere('tipo_documento', 'ILIKE', "%{$search}%");
+                  ->orWhereHas('documentoSustento', function($q) use ($searchLower) {
+                      $q->whereRaw('LOWER(numero_documento) LIKE ?', ["%{$searchLower}%"])
+                        ->orWhereRaw('LOWER(tipo_documento) LIKE ?', ["%{$searchLower}%"]);
                   });
             });
         }
@@ -233,38 +238,18 @@ class MovimientoController extends Controller
         $vista = $request->get('vista', 'activos'); // Por defecto 'activos'
         
         if ($vista === 'activos') {
-            // ✅ OPCIÓN "MOVIMIENTOS ACTIVOS" → SIN ASIGNAR + ASIGNACIÓN
-            $tiposActivos = TipoMvto::where(function($q) {
-                $q->where('tipo_mvto', 'ILIKE', '%asignaci%')
-                  ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%')
-                  ->orWhere('tipo_mvto', 'ILIKE', '%registro%'); // Fallback
-            })->pluck('id_tipo_mvto');
-
-            if ($tiposActivos->isNotEmpty()) {
-                $query->whereIn('tipo_mvto', $tiposActivos);
-            }
-
-            // ⭐ EXCLUIR filas de REGISTRO si el bien ya tiene ASIGNACIÓN vigente
-            $tiposRegistro = TipoMvto::where(function($q) {
-                $q->where('tipo_mvto', 'ILIKE', '%registro%')
-                  ->orWhere('tipo_mvto', 'ILIKE', '%sin asignar%');
-            })->pluck('id_tipo_mvto');
-
-            $tiposAsignacion = TipoMvto::where('tipo_mvto', 'ILIKE', '%asignaci%')
+            // ✅ VISTA "ACTIVOS": Mostrar todos los bienes activos (ALTA, ASIGNACIÓN, etc.)
+            // EXCLUIR solo los bienes que están de BAJA
+            $tiposBaja = TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%baja%'")
                 ->pluck('id_tipo_mvto');
 
-            if ($tiposRegistro->isNotEmpty() && $tiposAsignacion->isNotEmpty()) {
-                $query->where(function($q) use ($tiposRegistro, $tiposAsignacion) {
-                    $q->whereNotIn('tipo_mvto', $tiposRegistro)
-                      ->orWhere(function($q2) use ($tiposRegistro, $tiposAsignacion) {
-                          $q2->whereIn('tipo_mvto', $tiposRegistro)
-                             ->whereDoesntHave('bien.movimientos', function($q3) use ($tiposAsignacion) {
-                                 $q3->whereIn('tipo_mvto', $tiposAsignacion)
-                                    ->where('anulado', false);
-                             });
-                      });
-                });
+            if ($tiposBaja->isNotEmpty()) {
+                $query->whereNotIn('tipo_mvto', $tiposBaja);
             }
+
+            // ⭐ Si el bien tiene un movimiento de ASIGNACIÓN vigente,
+            // mostrar ese (el más reciente ya está garantizado por el whereIn de MAX id_movimiento)
+            // Esta lógica ya está cubierta por la subconsulta MAX(id_movimiento) de arriba.
         }
 
         // ✅ FILTRO DE TIPO DE MOVIMIENTO BD
@@ -322,15 +307,14 @@ class MovimientoController extends Controller
         $movimientos = $query->paginate($perPage);
 
         // ⭐ DATOS PARA LOS SELECTORES
-        $tiposMovimiento = TipoMvto::orderBy('tipo_mvto')->get();
-        $bienes = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
-        $usuarios = User::orderBy('name')->get();
-        $ubicaciones = Ubicacion::with('area')->orderBy('nombre_sede')->get();
-        $estadosConservacion = EstadoBien::orderBy('nombre_estado')->get();
-        $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
-
-        // ⭐⭐⭐ AGREGAR LISTA DE ÁREAS (NUEVO) ⭐⭐⭐
-        $areas = \App\Models\Area::orderBy('nombre_area')->get();
+        $tiposMovimiento     = TipoMvto::orderBy('tipo_mvto')->get();
+        $bienes              = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
+        $usuarios            = User::orderBy('name')->get();
+        $ubicaciones         = Ubicacion::with('area')->orderBy('nombre_sede')->get();
+        // ✅ CORREGIDO: usar EstadoConservacion (condición física)
+        $estadosConservacion = EstadoConservacion::orderBy('nombre_conservacion')->get();
+        $documentos          = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
+        $areas               = \App\Models\Area::orderBy('nombre_area')->get();
 
         // ✅ RESPUESTA AJAX (CON ESTADÍSTICAS DINÁMICAS)
         if ($request->ajax()) {
@@ -381,8 +365,8 @@ class MovimientoController extends Controller
                     ] : null,
 
                     'estado_conservacion' => $movimiento->estadoConservacion ? [
-                        'id_estado' => $movimiento->estadoConservacion->id_estado,
-                        'nombre_estado' => $movimiento->estadoConservacion->nombre_estado
+                        'id_estado_conservacion' => $movimiento->estadoConservacion->id_estado_conservacion,
+                        'nombre_conservacion'    => $movimiento->estadoConservacion->nombre_conservacion
                     ] : null,
 
                     'documento_sustento' => $movimiento->documentoSustento ? [
@@ -441,7 +425,7 @@ class MovimientoController extends Controller
                 'fecha_mvto' => 'required|date',
                 'detalle_tecnico' => 'nullable|string|max:500',
                 'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
-                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_conservacion,id_estado_conservacion',
                 'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
                 'NumDocto' => 'nullable|string|max:20'
             ]);
@@ -467,7 +451,7 @@ class MovimientoController extends Controller
             if ($esAsignacion) {
                 $ultimaBaja = Movimiento::where('idbien', $validated['idbien'])
                     ->whereHas('tipoMovimiento', function($q) {
-                        $q->where('tipo_mvto', 'ILIKE', '%baja%');
+                        $q->whereRaw("LOWER(tipo_mvto) LIKE '%baja%'");
                     })
                     ->where('anulado', false)
                     ->where('revertido', false)
@@ -504,15 +488,24 @@ class MovimientoController extends Controller
                     }
                 }
 
-                // ✅ ASIGNAR ESTADO "NUEVO" SI NO TIENE
+                // ✅ ASIGNAR ESTADO CONSERVACIÓN "BUENO" SI NO TIENE
                 if (empty($validated['id_estado_conservacion_bien'])) {
-                    $estadoNuevo = EstadoBien::where('nombre_estado', 'ILIKE', '%nuevo%')
-                        ->orWhere('nombre_estado', 'ILIKE', '%bueno%')
+                    $estadoBueno = EstadoConservacion::whereRaw('UPPER(TRIM(nombre_conservacion)) IN (?)', ['BUENO'])
+                        ->orWhereRaw('UPPER(TRIM(nombre_conservacion)) LIKE ?', ['%BUENO%'])
                         ->first();
 
-                    if ($estadoNuevo) {
-                        $validated['id_estado_conservacion_bien'] = $estadoNuevo->id_estado;
-                        \Log::info("✅ REGISTRO - Estado asignado: {$estadoNuevo->nombre_estado}");
+                    if ($estadoBueno) {
+                        $validated['id_estado_conservacion_bien'] = $estadoBueno->id_estado_conservacion;
+                        \Log::info("✅ REGISTRO - Estado conservación asignado: {$estadoBueno->nombre_conservacion}");
+                    }
+                }
+
+                // ✅ ACTUALIZAR ESTADO ADMINISTRATIVO DEL BIEN → ACTIVO
+                $bien = Bien::find($validated['idbien']);
+                if ($bien) {
+                    $idActivo = EstadoBien::obtenerIdPorNombreNullable(EstadoBien::ACTIVO);
+                    if ($idActivo) {
+                        $bien->forceFill(['id_estado_bien' => $idActivo, 'activo' => true])->save();
                     }
                 }
             }
@@ -522,7 +515,7 @@ class MovimientoController extends Controller
                 // ✅ 1. OBTENER ÚLTIMA ASIGNACIÓN DEL BIEN
                 $ultimaAsignacion = Movimiento::where('idbien', $validated['idbien'])
                     ->whereHas('tipoMovimiento', function($q) {
-                        $q->where('tipo_mvto', 'ILIKE', '%asignaci%');
+                        $q->whereRaw("LOWER(tipo_mvto) LIKE '%asignaci%'");
                     })
                     ->orderBy('fecha_mvto', 'desc')
                     ->orderBy('id_movimiento', 'desc')
@@ -537,17 +530,39 @@ class MovimientoController extends Controller
                     \Log::warning("⚠️ BAJA - Bien sin asignación previa. Ubicación = NULL");
                 }
 
-                // ✅ 3. FORZAR ESTADO "MALO"
-                $estadoMalo = EstadoBien::where('nombre_estado', 'ILIKE', '%malo%')
-                    ->orWhere('nombre_estado', 'ILIKE', '%inoperativo%')
-                    ->orWhere('nombre_estado', 'ILIKE', '%dañado%')
+                // ✅ 3. ASIGNAR ESTADO CONSERVACIÓN "MALO" (condición física en la baja)
+                $estadoMalo = EstadoConservacion::whereRaw('UPPER(TRIM(nombre_conservacion)) LIKE ?', ['%MALO%'])
+                    ->orWhereRaw('UPPER(TRIM(nombre_conservacion)) LIKE ?', ['%DETERIORA%'])
                     ->first();
 
                 if ($estadoMalo) {
-                    $validated['id_estado_conservacion_bien'] = $estadoMalo->id_estado;
-                    \Log::info("✅ BAJA - Estado forzado a: {$estadoMalo->nombre_estado}");
+                    $validated['id_estado_conservacion_bien'] = $estadoMalo->id_estado_conservacion;
+                    \Log::info("✅ BAJA - Estado conservación: {$estadoMalo->nombre_conservacion}");
                 } else {
-                    \Log::error("❌ BAJA - No se encontró estado 'MALO' en la BD");
+                    \Log::warning("⚠️ BAJA - No se encontró estado conservación 'MALO' en la BD");
+                }
+
+                // ✅ 4. ACTUALIZAR ESTADO ADMINISTRATIVO DEL BIEN → BAJA
+                $bien = Bien::find($validated['idbien']);
+                if ($bien) {
+                    $idEstadoBaja = EstadoBien::obtenerIdPorNombreNullable(EstadoBien::BAJA);
+                    $bien->forceFill([
+                        'activo'         => false,
+                        'eliminado_en'   => now(),
+                        'id_estado_bien' => $idEstadoBaja,
+                    ])->save();
+
+                    // ✅ 5. CREAR REGISTRO EN TABLA BAJA (si no existe ya)
+                    if (!$bien->baja()->exists()) {
+                        Baja::create([
+                            'id_bien'     => $bien->id_bien,
+                            'fecha_baja'  => now()->toDateString(),
+                            'motivo_baja' => $validated['detalle_tecnico'] ?? 'Baja registrada desde módulo de movimientos',
+                            'resolucion'  => null,
+                            'observacion' => 'Generado automáticamente al registrar movimiento de BAJA',
+                        ]);
+                        \Log::info("✅ BAJA - Registro formal creado en tabla baja para bien #{$bien->id_bien}");
+                    }
                 }
             }
 
@@ -606,18 +621,18 @@ class MovimientoController extends Controller
 
             // ✅ PRIORIDAD 2: Búsqueda inteligente por nombre (FALLBACK)
             $ubicacion = Ubicacion::where(function($q) {
-                $q->where('nombre_sede', 'ILIKE', '%abastecimiento%')
-                ->orWhere('nombre_sede', 'ILIKE', '%almacen%')
-                ->orWhere('nombre_sede', 'ILIKE', '%almacén%')
-                ->orWhere('nombre_sede', 'ILIKE', '%deposito%')
-                ->orWhere('nombre_sede', 'ILIKE', '%depósito%');
+                $q->whereRaw("LOWER(nombre_sede) LIKE '%abastecimiento%'")
+                ->orWhereRaw("LOWER(nombre_sede) LIKE '%almacen%'")
+                ->orWhereRaw("LOWER(nombre_sede) LIKE '%almacen%'")
+                ->orWhereRaw("LOWER(nombre_sede) LIKE '%deposito%'")
+                ->orWhereRaw("LOWER(nombre_sede) LIKE '%deposito%'");
             })
             ->orWhereHas('area', function($q) {
-                $q->where('nombre_area', 'ILIKE', '%abastecimiento%')
-                ->orWhere('nombre_area', 'ILIKE', '%almacen%')
-                ->orWhere('nombre_area', 'ILIKE', '%logistica%')
-                ->orWhere('nombre_area', 'ILIKE', '%patrimonio%')
-                ->orWhere('nombre_area', 'ILIKE', '%bodega%');
+                $q->whereRaw("LOWER(nombre_area) LIKE '%abastecimiento%'")
+                ->orWhereRaw("LOWER(nombre_area) LIKE '%almacen%'")
+                ->orWhereRaw("LOWER(nombre_area) LIKE '%logistica%'")
+                ->orWhereRaw("LOWER(nombre_area) LIKE '%patrimonio%'")
+                ->orWhereRaw("LOWER(nombre_area) LIKE '%bodega%'");
             })
             ->first();
 
@@ -660,11 +675,12 @@ class MovimientoController extends Controller
             'documentoSustento'
         ]);
 
-        $tiposMovimiento = TipoMvto::orderBy('tipo_mvto')->get();
-        $bienes = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
-        $ubicaciones = Ubicacion::with('area')->orderBy('nombre_sede')->get();
-        $estadosConservacion = EstadoBien::orderBy('nombre_estado')->get();
-        $documentos = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
+        $tiposMovimiento     = TipoMvto::orderBy('tipo_mvto')->get();
+        $bienes              = Bien::with('tipoBien')->orderBy('codigo_patrimonial')->get();
+        $ubicaciones         = Ubicacion::with('area')->orderBy('nombre_sede')->get();
+        // ✅ CORREGIDO: usar EstadoConservacion
+        $estadosConservacion = EstadoConservacion::orderBy('nombre_conservacion')->get();
+        $documentos          = DocumentoSustento::orderBy('fecha_documento', 'desc')->get();
 
         return response()->json([
             'success' => true,
@@ -688,7 +704,7 @@ class MovimientoController extends Controller
                 'fecha_mvto' => 'required|date',
                 'detalle_tecnico' => 'nullable|string|max:500',
                 'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
-                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_conservacion,id_estado_conservacion',
                 'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
                 'NumDocto' => 'nullable|string|max:20'
             ]);
@@ -887,15 +903,45 @@ class MovimientoController extends Controller
             $yaAnulados = [];
 
             foreach ($validated['movimientos_ids'] as $movimientoId) {
-                $movimiento = Movimiento::find($movimientoId);
+                $movimiento = Movimiento::with('tipoMovimiento')->find($movimientoId);
 
                 if ($movimiento && !$movimiento->anulado) {
+                    
+                    // ⭐⭐⭐ REGLA DE NEGOCIO: No se puede anular ALTA ni BAJA ⭐⭐⭐
+                    $tipoNombre = strtoupper($movimiento->tipoMovimiento->tipo_mvto ?? '');
+                    if (str_contains($tipoNombre, 'REGISTRO') || str_contains($tipoNombre, 'ALTA')) {
+                        throw new \Exception("El movimiento #{$movimiento->id_movimiento} es el ALTA inicial del bien y no puede ser anulado.");
+                    }
+                    if (str_contains($tipoNombre, 'BAJA')) {
+                        throw new \Exception("El movimiento #{$movimiento->id_movimiento} es una BAJA patrimonial y no puede ser anulado directamente.");
+                    }
+
                     $movimiento->update([
                         'anulado' => true,
                         'anulado_por' => Auth::id(),
                         'fecha_anulacion' => now(),
                         'motivo_anulacion' => $validated['motivo_anulacion']
                     ]);
+                    
+                    // ✅ SINCRONIZAR BIEN CON MOVIMIENTO ANTERIOR
+                    // Al anular este movimiento, buscamos cuál era el movimiento válido anterior
+                    $movimientoAnterior = Movimiento::where('idbien', $movimiento->idbien)
+                        ->where('anulado', false)
+                        ->orderBy('fecha_mvto', 'desc')
+                        ->orderBy('id_movimiento', 'desc')
+                        ->first();
+                        
+                    if ($movimientoAnterior) {
+                        $bien = Bien::find($movimiento->idbien);
+                        if ($bien) {
+                            // Si el movimiento anterior tenía un estado de conservación, lo heredamos
+                            if ($movimientoAnterior->id_estado_conservacion_bien) {
+                                $bien->id_estado_conservacion = $movimientoAnterior->id_estado_conservacion_bien;
+                                $bien->saveQuietly();
+                            }
+                        }
+                    }
+
                     $cantidadAnulados++;
                 } elseif ($movimiento && $movimiento->anulado) {
                     $yaAnulados[] = $movimiento->id_movimiento;
@@ -1121,13 +1167,13 @@ class MovimientoController extends Controller
                 'fecha_mvto' => 'required|date',
                 'detalle_tecnico' => 'nullable|string|max:500',
                 'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
-                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_conservacion,id_estado_conservacion',
                 'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
                 'NumDocto' => 'nullable|string|max:20'
             ]);
 
             // ⭐ FORZAR TIPO DE MOVIMIENTO A "ASIGNACIÓN"
-            $tipoAsignacion = TipoMvto::where('tipo_mvto', 'ILIKE', '%asignaci%')->first();
+            $tipoAsignacion = TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%asignaci%'")->first();
 
             if (!$tipoAsignacion) {
                 return response()->json([
@@ -1154,7 +1200,7 @@ class MovimientoController extends Controller
                 // ⭐⭐⭐ VALIDAR QUE EL BIEN NO ESTÉ DE BAJA ⭐⭐⭐
                 $ultimaBaja = Movimiento::where('idbien', $bienId)
                     ->whereHas('tipoMovimiento', function($q) {
-                        $q->where('tipo_mvto', 'ILIKE', '%baja%');
+                        $q->whereRaw("LOWER(tipo_mvto) LIKE '%baja%'");
                     })
                     ->where('anulado', false)
                     ->where('revertido', false)
@@ -1279,7 +1325,7 @@ class MovimientoController extends Controller
             ]);
 
             // ⭐ FORZAR TIPO DE MOVIMIENTO A "BAJA"
-            $tipoBaja = TipoMvto::where('tipo_mvto', 'ILIKE', '%baja%')->first();
+            $tipoBaja = TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%baja%'")->first();
 
             if (!$tipoBaja) {
                 return response()->json([
@@ -1289,9 +1335,9 @@ class MovimientoController extends Controller
             }
 
             // ⭐ OBTENER ESTADO "MALO"
-            $estadoMalo = EstadoBien::where('nombre_estado', 'ILIKE', '%malo%')
-                ->orWhere('nombre_estado', 'ILIKE', '%inoperativo%')
-                ->orWhere('nombre_estado', 'ILIKE', '%dañado%')
+            $estadoMalo = EstadoConservacion::whereRaw("LOWER(nombre_conservacion) LIKE '%malo%'")
+                ->orWhereRaw("LOWER(nombre_conservacion) LIKE '%inoperativo%'")
+                ->orWhereRaw("LOWER(nombre_conservacion) LIKE '%dañado%'")
                 ->first();
 
             if (!$estadoMalo) {
@@ -1332,7 +1378,7 @@ class MovimientoController extends Controller
                 // ⭐⭐⭐ OBTENER ÚLTIMA ASIGNACIÓN PARA HEREDAR UBICACIÓN ⭐⭐⭐
                 $ultimaAsignacion = Movimiento::where('idbien', $bienId)
                     ->whereHas('tipoMovimiento', function($q) {
-                        $q->where('tipo_mvto', 'ILIKE', '%asignaci%');
+                        $q->whereRaw("LOWER(tipo_mvto) LIKE '%asignaci%'");
                     })
                     ->orderBy('fecha_mvto', 'desc')
                     ->orderBy('id_movimiento', 'desc')
@@ -1363,7 +1409,7 @@ class MovimientoController extends Controller
                     'fecha_mvto' => $fechaMovimiento,
                     'detalle_tecnico' => $validated['detalle_tecnico'], // ⭐ MOTIVO DE BAJA
                     'idubicacion' => $ubicacionId, // ✅ Heredado de última asignación (o NULL)
-                    'id_estado_conservacion_bien' => $estadoMalo->id_estado, // ✅ FORZADO A MALO
+                    'id_estado_conservacion_bien' => $estadoMalo->id_estado_conservacion, // ✅ FORZADO A MALO
                     'idusuario' => $usuarioId,
                     'documento_sustentatorio' => $validated['documento_sustentatorio'] ?? null,
                     'NumDocto' => $validated['NumDocto'] ?? null
@@ -1384,7 +1430,7 @@ class MovimientoController extends Controller
                     'bien' => $bien->codigo_patrimonial,
                     'ubicacion_id' => $ubicacionId,
                     'area' => $movimiento->ubicacion?->area?->nombre_area ?? 'Sin área',
-                    'estado' => $estadoMalo->nombre_estado
+                    'estado' => $estadoMalo->nombre_conservacion
                 ]);
             }
 
@@ -1399,7 +1445,7 @@ class MovimientoController extends Controller
                 'usuario' => Auth::user()->name ?? 'Desconocido',
                 'usuario_id' => $usuarioId,
                 'motivo' => substr($validated['detalle_tecnico'], 0, 100),
-                'estado_aplicado' => $estadoMalo->nombre_estado,
+                'estado_aplicado' => $estadoMalo->nombre_conservacion,
                 'fecha' => now()->format('Y-m-d H:i:s')
             ]);
 
@@ -1421,7 +1467,7 @@ class MovimientoController extends Controller
                 'cantidad' => count($movimientosCreados),
                 'bienes_omitidos' => $bienesYaDeBaja,
                 'bienes_sin_asignacion' => $bienesSinAsignacion,
-                'estado_aplicado' => $estadoMalo->nombre_estado
+                'estado_aplicado' => $estadoMalo->nombre_conservacion
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1473,7 +1519,7 @@ class MovimientoController extends Controller
                 'fecha_mvto' => 'required|date',
                 'detalle_tecnico' => 'nullable|string|max:500',
                 'idubicacion' => 'nullable|exists:ubicacion,id_ubicacion',
-                'id_estado_conservacion_bien' => 'nullable|exists:estado_bien,id_estado',
+                'id_estado_conservacion_bien' => 'nullable|exists:estado_conservacion,id_estado_conservacion',
                 'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
                 'NumDocto' => 'nullable|string|max:20'
             ]);
@@ -1687,20 +1733,6 @@ class MovimientoController extends Controller
                 ->orderBy('id_movimiento', 'desc')  // ⭐ AGREGADO PARA DESEMPATAR
                 ->get();
 
-            // ⭐⭐⭐ DEBUG - Registrar en log qué se está cargando ⭐⭐⭐
-            \Log::info('=== PDF TRAZABILIDAD - DEBUG ===');
-            foreach($movimientos as $mov) {
-                \Log::info("Movimiento ID: {$mov->id_movimiento}");
-                \Log::info("FK documento_sustentatorio: " . ($mov->documento_sustentatorio ?? 'NULL'));
-                \Log::info("Relación documentoSustento cargada: " . ($mov->documentoSustento ? 'SÍ' : 'NO'));
-
-                if($mov->documentoSustento) {
-                    \Log::info("ID del documento: {$mov->documentoSustento->id_documento}");
-                    \Log::info("nombre_documento: " . ($mov->documentoSustento->nombre_documento ?? 'NULL'));
-                    \Log::info("Todos los campos: " . json_encode($mov->documentoSustento->toArray()));
-                }
-                \Log::info('---');
-            }
 
             // Estadísticas mejoradas
             $estadisticas = [
@@ -1766,181 +1798,14 @@ class MovimientoController extends Controller
 
 
     /**
-     * ⭐⭐⭐ REVERTIR BAJA - CLONA EL MOVIMIENTO ANTERIOR ⭐⭐⭐
-     * Cuando se revierte una baja, se crea un NUEVO movimiento que es COPIA EXACTA
-     * del movimiento anterior a la baja (mismo tipo, ubicación, estado, etc.)
+     * ⛔ INHABILITADO — Directiva N° 001-2015/SBN
+     * La reversión de baja no está permitida en la norma legal.
      */
     public function revertirBaja(Request $request, $bienId)
     {
-        try {
-            // 1️⃣ VALIDAR QUE SOLO EL ADMIN PUEDA EJECUTAR
-            if (!\App\Helpers\PermisosHelper::esAdmin()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '❌ Solo el administrador puede revertir bajas'
-                ], 403);
-            }
-
-            // 2️⃣ VALIDAR DATOS DE ENTRADA
-            $validated = $request->validate([
-                'detalle_tecnico' => 'required|string|max:200',
-                'fecha_mvto' => 'nullable|date',
-                'documento_sustentatorio' => 'nullable|integer',
-                'NumDocto' => 'nullable|string|max:20',
-            ], [
-                'detalle_tecnico.required' => 'El motivo de reversión es obligatorio',
-                'detalle_tecnico.max' => 'El motivo no puede exceder los 200 caracteres',
-                'fecha_mvto.date' => 'La fecha debe ser válida',
-            ]);
-
-            // 3️⃣ BUSCAR EL ÚLTIMO MOVIMIENTO DEL BIEN (debe ser BAJA)
-            $ultimoMovimiento = Movimiento::with(['tipoMovimiento', 'bien'])
-                ->where('idbien', $bienId)
-                ->orderBy('fecha_mvto', 'desc')
-                ->orderBy('id_movimiento', 'desc')
-                ->first();
-
-            if (!$ultimoMovimiento) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '❌ Este bien no tiene movimientos registrados'
-                ], 404);
-            }
-
-            // 4️⃣ VALIDAR QUE SEA UN MOVIMIENTO DE BAJA
-            $tipoBaja = strtoupper($ultimoMovimiento->tipoMovimiento->tipo_mvto);
-            if (!str_contains($tipoBaja, 'BAJA')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '❌ Este movimiento no es de tipo BAJA (tipo actual: ' . $ultimoMovimiento->tipoMovimiento->tipo_mvto . ')'
-                ], 400);
-            }
-
-            // 5️⃣ VALIDAR QUE NO ESTÉ YA REVERTIDO
-            if ($ultimoMovimiento->revertido) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '⚠️ Este movimiento ya fue revertido anteriormente el ' .
-                                \Carbon\Carbon::parse($ultimoMovimiento->fecha_reversion)->format('d/m/Y H:i')
-                ], 400);
-            }
-
-            DB::beginTransaction();
-
-            // 6️⃣ BUSCAR EL MOVIMIENTO ANTERIOR A LA BAJA (PARA CLONARLO)
-            $movimientoAnterior = Movimiento::with(['tipoMovimiento'])
-                ->where('idbien', $ultimoMovimiento->idbien)
-                ->where('fecha_mvto', '<', $ultimoMovimiento->fecha_mvto)
-                ->where('id_movimiento', '!=', $ultimoMovimiento->id_movimiento)
-                ->orderBy('fecha_mvto', 'DESC')
-                ->orderBy('id_movimiento', 'DESC')
-                ->first();
-
-            if (!$movimientoAnterior) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => '❌ No existe un movimiento anterior a la baja para restaurar'
-                ], 400);
-            }
-
-            // 7️⃣ USAR HORA ACTUAL DEL SERVIDOR
-            $fechaReversion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
-            $motivoUsuario = $validated['detalle_tecnico'];
-
-            // DETALLE TÉCNICO PERSONALIZADO
-            $detalleNuevo = sprintf(
-                "Reversión de BAJA #%d | Motivo: %s",
-                $ultimoMovimiento->id_movimiento,
-                substr($motivoUsuario, 0, 150)
-            );
-            $detalleNuevo = substr($detalleNuevo, 0, 200);
-
-            // 8️⃣ CREAR NUEVO MOVIMIENTO (COPIA DEL ANTERIOR)
-            $nuevoMovimiento = Movimiento::create([
-                'idbien' => $movimientoAnterior->idbien,
-                'tipo_mvto' => $movimientoAnterior->tipo_mvto,
-                'fecha_mvto' => $fechaReversion,
-                'idubicacion' => $movimientoAnterior->idubicacion,
-                'id_estado_conservacion_bien' => $movimientoAnterior->id_estado_conservacion_bien,
-                'detalle_tecnico' => $detalleNuevo,
-                'NumDocto' => $validated['NumDocto'] ?? $movimientoAnterior->NumDocto,
-                'idusuario' => Auth::id(),
-                'documento_sustentatorio' => $validated['documento_sustentatorio'] ?? $movimientoAnterior->documento_sustentatorio
-            ]);
-
-            // 9️⃣ MARCAR EL MOVIMIENTO DE BAJA COMO REVERTIDO
-            $ultimoMovimiento->update([
-                'revertido' => true,
-                'revertido_por' => Auth::id(),
-                'fecha_reversion' => $fechaReversion,
-                'movimiento_reversion_id' => $nuevoMovimiento->id_movimiento
-            ]);
-
-            DB::commit();
-
-            // 🔟 LOG DE AUDITORÍA
-            Log::info("✅ REVERSIÓN DE BAJA EJECUTADA (CLONÓ MOVIMIENTO ANTERIOR)", [
-                'movimiento_baja' => $ultimoMovimiento->id_movimiento,
-                'movimiento_anterior_clonado' => $movimientoAnterior->id_movimiento,
-                'nuevo_movimiento' => $nuevoMovimiento->id_movimiento,
-                'tipo_restaurado' => $movimientoAnterior->tipoMovimiento->tipo_mvto,
-                'admin' => Auth::user()->name,
-                'bien_codigo' => $ultimoMovimiento->bien->codigo_patrimonial,
-                'fecha_reversion' => $fechaReversion
-            ]);
-
-            // Cargar relaciones para la respuesta
-            $nuevoMovimiento->load([
-                'tipoMovimiento',
-                'usuario',
-                'ubicacion.area',
-                'estadoConservacion',
-                'bien.tipoBien',
-                'documentoSustento'
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => '✅ Baja revertida exitosamente',
-                'data' => [
-                    'movimientooriginal' => [
-                        'id' => $ultimoMovimiento->id_movimiento,
-                        'fechabaja' => \Carbon\Carbon::parse($ultimoMovimiento->fecha_mvto)->format('d/m/Y H:i'),
-                        'revertidopor' => Auth::user()->name,
-                        'fechareversion' => \Carbon\Carbon::parse($fechaReversion)->format('d/m/Y H:i')
-                    ],
-                    'movimientoreversion' => $nuevoMovimiento,
-                    'bien' => [
-                        'id' => $ultimoMovimiento->bien->id_bien,
-                        'codigo' => $ultimoMovimiento->bien->codigo_patrimonial,
-                        'denominacion' => $ultimoMovimiento->bien->denominacion_bien
-                    ],
-                    'estadorestaurado' => "Restaurado al estado: " . $movimientoAnterior->tipoMovimiento->tipo_mvto
-                ]
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Error de validación',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("❌ ERROR AL REVERTIR BAJA: " . $e->getMessage(), [
-                'bien_id' => $bienId ?? 'N/A',
-                'user_id' => Auth::id(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => '❌ Error al revertir: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['success' => false, 'message' => 'La reversión de bajas no está permitida según la Directiva N° 001-2015/SBN.'], 410);
     }
+
 
 
 

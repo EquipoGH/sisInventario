@@ -33,11 +33,12 @@ class DocumentoSustentoController extends Controller
 
         // Aplicar búsqueda
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('id_documento', 'LIKE', "%{$search}%")
-                  ->orWhere('tipo_documento', 'ILIKE', "%{$search}%")
-                  ->orWhere('numero_documento', 'ILIKE', "%{$search}%")
-                  ->orWhereRaw("TO_CHAR(fecha_documento, 'DD/MM/YYYY') LIKE ?", ["%{$search}%"]);
+                  ->orWhereRaw('LOWER(tipo_documento) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(numero_documento) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw("DATE_FORMAT(fecha_documento, '%d/%m/%Y') LIKE ?", ["%{$search}%"]);
             });
         }
 

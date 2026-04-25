@@ -526,7 +526,7 @@
                             <div class="feed-desc">{{ Str::limit($mov->bien->denominacion_bien ?? '—', 45) }}</div>
                             @if($mov->ubicacion)
                             <div class="feed-meta">
-                                <i class="fas fa-map-marker-alt text-muted"></i> {{ $mov->ubicacion->nombre_sede }}
+                                <i class="fas fa-map-marker-alt text-muted"></i> {{ $mov->ubicacion->ambiente }}
                                 @if($mov->ubicacion->area) · <i class="fas fa-building text-muted"></i> {{ $mov->ubicacion->area->nombre_area }} @endif
                             </div>
                             @endif

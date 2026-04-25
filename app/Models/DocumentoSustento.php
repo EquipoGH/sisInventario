@@ -102,13 +102,13 @@ class DocumentoSustento extends Model
     // ⭐ NUEVO: Buscar por tipo de documento
     public function scopePorTipo($query, $tipo)
     {
-        return $query->where('tipo_documento', 'ILIKE', "%{$tipo}%");
+        return $query->whereRaw('LOWER(tipo_documento) LIKE ?', ['%' . strtolower($tipo) . '%']);
     }
 
     // ⭐ NUEVO: Buscar por número de documento
     public function scopePorNumero($query, $numero)
     {
-        return $query->where('numero_documento', 'ILIKE', "%{$numero}%");
+        return $query->whereRaw('LOWER(numero_documento) LIKE ?', ['%' . strtolower($numero) . '%']);
     }
 
     // ⭐ NUEVO: Documentos que tienen bienes asociados

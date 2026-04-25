@@ -103,15 +103,16 @@ class ResponsableArea extends Model
      */
     public function scopeBuscar($query, $termino)
     {
-        return $query->where(function($q) use ($termino) {
+        $termLower = strtolower($termino);
+        return $query->where(function($q) use ($termino, $termLower) {
             $q->where('dni_responsable', 'LIKE', "%{$termino}%")
-              ->orWhereHas('responsable', function($q) use ($termino) {
-                  $q->where('nombre_responsable', 'ILIKE', "%{$termino}%")
-                    ->orWhere('apellidos_responsable', 'ILIKE', "%{$termino}%")
-                    ->orWhere('cargo_responsable', 'ILIKE', "%{$termino}%");
+              ->orWhereHas('responsable', function($q) use ($termLower) {
+                  $q->whereRaw('LOWER(nombre_responsable) LIKE ?', ["%{$termLower}%"])
+                    ->orWhereRaw('LOWER(apellidos_responsable) LIKE ?', ["%{$termLower}%"])
+                    ->orWhereRaw('LOWER(cargo_responsable) LIKE ?', ["%{$termLower}%"]);
               })
-              ->orWhereHas('area', function($q) use ($termino) {
-                  $q->where('nombre_area', 'ILIKE', "%{$termino}%");
+              ->orWhereHas('area', function($q) use ($termLower) {
+                  $q->whereRaw('LOWER(nombre_area) LIKE ?', ["%{$termLower}%"]);
               });
         });
     }

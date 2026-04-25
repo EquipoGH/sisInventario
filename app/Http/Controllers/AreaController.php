@@ -25,9 +25,10 @@ class AreaController extends Controller
 
         // 🔍 BÚSQUEDA
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('id_area', 'LIKE', "%{$search}%")
-                  ->orWhere('nombre_area', 'ILIKE', "%{$search}%");
+                  ->orWhereRaw('LOWER(nombre_area) LIKE ?', ["%{$searchLower}%"]);
             });
         }
 

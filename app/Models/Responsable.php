@@ -136,11 +136,12 @@ class Responsable extends Model
      */
     public function scopeBuscar($query, $termino)
     {
-        return $query->where(function($q) use ($termino) {
+        $termLower = strtolower($termino);
+        return $query->where(function($q) use ($termino, $termLower) {
             $q->where('dni_responsable', 'LIKE', "%{$termino}%")
-              ->orWhere('nombre_responsable', 'ILIKE', "%{$termino}%")
-              ->orWhere('apellidos_responsable', 'ILIKE', "%{$termino}%")
-              ->orWhere('cargo_responsable', 'ILIKE', "%{$termino}%");
+              ->orWhereRaw('LOWER(nombre_responsable) LIKE ?', ["%{$termLower}%"])
+              ->orWhereRaw('LOWER(apellidos_responsable) LIKE ?', ["%{$termLower}%"])
+              ->orWhereRaw('LOWER(cargo_responsable) LIKE ?', ["%{$termLower}%"]);
         });
     }
 }

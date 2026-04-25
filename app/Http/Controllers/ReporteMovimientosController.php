@@ -95,12 +95,13 @@ class ReporteMovimientosController extends Controller
             })
             ->when(trim((string) $request->input('q', '')) !== '', function ($q) use ($request) {
                 $term = trim((string) $request->input('q', ''));
-                $q->where(function ($w) use ($term) {
-                    $w->where('b.codigo_patrimonial', 'ILIKE', "%{$term}%")
-                      ->orWhere('b.denominacion_bien', 'ILIKE', "%{$term}%")
-                      ->orWhere('b.marca_bien', 'ILIKE', "%{$term}%")
-                      ->orWhere('b.modelo_bien', 'ILIKE', "%{$term}%")
-                      ->orWhere('b.nserie_bien', 'ILIKE', "%{$term}%");
+                $termLower = strtolower($term);
+                $q->where(function ($w) use ($termLower) {
+                    $w->whereRaw('LOWER(b.codigo_patrimonial) LIKE ?', ["%{$termLower}%"])
+                      ->orWhereRaw('LOWER(b.denominacion_bien) LIKE ?', ["%{$termLower}%"])
+                      ->orWhereRaw('LOWER(b.marca_bien) LIKE ?', ["%{$termLower}%"])
+                      ->orWhereRaw('LOWER(b.modelo_bien) LIKE ?', ["%{$termLower}%"])
+                      ->orWhereRaw('LOWER(b.nserie_bien) LIKE ?', ["%{$termLower}%"]);
                 });
             })
             ->when(\App\Helpers\PermisosHelper::esInvitado(), function ($q) {
@@ -108,7 +109,7 @@ class ReporteMovimientosController extends Controller
                 // Evaluamos el estado REAL ACTUAL del bien globalmente.
                 try {
                     $estadoBuenoId = \App\Models\EstadoBien::obtenerIdPorNombre('bueno');
-                    $idsBaja = \App\Models\TipoMvto::where('tipo_mvto', 'ILIKE', '%baja%')->pluck('id_tipo_mvto')->toArray();
+                    $idsBaja = \App\Models\TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%baja%'")->pluck('id_tipo_mvto')->toArray();
 
                     $q->whereIn('b.id_bien', function($query) use ($estadoBuenoId, $idsBaja) {
                         $query->select('idbien')
@@ -164,8 +165,8 @@ class ReporteMovimientosController extends Controller
                 ->get();
 
             $data = $rows->values()->map(function ($r, $idx) use ($start) {
-                $ubicTxt = trim(($r->nombre_sede ?? '') . ' - ' . ($r->ambiente ?? ''));
-                if ($ubicTxt === '' || $ubicTxt === '-') $ubicTxt = '-';
+                $ubicTxt = trim($r->ambiente ?? '');
+                if ($ubicTxt === '') $ubicTxt = '-';
 
                 $docTxt = trim(($r->tipo_documento ?? '') . ' ' . ($r->numero_documento ?? ''));
                 if ($docTxt === '') $docTxt = '-';

@@ -138,12 +138,13 @@ class QRBienController extends Controller
 
             if ($request->filled('q')) {
                 $search = $request->q;
-                $query->where(function($q) use ($search) {
-                    $q->where('codigo_patrimonial', 'ILIKE', "%{$search}%")
-                      ->orWhere('denominacion_bien', 'ILIKE', "%{$search}%")
-                      ->orWhere('marca_bien', 'ILIKE', "%{$search}%")
-                      ->orWhere('modelo_bien', 'ILIKE', "%{$search}%")
-                      ->orWhere('nserie_bien', 'ILIKE', "%{$search}%");
+                $searchLower = strtolower($search);
+                $query->where(function($q) use ($searchLower) {
+                    $q->whereRaw('LOWER(codigo_patrimonial) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(denominacion_bien) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(marca_bien) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(modelo_bien) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(nserie_bien) LIKE ?', ["%{$searchLower}%"]);
                 });
             }
 
@@ -340,56 +341,181 @@ class QRBienController extends Controller
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
             $urlAPI = env('API_NODE_URL', 'https://inventario-android-api.onrender.com') . "/qr/{$codigo}";
-            
-            // Generar el código QR en base64 para enviarlo al frontend mediante EndroidQrCode para generar un PNG
+
+            // Generar QR PNG en memoria
             $qr = new EndroidQrCode($urlAPI);
             $qr->setSize(300);
             $qr->setMargin(10);
             $qr->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
-            
-            $writer = new PngWriter();
-            $result = $writer->write($qr);
+
+            $writer  = new PngWriter();
+            $result  = $writer->write($qr);
+
+            // Componer imagen con logo + textos
+            $imgData = $this->componerImagenQR(
+                $result->getString(),
+                $bien->denominacion_bien,
+                $bien->codigo_patrimonial
+            );
+
+            $base64 = 'data:image/png;base64,' . base64_encode($imgData);
 
             return response()->json([
-                'ok' => true,
-                'qr_img' => $result->getDataUri(),
+                'ok'     => true,
+                'qr_img' => $base64,
                 'codigo' => $bien->codigo_patrimonial,
                 'nombre' => $bien->denominacion_bien,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
-                'ok' => false,
+                'ok'      => false,
                 'message' => 'Error al generar código QR: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * 📥 DESCARGAR IMAGEN QR INDIVIDUAL
+     * 📥 DESCARGAR IMAGEN QR INDIVIDUAL (con logo + textos)
      */
     public function descargarImagenQR($codigo)
     {
         try {
             $bien = Bien::where('codigo_patrimonial', $codigo)->firstOrFail();
             $urlAPI = env('API_NODE_URL', 'https://inventario-android-api.onrender.com') . "/qr/{$codigo}";
-            
+
             $qr = new EndroidQrCode($urlAPI);
-            $qr->setSize(500); // Mayor tamaño para impresión
+            $qr->setSize(520); // Mayor tamaño para impresión
             $qr->setMargin(10);
             $qr->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
-            
+
             $writer = new PngWriter();
             $result = $writer->write($qr);
-                
+
+            // Componer imagen con logo + textos
+            $imgData = $this->componerImagenQR(
+                $result->getString(),
+                $bien->denominacion_bien,
+                $bien->codigo_patrimonial
+            );
+
             $nombreArchivo = "QR_{$codigo}_" . date('Ymd_His') . ".png";
-            
-            return response($result->getString())
-                ->header('Content-Type', $result->getMimeType())
+
+            return response($imgData)
+                ->header('Content-Type', 'image/png')
                 ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"');
 
         } catch (\Exception $e) {
             return back()->with('error', 'Error al descargar QR: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * 🎨 COMPONER IMAGEN QR: superpone logo en el centro + nombre + código abajo
+     */
+    private function componerImagenQR(string $qrPngData, string $nombre, string $codigo): string
+    {
+        // ── 1. Cargar QR base ───────────────────────────────────────────────
+        $qrImg = imagecreatefromstring($qrPngData);
+        $qrW   = imagesx($qrImg);
+        $qrH   = imagesy($qrImg);
+
+        // ── 2. Definir panel inferior de texto ──────────────────────────────
+        $paddingTop    = 14;  // espacio entre QR y texto
+        $paddingBottom = 18;
+        $lineHeight    = 28;
+        $fontSize      = 5;   // fuente GD interna (1-5)
+        $charW         = imagefontwidth($fontSize);
+        $charH         = imagefontheight($fontSize);
+
+        // Truncar nombre si es muy largo
+        $maxChars = (int) floor($qrW / $charW) - 2;
+        $nombreTxt = mb_strlen($nombre) > $maxChars
+            ? mb_substr($nombre, 0, $maxChars - 3) . '...'
+            : $nombre;
+        $codigoTxt = $codigo;
+
+        $panelH = $paddingTop + $charH + 6 + $charH + $paddingBottom;
+
+        // ── 3. Crear lienzo final (QR + panel) ──────────────────────────────
+        $canvas = imagecreatetruecolor($qrW, $qrH + $panelH);
+        imagealphablending($canvas, true);
+        imagesavealpha($canvas, true);
+
+        // Colores
+        $blanco    = imagecolorallocate($canvas, 255, 255, 255);
+        $grisClaro = imagecolorallocate($canvas, 245, 247, 250);
+        $azulOsc   = imagecolorallocate($canvas, 30,  58, 138);  // azul institucional
+        $grisTexto = imagecolorallocate($canvas, 55,  65,  81);
+        $bordeColor= imagecolorallocate($canvas, 99, 102, 241);  // índigo
+
+        // Fondo blanco completo
+        imagefilledrectangle($canvas, 0, 0, $qrW - 1, $qrH + $panelH - 1, $blanco);
+
+        // Panel inferior con color suave
+        imagefilledrectangle($canvas, 0, $qrH, $qrW - 1, $qrH + $panelH - 1, $grisClaro);
+
+        // Línea separadora decorativa (índigo)
+        imagefilledrectangle($canvas, 0, $qrH, $qrW - 1, $qrH + 3, $bordeColor);
+
+        // Pegar QR
+        imagecopy($canvas, $qrImg, 0, 0, 0, 0, $qrW, $qrH);
+        imagedestroy($qrImg);
+
+        // ── 4. Superponer LOGO en el centro del QR ──────────────────────────
+        $logoPath = public_path('images/bienes/LogosinFondo.png');
+        if (file_exists($logoPath)) {
+            $logoSrc = @imagecreatefrompng($logoPath);
+            if ($logoSrc) {
+                // Tamaño del logo: ~18% del QR
+                $logoSize = (int) round($qrW * 0.18);
+                $logoDst  = imagecreatetruecolor($logoSize, $logoSize);
+                imagealphablending($logoDst, false);
+                imagesavealpha($logoDst, true);
+                $trans = imagecolorallocatealpha($logoDst, 255, 255, 255, 127);
+                imagefilledrectangle($logoDst, 0, 0, $logoSize - 1, $logoSize - 1, $trans);
+                imagealphablending($logoDst, true);
+                imagecopyresampled(
+                    $logoDst, $logoSrc,
+                    0, 0, 0, 0,
+                    $logoSize, $logoSize,
+                    imagesx($logoSrc), imagesy($logoSrc)
+                );
+                imagedestroy($logoSrc);
+
+                // Fondo blanco circular detrás del logo
+                $cx = (int) round($qrW / 2);
+                $cy = (int) round($qrH / 2);
+                $r  = (int) round($logoSize / 2) + 6;
+                imagefilledellipse($canvas, $cx, $cy, $r * 2, $r * 2, $blanco);
+
+                // Pegar logo centrado en el QR
+                $lx = $cx - (int) round($logoSize / 2);
+                $ly = $cy - (int) round($logoSize / 2);
+                imagecopy($canvas, $logoDst, $lx, $ly, 0, 0, $logoSize, $logoSize);
+                imagedestroy($logoDst);
+            }
+        }
+
+        // ── 5. Escribir textos en el panel inferior ──────────────────────────
+        // Nombre del bien (azul, centrado)
+        $nombreW = strlen($nombreTxt) * $charW;
+        $nombreX = (int) max(0, round(($qrW - $nombreW) / 2));
+        $nombreY = $qrH + $paddingTop;
+        imagestring($canvas, $fontSize, $nombreX, $nombreY, $nombreTxt, $azulOsc);
+
+        // Código patrimonial (gris oscuro, centrado, debajo del nombre)
+        $codigoW = strlen($codigoTxt) * $charW;
+        $codigoX = (int) max(0, round(($qrW - $codigoW) / 2));
+        $codigoY = $nombreY + $charH + 6;
+        imagestring($canvas, $fontSize, $codigoX, $codigoY, $codigoTxt, $grisTexto);
+
+        // ── 6. Exportar a string PNG ─────────────────────────────────────────
+        ob_start();
+        imagepng($canvas, null, 6); // compresión 6
+        $output = ob_get_clean();
+        imagedestroy($canvas);
+
+        return $output;
     }
 }

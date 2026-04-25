@@ -70,7 +70,7 @@
               $estadoCons = $lm?->estadoConservacion?->nombre_estado;
               $usuarioMvto = $lm?->usuario?->name;
               $ubicTxtE = $ubic
-                ? trim(($ubic->nombre_sede ?? '') . ' - ' . ($ubic->ambiente ?? ''))
+                ? trim($ubic->ambiente ?? '')
                 : null;
             @endphp
             <tr>

@@ -32,9 +32,10 @@ class EstadoBienController extends Controller
 
         // Aplicar búsqueda
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
+            $searchLower = strtolower($search);
+            $query->where(function($q) use ($search, $searchLower) {
                 $q->where('id_estado', 'LIKE', "%{$search}%")
-                  ->orWhere('nombre_estado', 'ILIKE', "%{$search}%");
+                  ->orWhereRaw('LOWER(nombre_estado) LIKE ?', ["%{$searchLower}%"]);
             });
         }
 

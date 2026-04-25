@@ -274,11 +274,7 @@
 
             $ubicTxtRow = null;
             if ($ubic) {
-              $partsU = array_filter([
-                $ubic->nombre_sede ?? null,
-                $ubic->ambiente    ?? null,
-              ]);
-              $ubicTxtRow = implode(' - ', $partsU);
+              $ubicTxtRow = trim($ubic->ambiente ?? '');
             }
           @endphp
 
