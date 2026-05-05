@@ -224,9 +224,9 @@ class BienesExport implements FromCollection, WithHeadings, WithStyles, WithColu
 
         // A4: período/filtros + total + estado
         $estadoTxt = match($this->filtros['estado'] ?? 'activos') {
-            'inactivos' => 'Inactivos',
-            'todos'     => 'Todos',
-            default     => 'Activos',
+            'bajas' => 'Bajas',
+            'todos' => 'Todos',
+            default => 'Activos',
         };
         $sheet->mergeCells("A4:{$lastCol}4");
         $sheet->setCellValue('A4', "Estado: {$estadoTxt} | Filtros: {$periodo} | Total: " . $this->bienes->count() . " | Fecha: " . now()->format('d/m/Y H:i'));

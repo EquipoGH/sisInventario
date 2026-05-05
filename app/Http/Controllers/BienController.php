@@ -392,6 +392,15 @@ class BienController extends Controller
             ], 403);
         }
 
+        // ⭐ VALIDACIÓN PROFESIONAL: No eliminar si está en inventario activo
+        if ($bien->estaEnInventarioActivo()) {
+            $codigos = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+            return response()->json([
+                'success' => false,
+                'message' => "No se puede eliminar el bien porque forma parte de un proceso de auditoría activo ({$codigos}). Cierre o anule el inventario primero."
+            ], 422);
+        }
+
         try {
             // ⭐ Verificar si tiene movimientos
             $tieneMovimientos = $bien->movimientos()->exists();
@@ -461,6 +470,22 @@ class BienController extends Controller
     {
         try {
             $bien = Bien::findOrFail($id);
+
+            // ⭐ VALIDACIÓN PROFESIONAL: No restaurar si el bien está en un inventario de BAJA activo
+            if ($bien->estaEnInventarioActivo()) {
+                $inventariosBaja = $bien->getInventariosActivos()->filter(function($inv) {
+                    return $inv->getRawOriginal('tipoinventario') === \App\Models\Inventario::TIPO_BAJA;
+                });
+
+                if ($inventariosBaja->isNotEmpty()) {
+                    $codigos = $inventariosBaja->pluck('codigoinventario')->implode(', ');
+                    return response()->json([
+                        'success' => false,
+                        'message' => "No se puede restaurar el bien porque forma parte de un proceso de auditoría de BAJA activo ({$codigos}). Debe anular o finalizar dicho inventario primero para garantizar la trazabilidad."
+                    ], 422);
+                }
+            }
+
             $bien->restaurar();
 
             return response()->json([

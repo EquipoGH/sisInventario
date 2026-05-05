@@ -299,7 +299,7 @@ $(document).ready(function() {
         $('#infoResultados').hide();
 
         $.ajax({
-            url: '{{ route("tipo-bien.index") }}',
+            url: '{{ route("catalogos.tipo-bien.index") }}',
             method: 'GET',
             data: {
                 search: termino,
@@ -526,7 +526,7 @@ $(document).ready(function() {
 
         let promesas = ids.map(id => {
             return $.ajax({
-                url: '/tipo-bien/' + id,
+                url: '/catalogos/tipo-bien/' + id,
                 method: 'POST',
                 data: {
                     _method: 'DELETE',
@@ -590,7 +590,7 @@ $(document).ready(function() {
         btnGuardar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
 
         $.ajax({
-            url: '{{ route("tipo-bien.store") }}',
+            url: '{{ route("catalogos.tipo-bien.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             dataType: 'json',
@@ -619,7 +619,8 @@ $(document).ready(function() {
                         $('.error-nombre_tipo').text(errors.nombre_tipo[0]);
                     }
                 } else {
-                    Swal.fire('Error', 'No se pudo guardar el registro', 'error');
+                    let msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo guardar el registro';
+                    Swal.fire('Error', msg, 'error');
                 }
             }
         });
@@ -638,7 +639,7 @@ $(document).ready(function() {
         let id = $('#edit_id').val();
 
         $.ajax({
-            url: '/tipo-bien/' + id,
+            url: '/catalogos/tipo-bien/' + id,
             method: 'POST',
             data: $(this).serialize() + '&_method=PUT',
             dataType: 'json',
@@ -666,7 +667,8 @@ $(document).ready(function() {
                         $('.error-edit-nombre_tipo').text(errors.nombre_tipo[0]);
                     }
                 } else {
-                    Swal.fire('Error', 'No se pudo actualizar el registro', 'error');
+                    let msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo actualizar el registro';
+                    Swal.fire('Error', msg, 'error');
                 }
             }
         });

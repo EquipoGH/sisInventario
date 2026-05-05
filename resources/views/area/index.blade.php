@@ -256,7 +256,7 @@ $(document).ready(function() {
         mostrarCargando(true);
 
         $.ajax({
-            url: '{{ route("area.index") }}',
+            url: '{{ route("catalogos.area.index") }}',
             method: 'GET',
             data: {
                 search: termino,
@@ -536,7 +536,7 @@ $(document).ready(function() {
         Promise.allSettled(
             ids.map(id =>
                 $.ajax({
-                    url: `/area/${id}`,
+                    url: `/catalogos/area/${id}`,
                     method: 'POST',
                     data: { _method: 'DELETE' }
                 }).then(() => {
@@ -572,7 +572,7 @@ $(document).ready(function() {
         $(document).on('dblclick', '.editable-cell', function() {
             const id = $(this).data('id');
 
-            $.get(`/area/${id}/edit`, function(data) {
+            $.get(`/catalogos/area/${id}/edit`, function(data) {
                 $('#edit_id').val(data.id_area);
                 $('#edit_nombre_area').val(data.nombre_area);
                 $('#modalEdit').modal('show');
@@ -595,7 +595,7 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
 
         $.ajax({
-            url: '{{ route("area.store") }}',
+            url: '{{ route("catalogos.area.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(res) {
@@ -633,7 +633,7 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
 
         $.ajax({
-            url: `/area/${id}`,
+            url: `/catalogos/area/${id}`,
             method: 'PUT',
             data: $(this).serialize(),
             success: function(res) {
@@ -688,3 +688,4 @@ $(document).ready(function() {
 });
 </script>
 @stop
+

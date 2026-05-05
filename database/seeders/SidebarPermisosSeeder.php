@@ -22,10 +22,8 @@ class SidebarPermisosSeeder extends Seeder
         $map = [
             'Gestión De Bienes' => [
                 ['label' => 'Registrar Bien', 'route' => 'bien.index'],
-            ],
-
-            'Movimientos' => [
-                ['label' => 'Registrar Movimiento', 'route' => 'movimiento.index'],
+                ['label' => 'Movimientos', 'route' => 'movimiento.index'],
+                ['label' => 'Baja de Bienes', 'route' => 'baja.index'],
             ],
 
             'Documento Sustento' => [
@@ -40,11 +38,16 @@ class SidebarPermisosSeeder extends Seeder
                 ['label' => 'Ubicación', 'route' => 'catalogos.ubicacion.index'],
                 ['label' => 'Responsable', 'route' => 'catalogos.responsable.index'],
                 ['label' => 'Asignación', 'route' => 'catalogos.responsable-area.index'],
+                ['label' => 'Estado Conservación', 'route' => 'catalogos.estado-conservacion.index'],
             ],
 
             'Reportes' => [
-                ['label' => 'Reporte de Bienes', 'route' => 'reportes.bienes.index'],
-                ['label' => 'Reporte Movimientos', 'route' => 'reportes.movimientos.index'],
+                ['label' => 'Reporte De Bienes', 'route' => 'reportes.bienes.index'],
+                ['label' => 'Generador Masivo QR', 'route' => 'qr-bienes.index'],
+            ],
+
+            'Control De Inventario' => [
+                ['label' => 'Gestión de Inventarios', 'route' => 'inventario.index'],
             ],
 
             'Seguridad' => [

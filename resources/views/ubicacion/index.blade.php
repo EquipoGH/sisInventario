@@ -455,7 +455,7 @@ $(document).ready(function() {
         mostrarCargando(true);
 
         $.ajax({
-            url: '{{ route("ubicacion.index") }}',
+            url: '{{ route("catalogos.ubicacion.index") }}',
             method: 'GET',
             data: {
                 search: termino,
@@ -635,7 +635,7 @@ $(document).ready(function() {
     // ⭐ MARCAR UBICACIÓN
     function marcarRecepcion(id) {
         $.ajax({
-            url: `/ubicacion/${id}/marcar-recepcion`,
+            url: `/catalogos/ubicacion/${id}/marcar-recepcion`,
             method: 'POST',
             success: function(res) {
                 if (res.success) {
@@ -656,7 +656,7 @@ $(document).ready(function() {
     // ⭐ DESMARCAR UBICACIÓN
     function desmarcarRecepcion(id) {
         $.ajax({
-            url: `/ubicacion/${id}/desmarcar-recepcion`,
+            url: `/catalogos/ubicacion/${id}/desmarcar-recepcion`,
             method: 'POST',
             success: function(res) {
                 if (res.success) {
@@ -870,7 +870,7 @@ $(document).ready(function() {
         Promise.allSettled(
             ids.map(id =>
                 $.ajax({
-                    url: `/ubicacion/${id}`,
+                    url: `/catalogos/ubicacion/${id}`,
                     method: 'POST',
                     data: { _method: 'DELETE' }
                 }).then(() => {
@@ -906,7 +906,7 @@ $(document).ready(function() {
         $(document).on('dblclick', '.editable-row', function() {
             const id = $(this).data('id');
 
-            $.get(`/ubicacion/${id}/edit`, function(data) {
+            $.get(`/catalogos/ubicacion/${id}/edit`, function(data) {
                 $('#edit_id').val(data.id_ubicacion);
                 $('#edit_nombre_sede').val(data.nombre_sede);
                 $('#edit_ambiente').val(data.ambiente);
@@ -933,7 +933,7 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
 
         $.ajax({
-            url: '{{ route("ubicacion.store") }}',
+            url: '{{ route("catalogos.ubicacion.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(res) {
@@ -973,7 +973,7 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
 
         $.ajax({
-            url: `/ubicacion/${id}`,
+            url: `/catalogos/ubicacion/${id}`,
             method: 'PUT',
             data: $(this).serialize(),
             success: function(res) {
@@ -1033,3 +1033,4 @@ $(document).ready(function() {
 });
 </script>
 @stop
+

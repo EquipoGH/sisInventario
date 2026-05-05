@@ -418,6 +418,14 @@ class MovimientoController extends Controller
 
     public function store(Request $request)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!Auth::user()->esAdmin() && strtoupper(Auth::user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para registrar movimientos'
+            ], 403);
+        }
+
         try {
             $validated = $request->validate([
                 'idbien' => 'required|exists:bien,id_bien',
@@ -431,6 +439,25 @@ class MovimientoController extends Controller
             ]);
 
             $validated['idusuario'] = Auth::id();
+
+            $bien = Bien::findOrFail($validated['idbien']);
+
+            // ⭐ VALIDACIÓN: NO MOVER SI ESTÁ EN INVENTARIO ACTIVO
+            if ($bien->estaEnInventarioActivo()) {
+                $tipoMvto = TipoMvto::find($validated['tipo_mvto']);
+                $tipoNombre = strtoupper($tipoMvto->tipo_mvto ?? '');
+                
+                // Permitir si es una regularización (usualmente hecha por el sistema, pero por si acaso)
+                $esRegularizacion = str_contains($tipoNombre, 'REGULARIZA');
+                
+                if (!$esRegularizacion) {
+                    $inventarios = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+                    return response()->json([
+                        'success' => false,
+                        'message' => "No se puede registrar el movimiento porque el bien forma parte de los siguientes inventarios EN PROCESO: {$inventarios}. Finalice o anule los inventarios primero."
+                    ], 422);
+                }
+            }
 
             if ($validated['fecha_mvto']) {
                 $fecha = \Carbon\Carbon::parse($validated['fecha_mvto']);
@@ -666,6 +693,14 @@ class MovimientoController extends Controller
 
     public function edit(Movimiento $movimiento)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!Auth::user()->esAdmin() && strtoupper(Auth::user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para editar movimientos'
+            ], 403);
+        }
+
         $movimiento->load([
             'bien.tipoBien',
             'tipoMovimiento',
@@ -697,6 +732,14 @@ class MovimientoController extends Controller
 
     public function update(Request $request, Movimiento $movimiento)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!Auth::user()->esAdmin() && strtoupper(Auth::user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para actualizar movimientos'
+            ], 403);
+        }
+
         try {
             $validated = $request->validate([
                 'idbien' => 'required|exists:bien,id_bien',
@@ -708,6 +751,16 @@ class MovimientoController extends Controller
                 'documento_sustentatorio' => 'nullable|exists:documento_sustento,id_documento',
                 'NumDocto' => 'nullable|string|max:20'
             ]);
+
+            // ⭐ VALIDACIÓN: NO ACTUALIZAR SI ESTÁ EN INVENTARIO ACTIVO
+            $bien = Bien::find($validated['idbien'] ?? $movimiento->idbien);
+            if ($bien && $bien->estaEnInventarioActivo()) {
+                $inventarios = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede actualizar el movimiento porque el bien forma parte de una auditoría activa ({$inventarios})."
+                ], 422);
+            }
 
             $movimiento->update($validated);
             $movimiento->refresh();
@@ -761,11 +814,17 @@ class MovimientoController extends Controller
 
             // ✅ VALIDAR QUE NO ESTÉ YA ANULADO
             if ($movimiento->anulado) {
+                return response()->json(['success' => false, 'message' => 'El movimiento ya se encuentra anulado.'], 400);
+            }
+
+            // ⭐ VALIDACIÓN: NO ANULAR SI ESTÁ EN INVENTARIO ACTIVO
+            $bien = $movimiento->bien;
+            if ($bien && $bien->estaEnInventarioActivo()) {
+                $inventarios = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
                 return response()->json([
                     'success' => false,
-                    'message' => 'Este movimiento ya fue anulado el ' .
-                                \Carbon\Carbon::parse($movimiento->fecha_anulacion)->format('d/m/Y H:i')
-                ], 400);
+                    'message' => "No se puede anular el movimiento porque el bien forma parte de una auditoría activa ({$inventarios})."
+                ], 422);
             }
 
             // ✅ VALIDAR MOTIVO (OBLIGATORIO)
@@ -901,9 +960,22 @@ class MovimientoController extends Controller
 
             $cantidadAnulados = 0;
             $yaAnulados = [];
+            $omitidos = [];
 
-            foreach ($validated['movimientos_ids'] as $movimientoId) {
-                $movimiento = Movimiento::with('tipoMovimiento')->find($movimientoId);
+            foreach ($validated['movimientos_ids'] as $id) {
+                $movimiento = Movimiento::find($id);
+
+                // ⭐ VALIDACIÓN: NO ANULAR SI ESTÁ EN INVENTARIO ACTIVO
+                $bien = $movimiento ? $movimiento->bien : null;
+                if ($bien && $bien->estaEnInventarioActivo()) {
+                    $inventarios = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+                    $omitidos[] = [
+                        'id' => $id,
+                        'codigo' => $bien->codigo_patrimonial,
+                        'motivo' => "Bloqueado por Inventario: {$inventarios}"
+                    ];
+                    continue;
+                }
 
                 if ($movimiento && !$movimiento->anulado) {
                     
@@ -968,7 +1040,8 @@ class MovimientoController extends Controller
                 'success' => true,
                 'message' => $mensaje,
                 'cantidad' => $cantidadAnulados,
-                'ya_anulados' => $yaAnulados
+                'ya_anulados' => $yaAnulados,
+                'omitidos' => $omitidos
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1158,6 +1231,14 @@ class MovimientoController extends Controller
      */
     public function asignarMasivo(Request $request)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!Auth::user()->esAdmin() && strtoupper(Auth::user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar asignaciones masivas'
+            ], 403);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -1193,6 +1274,18 @@ class MovimientoController extends Controller
                     $bienesOmitidos[] = [
                         'idbien' => $bienId,
                         'motivo' => 'Bien no encontrado'
+                    ];
+                    continue;
+                }
+
+                // ⭐⭐⭐ VALIDACIÓN: NO MOVER SI ESTÁ EN INVENTARIO ACTIVO ⭐⭐⭐
+                if ($bien->estaEnInventarioActivo()) {
+                    $inventarios = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+                    $bienesOmitidos[] = [
+                        'idbien' => $bienId,
+                        'codigo' => $bien->codigo_patrimonial,
+                        'denominacion' => $bien->denominacion_bien,
+                        'motivo' => "En Inventario Activo: {$inventarios}"
                     ];
                     continue;
                 }
@@ -1258,9 +1351,12 @@ class MovimientoController extends Controller
             DB::commit();
 
             // ⭐ MENSAJE PERSONALIZADO CON DETALLES
-            $mensaje = count($movimientosCreados) . ' movimiento(s) de ASIGNACIÓN creado(s)';
-            if (count($bienesOmitidos) > 0) {
-                $mensaje .= '. ' . count($bienesOmitidos) . ' bien(es) omitido(s) por estar de BAJA.';
+            $totalCreados = count($movimientosCreados);
+            $totalOmitidos = count($bienesOmitidos);
+            
+            $mensaje = "{$totalCreados} movimiento(s) de ASIGNACIÓN creado(s).";
+            if ($totalOmitidos > 0) {
+                $mensaje .= " {$totalOmitidos} bien(es) omitido(s) por restricciones de seguridad (Baja o Inventario).";
             }
 
             return response()->json([
@@ -1502,6 +1598,14 @@ class MovimientoController extends Controller
      */
     public function crearMasivo(Request $request)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!Auth::user()->esAdmin() && strtoupper(Auth::user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para registrar movimientos masivos'
+            ], 403);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -1525,12 +1629,22 @@ class MovimientoController extends Controller
             ]);
 
             $movimientosCreados = [];
+            $omitidos = [];
             $usuarioId = Auth::id();
 
             foreach ($bienesIds as $bienId) {
                 $bien = Bien::find($bienId);
 
-                if (!$bien) {
+                if (!$bien) continue;
+
+                // ⭐ VALIDACIÓN: NO MOVER SI ESTÁ EN INVENTARIO ACTIVO
+                if ($bien->estaEnInventarioActivo()) {
+                    $inventarios = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+                    $omitidos[] = [
+                        'id' => $bienId,
+                        'codigo' => $bien->codigo_patrimonial,
+                        'motivo' => "En Auditoría: {$inventarios}"
+                    ];
                     continue;
                 }
 

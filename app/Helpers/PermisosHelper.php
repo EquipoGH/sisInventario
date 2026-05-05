@@ -39,12 +39,12 @@ class PermisosHelper
     {
         $user = Auth::user();
 
-        // ⭐⭐⭐ SOLO ADMIN ve TODOS los bienes (sin restricción de área) ⭐⭐⭐
-        if (self::esAdmin()) {
+        // ⭐⭐⭐ ADMIN, INFORMATICA e INVITADO ven TODOS los bienes ⭐⭐⭐
+        if (self::esAdmin() || self::esInformatica() || self::esInvitado()) {
             return Bien::query();
         }
 
-        // ⭐⭐⭐ TODOS LOS DEMÁS (INFORMATICA, USUARIO, etc.) filtran por área ⭐⭐⭐
+        // ⭐⭐⭐ TODOS LOS DEMÁS (USUARIO, etc.) filtran por área ⭐⭐⭐
         $areasPermitidas = $user->getIdsAreasPermitidas();
 
         // Si no tiene áreas asignadas, no ve nada
@@ -105,19 +105,14 @@ class PermisosHelper
     {
         $user = Auth::user();
 
-        // ADMIN puede editar todo
-        if (self::esAdmin()) {
+        // ADMIN e INFORMÁTICA pueden editar todos los bienes que ven
+        if (self::esAdmin() || self::esInformatica()) {
             return true;
         }
 
         // ⭐ Si el usuario registró este bien, puede editarlo
         if ($bien->registrado_por == $user->id) {
             return true;
-        }
-
-        // INFORMÁTICA puede editar bienes de su área
-        if (self::esInformatica()) {
-            return self::puedeVerBien($bien);
         }
 
         return false;
@@ -146,12 +141,12 @@ class PermisosHelper
     {
         $user = Auth::user();
 
-        // ADMIN ve todas las ubicaciones
-        if (self::esAdmin()) {
+        // ADMIN, INFORMATICA e INVITADO ven todas las ubicaciones
+        if (self::esAdmin() || self::esInformatica() || self::esInvitado()) {
             return \App\Models\Ubicacion::all();
         }
 
-        // ⭐⭐⭐ TODOS LOS DEMÁS (incluyendo INFORMATICA) filtran por área ⭐⭐⭐
+        // ⭐⭐⭐ TODOS LOS DEMÁS filtran por área ⭐⭐⭐
         $areasPermitidas = $user->getIdsAreasPermitidas();
 
         return \App\Models\Ubicacion::whereIn('idarea', $areasPermitidas)->get();
@@ -164,39 +159,24 @@ class PermisosHelper
     {
         $user = Auth::user();
 
-        // ⭐ SOLO ADMIN ve TODOS los movimientos
-        if (self::esAdmin()) {
+        // ⭐ ADMIN, INFORMATICA e INVITADO ven TODOS los movimientos
+        if (self::esAdmin() || self::esInformatica() || self::esInvitado()) {
             return \App\Models\Movimiento::query();
         }
 
-        // ⭐ TODOS LOS DEMÁS (INFORMATICA, USUARIO, etc.) filtran por área
+        // ⭐ TODOS LOS DEMÁS (USUARIO, etc.) filtran por área
         $areasPermitidas = $user->getIdsAreasPermitidas();
 
         if (empty($areasPermitidas)) {
             return \App\Models\Movimiento::whereRaw('1 = 0'); // Query vacía
         }
 
-        // ⭐⭐⭐ LÓGICA OPTIMIZADA ⭐⭐⭐
-        return \App\Models\Movimiento::where(function($query) use ($areasPermitidas, $user) {
-
-            // 1️⃣ Movimientos con ubicación en áreas permitidas (DE CUALQUIER USUARIO)
+        // ⭐⭐⭐ LÓGICA FILTRADA POR ÁREA ⭐⭐⭐
+        return \App\Models\Movimiento::where(function($query) use ($areasPermitidas) {
             $query->whereHas('ubicacion', function($q) use ($areasPermitidas) {
                 $q->whereIn('idarea', $areasPermitidas);
             });
-
-            // 2️⃣ O TODOS los movimientos de bienes que el usuario registró (solo INFORMATICA)
-            if (self::esInformatica()) {
-                $query->orWhere(function($q) use ($user) {
-                    // Ver todos los movimientos de los bienes que el usuario registró
-                    $bienesDelUsuario = \App\Models\Bien::where('registrado_por', $user->id)
-                        ->pluck('id_bien');
-                    if ($bienesDelUsuario->isNotEmpty()) {
-                        $q->whereIn('idbien', $bienesDelUsuario);
-                    } else {
-                        $q->whereRaw('1 = 0'); // nada si no tiene bienes
-                    }
-                });
-            }
         });
-    } 
+    }
+ 
 }

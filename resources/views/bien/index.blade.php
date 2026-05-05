@@ -11,9 +11,11 @@
     <div class="card-header">
         <div class="row mb-3">
             <div class="col-md-4">
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
-                    <i class="fas fa-plus"></i> Nuevo Bien
-                </button>
+                @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
+                        <i class="fas fa-plus"></i> Nuevo Bien
+                    </button>
+                @endif
                 @if(Auth::user()->esAdmin())
                     <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none">
                         <i class="fas fa-trash-alt"></i> Eliminar 
@@ -64,9 +66,11 @@
             </div>
         </div>
 
-        <div class="text-right">
-            <small class="text-muted"><i class="fas fa-info-circle"></i> Doble click en la denominación para editar</small>
-        </div>
+        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+            <div class="text-right">
+                <small class="text-muted"><i class="fas fa-info-circle"></i> Doble click en la denominación para editar</small>
+            </div>
+        @endif
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -629,7 +633,7 @@
         <div class="modal-content">
             <div class="modal-header bg-secondary text-white">
                 <h5 class="modal-title">
-                    <i class="fas fa-trash-restore"></i> Bienes Eliminados (Inactivos)
+                    <i class="fas fa-trash-restore"></i> Bienes de Baja (Eliminados)
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
@@ -1525,8 +1529,10 @@ function eliminarMultiples(ids) {
     // DOBLE CLICK PARA EDITAR
     // ===============================
     $(document).on('dblclick', '.editable-cell', function() {
-        let id = $(this).data('id');
-        cargarDatosEdicion(id);
+        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+            let id = $(this).data('id');
+            cargarDatosEdicion(id);
+        @endif
     });
 
     function cargarDatosEdicion(id) {

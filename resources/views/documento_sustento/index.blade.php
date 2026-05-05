@@ -19,12 +19,16 @@
             <div class="card-header">
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
-                            <i class="fas fa-plus"></i> Nuevo Documento
-                        </button>
-                        <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
-                            <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
-                        </button>
+                        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
+                                <i class="fas fa-plus"></i> Nuevo Documento
+                            </button>
+                        @endif
+                        @if(Auth::user()->esAdmin())
+                            <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
+                                <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
+                            </button>
+                        @endif
                     </div>
                     <div class="col-md-8">
                         <div class="float-right" style="width: 100%; max-width: 500px;">
@@ -60,9 +64,11 @@
                     </div>
                 </div>
 
-                <div class="text-right">
-                    <small class="text-muted"><i class="fas fa-info-circle"></i> Doble click en una fila para editar</small>
-                </div>
+                @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+                    <div class="text-right">
+                        <small class="text-muted"><i class="fas fa-info-circle"></i> Doble click en una fila para editar</small>
+                    </div>
+                @endif
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -764,7 +770,9 @@ $(document).ready(function() {
     // DOBLE CLICK PARA EDITAR
     // ===============================
     $(document).on('dblclick', '.editable-row', function() {
-        abrirModalEditar($(this));
+        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+            abrirModalEditar($(this));
+        @endif
     });
 
     function abrirModalEditar(row) {

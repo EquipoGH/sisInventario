@@ -83,6 +83,14 @@ class DocumentoSustentoController extends Controller
 
     public function store(DocumentoSustentoRequest $request)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!auth()->user()->esAdmin() && strtoupper(auth()->user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para registrar documentos'
+            ], 403);
+        }
+
         Log::info('Datos recibidos en store:', $request->all());
 
         try {
@@ -112,6 +120,14 @@ class DocumentoSustentoController extends Controller
 
     public function edit(DocumentoSustento $documentoSustento)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!auth()->user()->esAdmin() && strtoupper(auth()->user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para editar documentos'
+            ], 403);
+        }
+
         // ⭐ MEJORADO: Incluir cantidad de bienes
         $documentoSustento->loadCount('bienes');
         return response()->json($documentoSustento);
@@ -119,6 +135,14 @@ class DocumentoSustentoController extends Controller
 
     public function update(DocumentoSustentoRequest $request, DocumentoSustento $documentoSustento)
     {
+        // ⭐ VALIDAR PERMISO
+        if (!auth()->user()->esAdmin() && strtoupper(auth()->user()->rol_usuario) !== 'INFORMATICA') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para actualizar documentos'
+            ], 403);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -144,6 +168,14 @@ class DocumentoSustentoController extends Controller
 
     public function destroy(DocumentoSustento $documentoSustento)
     {
+        // ⭐ SOLO ADMIN PUEDE ELIMINAR
+        if (!auth()->user()->esAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo el administrador puede eliminar documentos'
+            ], 403);
+        }
+
         try {
             // ⭐ CRÍTICO: Validar que no tenga bienes asociados
             if ($documentoSustento->tieneBienes()) {

@@ -516,11 +516,13 @@
     <div class="col-12">
         <div class="btn-toolbar justify-content-center bg-light py-2 px-3 rounded" role="toolbar">
             <div class="btn-group mr-2" role="group">
-                <button type="button" class="btn btn-success btn-action" id="btnAsignarSeleccionados">
-                    <i class="fas fa-share-square"></i>
-                    <span class="d-none d-sm-inline">Asignar</span>
-                    <span class="badge badge-light ml-1" id="contadorAsignar">0</span>
-                </button>
+                @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+                    <button type="button" class="btn btn-success btn-action" id="btnAsignarSeleccionados">
+                        <i class="fas fa-share-square"></i>
+                        <span class="d-none d-sm-inline">Asignar</span>
+                        <span class="badge badge-light ml-1" id="contadorAsignar">0</span>
+                    </button>
+                @endif
                 @if(Auth::user()->esAdmin())
                     <button type="button" class="btn btn-warning btn-action" id="btnBajaSeleccionados">
                         <i class="fas fa-ban"></i>
@@ -588,7 +590,7 @@
             <select id="filtroEstadoBien" class="form-control form-control-sm custom-select-filter">
                 <option value="todos">Todos</option>
                 <option value="1" selected>Activos</option>
-                <option value="0">Inactivos</option>
+                <option value="0">Bajas</option>
             </select>
         </div>
 
@@ -691,9 +693,11 @@
 
     {{-- Texto de información reubicado --}}
     <div class="d-flex justify-content-end mb-2">
-        <span class="text-muted small">
-            <i class="fas fa-info-circle text-primary"></i> Doble clic en la fila para editar
-        </span>
+        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+            <span class="text-muted small">
+                <i class="fas fa-info-circle text-primary"></i> Doble clic en la fila para editar
+            </span>
+        @endif
     </div>
 
 
@@ -1925,7 +1929,7 @@ $(document).ready(function() {
                             <hr>
                             <small class="text-muted">
                                 <i class="fas fa-check-circle text-success"></i>
-                                ${bienesSeleccionados.length} bien(es) asignado(s) correctamente
+                                ${response.cantidad} bien(es) asignado(s) correctamente
                             </small>
                         `,
                         timer: 3500,
@@ -2634,39 +2638,41 @@ $(document).ready(function() {
     // EDITAR MOVIMIENTO
     // ==========================================
     $(document).on('dblclick', '.fila-movimiento', function() {
-        const id = $(this).data('id');
+        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+            const id = $(this).data('id');
 
-        $.ajax({
-            url: `/movimiento/${id}/edit`,
-            method: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    const data = response.data;
+            $.ajax({
+                url: `/movimiento/${id}/edit`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const data = response.data;
 
-                    $('#edit_id').val(data.id_movimiento);
-                    $('#edit-id-display').text(data.id_movimiento);
-                    $('#edit_idbien').val(data.idbien);
-                    $('#edit_tipo_mvto').val(data.tipo_mvto);
-                    $('#edit_fecha_mvto').val(typeof moment !== 'undefined' ? moment(data.fecha_mvto).format('YYYY-MM-DD') : data.fecha_mvto.split(' ')[0]);
-                    $('#edit_idubicacion').val(data.idubicacion || '');
-                    $('#edit_id_estado_conservacion_bien').val(data.id_estado_conservacion_bien || '');
-                    $('#edit_detalle_tecnico').val(data.detalle_tecnico || '');
-                    $('#edit_documento_sustentatorio').val(data.documento_sustentatorio || '');
-                    $('#edit_NumDocto').val(data.NumDocto || '');
+                        $('#edit_id').val(data.id_movimiento);
+                        $('#edit-id-display').text(data.id_movimiento);
+                        $('#edit_idbien').val(data.idbien);
+                        $('#edit_tipo_mvto').val(data.tipo_mvto);
+                        $('#edit_fecha_mvto').val(typeof moment !== 'undefined' ? moment(data.fecha_mvto).format('YYYY-MM-DD') : data.fecha_mvto.split(' ')[0]);
+                        $('#edit_idubicacion').val(data.idubicacion || '');
+                        $('#edit_id_estado_conservacion_bien').val(data.id_estado_conservacion_bien || '');
+                        $('#edit_detalle_tecnico').val(data.detalle_tecnico || '');
+                        $('#edit_documento_sustentatorio').val(data.documento_sustentatorio || '');
+                        $('#edit_NumDocto').val(data.NumDocto || '');
 
-                    $('.text-danger').text('');
+                        $('.text-danger').text('');
 
-                    $('#modalEdit').modal('show');
+                        $('#modalEdit').modal('show');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo cargar el movimiento'
+                    });
                 }
-            },
-            error: function(xhr) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudo cargar el movimiento'
-                });
-            }
-        });
+            });
+        @endif
     });
 
     $('#formEdit').submit(function(e) {

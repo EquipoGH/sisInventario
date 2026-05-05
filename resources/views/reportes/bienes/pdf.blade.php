@@ -146,7 +146,7 @@
 
     $estadoRaw = $estado ?? ($filtros['estado'] ?? 'activos');
     $estadoTxt = match($estadoRaw) {
-      'inactivos' => 'Inactivos',
+      'bajas' => 'Bajas',
       'todos'     => 'Todos',
       default     => 'Activos',
     };

@@ -19,10 +19,13 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
         $this->call([
-        SystemSettingSeeder::class,
-        UsuarioAdminSeeder::class,
-        SidebarModulosSeeder::class,
-        SidebarPermisosSeeder::class,   
+            SystemSettingSeeder::class,
+            PerfilesBaseSeeder::class,
+            UsuarioAdminSeeder::class,
+            SidebarModulosSeeder::class,
+            SidebarPermisosSeeder::class,
+            PerfilesInformaticaInvitadoSeeder::class,
+            TipoMvtoSeeder::class, 
         ]);
     }
 }

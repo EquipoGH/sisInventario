@@ -24,26 +24,54 @@ class CheckPermisoRuta
             return response()->view('errors.403', [], 403);
         }
 
-        // ⭐ PostgreSQL: usa ~* en lugar de REGEXP
-        $tienePermiso = \App\Models\PerfilModulo::query()
+        // Obtener los módulos y permisos del usuario en memoria para evaluación agnóstica de DB
+        $perfilModulos = \App\Models\PerfilModulo::query()
             ->whereIn('idperfil', $perfilIds->all())
-            ->where(function($query) use ($routeName) {
-                // 1️⃣ Permiso directo: route_name exacto
-                $query->whereHas('permisos', function($p) use ($routeName) {
-                    $p->where('route_name', $routeName)
-                      ->where('estadopermiso', 'A');
-                })
-                // 2️⃣ O módulo padre con route_prefix que coincida (user.*, users.*, etc.)
-                ->orWhereHas('modulo', function($m) use ($routeName) {
-                    $m->where(function($mm) use ($routeName) {
-                        // PostgreSQL: ~* para regex case-insensitive
-                        $mm->whereRaw("route_prefix ~* ?", ['.*' . str_replace('*', '.*', $routeName)])
-                           ->orWhere('route_prefix', $routeName)
-                           ->orWhereRaw("'$routeName' ~* ?", [str_replace('*', '.*', $routeName)]);
-                    });
-                });
-            })
-            ->exists();
+            ->with(['modulo', 'permisos'])
+            ->get();
+
+        $tienePermiso = $perfilModulos->contains(function ($pm) use ($routeName) {
+            // Mapa de excepciones para rutas hijas que no comparten el mismo prefijo estricto de su padre
+            $routePermissionMap = [
+                'users.perfiles.edit' => 'user.index',
+                'users.perfiles.update' => 'user.index',
+                'perfil-modulo.permisos.edit' => 'perfil.index',
+                'perfil-modulo.permisos.update' => 'perfil.index',
+                'perfil-modulo.permisos.index' => 'perfil.index',
+            ];
+
+            foreach ($pm->permisos as $permiso) {
+                if ($permiso->estadopermiso !== 'A' || empty($permiso->route_name)) {
+                    continue;
+                }
+
+                // 1. Coincidencia exacta
+                if ($permiso->route_name === $routeName) {
+                    return true;
+                }
+
+                // 2. Coincidencia por excepciones de mapa
+                if (isset($routePermissionMap[$routeName]) && $routePermissionMap[$routeName] === $permiso->route_name) {
+                    return true;
+                }
+
+                // 3. Coincidencia por prefijo derivado del index (ej: bien.index -> permite bien.*)
+                if (str_ends_with($permiso->route_name, '.index')) {
+                    $prefix = str_replace('.index', '.', $permiso->route_name); // "bien."
+                    if (\Illuminate\Support\Str::startsWith($routeName, $prefix)) {
+                        return true;
+                    }
+                }
+
+                // 4. Coincidencia por prefijo directo (ej: configuracion.institucion -> permite configuracion.institucion.*)
+                $directPrefix = $permiso->route_name . '.';
+                if (\Illuminate\Support\Str::startsWith($routeName, $directPrefix)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
 
         if (!$tienePermiso) {
             return response()->view('errors.403', [], 403);

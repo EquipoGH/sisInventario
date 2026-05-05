@@ -299,7 +299,7 @@ $(document).ready(function() {
         $('#infoResultados').hide();
 
         $.ajax({
-            url: '{{ route("tipo-mvto.index") }}',
+            url: '{{ route("catalogos.tipo-mvto.index") }}',
             method: 'GET',
             data: {
                 search: termino,
@@ -526,7 +526,7 @@ $(document).ready(function() {
 
         let promesas = ids.map(id => {
             return $.ajax({
-                url: '/tipo-mvto/' + id,
+                url: '/catalogos/tipo-mvto/' + id,
                 method: 'POST',
                 data: {
                     _method: 'DELETE',
@@ -590,7 +590,7 @@ $(document).ready(function() {
         btnGuardar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
 
         $.ajax({
-            url: '{{ route("tipo-mvto.store") }}',
+            url: '{{ route("catalogos.tipo-mvto.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             dataType: 'json',
@@ -638,7 +638,7 @@ $(document).ready(function() {
         let id = $('#edit_id').val();
 
         $.ajax({
-            url: '/tipo-mvto/' + id,
+            url: '/catalogos/tipo-mvto/' + id,
             method: 'POST',
             data: $(this).serialize() + '&_method=PUT',
             dataType: 'json',
@@ -690,3 +690,4 @@ $(document).ready(function() {
 });
 </script>
 @stop
+

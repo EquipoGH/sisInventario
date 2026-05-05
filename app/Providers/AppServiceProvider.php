@@ -56,13 +56,22 @@ class AppServiceProvider extends ServiceProvider
                 ->filter(fn ($pm) => (bool) $pm->modulo)
                 ->values();
 
+            $ordenPermisos = [
+                'bien.index' => 1,
+                'movimiento.index' => 2,
+                'baja.index' => 3,
+            ];
+
             $menu = $perfilModulos
                 ->groupBy('idmodulo')
-                ->map(function ($items) {
+                ->map(function ($items) use ($ordenPermisos) {
                     $first = $items->first();
 
                     $permisos = $items->flatMap(fn ($pm) => $pm->permisos)
                         ->unique('idpermiso')
+                        ->sortBy(function ($perm) use ($ordenPermisos) {
+                            return $ordenPermisos[$perm->route_name] ?? 999;
+                        })
                         ->values();
 
                     $first->setRelation('permisos', $permisos);
@@ -77,8 +86,9 @@ class AppServiceProvider extends ServiceProvider
                 3 => 3, // Documentos
                 4 => 4, // Catálogos
                 5 => 5, // Reportes
-                6 => 6, // Seguridad
-                7 => 7, // Config
+                6 => 6, // Control De Inventario
+                7 => 7, // Seguridad
+                8 => 8, // Config
             ];
 
             $menu = $menu->sortBy(function ($pm) use ($ordenIds) {

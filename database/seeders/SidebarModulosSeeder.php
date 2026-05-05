@@ -21,15 +21,7 @@ class SidebarModulosSeeder extends Seeder
                 'etiqueta'     => 'BIENES',
                 'color'        => '#17a2b8',
                 'icono'        => 'fas fa-boxes',
-                'route_prefix' => 'bien.*',
-                'estadomodulo' => 'A',
-            ],
-            [
-                'nommodulo'    => 'Movimientos',
-                'etiqueta'     => 'MOVIMIENTOS',
-                'color'        => '#28a745',
-                'icono'        => 'fas fa-exchange-alt', // <-- CAMBIADO
-                'route_prefix' => 'movimiento.*',
+                'route_prefix' => 'bien.*,movimiento.*,baja.*',
                 'estadomodulo' => 'A',
             ],
             [
@@ -53,7 +45,15 @@ class SidebarModulosSeeder extends Seeder
                 'etiqueta'     => 'REPORTES',
                 'color'        => '#20c997',
                 'icono'        => 'fas fa-chart-bar',
-                'route_prefix' => 'reportes.*',
+                'route_prefix' => 'reportes.*,qr-bienes.*',
+                'estadomodulo' => 'A',
+            ],
+            [
+                'nommodulo'    => 'Control De Inventario',
+                'etiqueta'     => 'INVENTARIO',
+                'color'        => '#e83e8c',
+                'icono'        => 'fas fa-clipboard-list',
+                'route_prefix' => 'inventario.*',
                 'estadomodulo' => 'A',
             ],
             [

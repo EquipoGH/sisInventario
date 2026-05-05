@@ -141,6 +141,15 @@ class BajaController extends Controller
                 return response()->json(['success' => false, 'message' => 'Este bien ya tiene un registro de baja formal.'], 400);
             }
 
+            // ⭐ VALIDACIÓN: NO DAR DE BAJA SI ESTÁ EN INVENTARIO ACTIVO
+            if ($bien->estaEnInventarioActivo()) {
+                $inventarios = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede dar de baja el bien porque forma parte de los siguientes inventarios EN PROCESO: {$inventarios}. Finalice o anule los inventarios primero."
+                ], 422);
+            }
+
             $baja = Baja::create($request->validated());
 
             $idEstadoBaja = EstadoBien::obtenerIdPorNombreNullable(EstadoBien::BAJA);
@@ -212,6 +221,16 @@ class BajaController extends Controller
         try {
             DB::beginTransaction();
             $bien = $baja->bien;
+
+            // ⭐ VALIDACIÓN PROFESIONAL: No revertir baja si está en inventario activo
+            if ($bien && $bien->estaEnInventarioActivo()) {
+                $codigos = $bien->getInventariosActivos()->pluck('codigoinventario')->implode(', ');
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede eliminar el registro de baja porque el bien forma parte de una auditoría activa ({$codigos})."
+                ], 422);
+            }
+
             $baja->delete();
 
             if ($bien) {

@@ -31,7 +31,7 @@
         if (!empty($filtros['tipo_bien_nombre']))     $partesFiltros[] = "Tipo: {$filtros['tipo_bien_nombre']}";
         $periodoExcel = !empty($partesFiltros) ? implode(' | ', $partesFiltros) : 'Todos los registros';
         $estadoExcel  = match($filtros['estado'] ?? 'activos') {
-          'inactivos' => 'Inactivos',
+          'bajas' => 'Bajas',
           'todos'     => 'Todos',
           default     => 'Activos',
         };

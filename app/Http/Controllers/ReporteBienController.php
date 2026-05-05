@@ -97,7 +97,7 @@ class ReporteBienController extends Controller
     }
 
     /**
-     * Activos/Inactivos/Todos
+     * Activos/Bajas/Todos
      * - Soporta SoftDeletes (deleted_at)
      * - O columna boolean 'activo'
      */
@@ -106,7 +106,7 @@ class ReporteBienController extends Controller
         $estado = $request->input('estado', $request->query('estado', 'activos'));
         $estado = strtolower(trim((string)$estado));
 
-        return in_array($estado, ['activos', 'inactivos', 'todos'], true) ? $estado : 'activos';
+        return in_array($estado, ['activos', 'bajas', 'todos'], true) ? $estado : 'activos';
     }
 
     /**
@@ -147,7 +147,7 @@ class ReporteBienController extends Controller
     }
 
     /**
-     * Aplica filtro activos/inactivos/todos al query de Bien
+     * Aplica filtro activos/bajas/todos al query de Bien
      * (detecta si hay deleted_at o activo)
      */
     private function applyEstadoFilter($q, string $estado)
@@ -160,7 +160,7 @@ class ReporteBienController extends Controller
             if ($estado === 'activos') {
                 // default: solo no eliminados
                 // $q->withoutTrashed(); // si usas SoftDeletes; opcional
-            } elseif ($estado === 'inactivos') {
+            } elseif ($estado === 'bajas') {
                 $q->onlyTrashed();
             } else { // todos
                 $q->withTrashed();
@@ -170,7 +170,7 @@ class ReporteBienController extends Controller
 
         if ($hasActivo) {
             if ($estado === 'activos') $q->where('activo', true);
-            if ($estado === 'inactivos') $q->where('activo', false);
+            if ($estado === 'bajas') $q->where('activo', false);
             return $q; // todos: sin filtro
         }
 
@@ -353,9 +353,9 @@ class ReporteBienController extends Controller
             // Estado registro (para badge)
             $estadoRegistro = null;
             if ($hasDeletedAt) {
-                $estadoRegistro = $b->deleted_at ? 'inactivo' : 'activo';
+                $estadoRegistro = $b->deleted_at ? 'baja' : 'activo';
             } elseif ($hasActivo) {
-                $estadoRegistro = ((bool)$b->activo) ? 'activo' : 'inactivo';
+                $estadoRegistro = ((bool)$b->activo) ? 'activo' : 'baja';
             }
 
             // El estado de conservación del bien viene del último movimiento

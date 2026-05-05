@@ -792,9 +792,14 @@ $(document).ready(function () {
                 btn.prop('disabled', false).html('<i class="fas fa-times-circle"></i> Registrar Baja');
                 if (xhr.status === 422) {
                     const errors = xhr.responseJSON.errors || {};
-                    if (errors.fecha_baja)  $('.error-fecha_baja').text(errors.fecha_baja[0]);
-                    if (errors.motivo_baja) $('.error-motivo_baja').text(errors.motivo_baja[0]);
-                    if (errors.resolucion)  $('.error-resolucion').text(errors.resolucion[0]);
+                    if (Object.keys(errors).length > 0) {
+                        if (errors.fecha_baja)  $('.error-fecha_baja').text(errors.fecha_baja[0]);
+                        if (errors.motivo_baja) $('.error-motivo_baja').text(errors.motivo_baja[0]);
+                        if (errors.resolucion)  $('.error-resolucion').text(errors.resolucion[0]);
+                    } else {
+                        // Es un error de validación de negocio (inventario activo, etc.)
+                        Swal.fire('Atención', xhr.responseJSON?.message || 'No se pudo realizar la acción.', 'warning');
+                    }
                 } else {
                     Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo registrar la baja.', 'error');
                 }

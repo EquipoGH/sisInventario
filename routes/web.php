@@ -35,6 +35,7 @@ use App\Http\Controllers\ReporteMovimientosController;
 
 use App\Http\Controllers\QRBienController;
 use App\Http\Controllers\CatalogoController;
+use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\BajaController;
 use App\Http\Controllers\EstadoConservacionController;
 
@@ -197,6 +198,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('modulo/bulk-destroy', [ModuloController::class, 'bulkDestroy'])->name('modulo.bulk-destroy');
         Route::post('modulo/bulk-restore', [ModuloController::class, 'bulkRestore'])->name('modulo.bulk-restore');
         Route::resource('modulo', ModuloController::class)->except(['show', 'create']);
+
+        // ==================== CONTROL DE INVENTARIO ====================
+        Route::prefix('inventario')->name('inventario.')->group(function () {
+
+            // Gestión de cabecera de inventario
+            Route::post('{inventario}/cambiar-estado', [InventarioController::class, 'cambiarEstado'])
+                ->name('cambiar-estado');
+
+            Route::post('anular-multiples', [InventarioController::class, 'anularMultiples'])
+                ->name('anular-multiples');
+
+            Route::post('eliminar-multiples', [InventarioController::class, 'eliminarMultiples'])
+                ->name('eliminar-multiples');
+
+            Route::post('{inventario}/regularizar', [InventarioController::class, 'regularizarUbicaciones'])
+                ->name('regularizar');
+
+            // Gestión de detalles (bienes dentro del inventario)
+            Route::get('{inventario}/bienes-disponibles', [InventarioController::class, 'bienesDisponibles'])
+                ->name('bienes-disponibles');
+
+            Route::post('{inventario}/detalles', [InventarioController::class, 'agregarDetalle'])
+                ->name('detalles.store');
+
+            Route::put('{inventario}/detalles/{detalle}', [InventarioController::class, 'actualizarDetalle'])
+                ->name('detalles.update');
+
+            Route::delete('{inventario}/detalles/{detalle}', [InventarioController::class, 'eliminarDetalle'])
+                ->name('detalles.destroy');
+        });
+
+        Route::resource('inventario', InventarioController::class);
+
+        // ==================== ACTA PDF ====================
+        Route::get('{inventario}/acta', [InventarioController::class, 'downloadActa'])->name('inventario.acta');
 
         // ==================== REPORTES ====================
         Route::prefix('reportes')->name('reportes.')->group(function () {

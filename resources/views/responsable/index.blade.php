@@ -336,7 +336,7 @@ $(document).ready(function() {
         mostrarCargando(true);
 
         $.ajax({
-            url: '{{ route("responsable.index") }}',
+            url: '{{ route("catalogos.responsable.index") }}',
             method: 'GET',
             data: {
                 search: termino,
@@ -618,7 +618,7 @@ $(document).ready(function() {
         Promise.allSettled(
             dnis.map(dni =>
                 $.ajax({
-                    url: `/responsable/${dni}`,
+                    url: `/catalogos/responsable/${dni}`,
                     method: 'POST',
                     data: { _method: 'DELETE' }
                 }).then(() => {
@@ -654,7 +654,7 @@ $(document).ready(function() {
         $(document).on('dblclick', '.editable-row', function() {
             const dni = $(this).data('dni');
 
-            $.get(`/responsable/${dni}/edit`, function(data) {
+            $.get(`/catalogos/responsable/${dni}/edit`, function(data) {
                 $('#edit_dni_original').val(data.dni_responsable);
                 $('#edit_dni_responsable').val(data.dni_responsable);
                 $('#edit_nombre_responsable').val(data.nombre_responsable);
@@ -680,7 +680,7 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
 
         $.ajax({
-            url: '{{ route("responsable.store") }}',
+            url: '{{ route("catalogos.responsable.store") }}',
             method: 'POST',
             data: $(this).serialize(),
             success: function(res) {
@@ -718,7 +718,7 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
 
         $.ajax({
-            url: `/responsable/${dni}`,
+            url: `/catalogos/responsable/${dni}`,
             method: 'PUT',
             data: $(this).serialize(),
             success: function(res) {
@@ -783,3 +783,4 @@ $(document).ready(function() {
 });
 </script>
 @stop
+

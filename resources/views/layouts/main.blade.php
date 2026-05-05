@@ -345,36 +345,123 @@
 </script>
 
 {{-- ✅ Script para confirmar cierre de sesión profesional y animado --}}
+<style>
+    /* Estilos profesionales para el modal de cierre de sesión (estilo Login) */
+    .swal2-pro-popup {
+        border-radius: 20px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        border: none !important;
+        padding: 2rem !important;
+    }
+    .swal2-pro-title {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 800 !important;
+        color: #2d3748 !important;
+        font-size: 1.8rem !important;
+        margin-top: 10px !important;
+    }
+    .swal2-pro-html {
+        color: #718096 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    .swal2-pro-btn-confirm {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 10px !important;
+        color: white !important;
+        font-weight: 700 !important;
+        padding: 12px 28px !important;
+        font-size: 1.05rem !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    .swal2-pro-btn-confirm:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.6) !important;
+    }
+    .swal2-pro-btn-cancel {
+        background: #f7fafc !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        color: #4a5568 !important;
+        font-weight: 700 !important;
+        padding: 10px 28px !important;
+        font-size: 1.05rem !important;
+        transition: all 0.3s ease !important;
+        margin-right: 15px !important;
+    }
+    .swal2-pro-btn-cancel:hover {
+        background: #edf2f7 !important;
+        border-color: #cbd5e0 !important;
+        color: #1a202c !important;
+    }
+    .swal2-pro-icon-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        border-radius: 50%;
+        background: rgba(102, 126, 234, 0.1);
+        margin-bottom: 1rem;
+    }
+    .swal2-pro-icon-container i {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+
 <script>
     function confirmLogout() {
         Swal.fire({
-            title: '¿Desea cerrar su sesión?',
-            text: "Se cerrará de forma segura su sesión en el sistema.",
-            icon: 'question',
+            html: `
+                <div class="swal2-pro-icon-container">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+                <h2 class="swal2-pro-title">¿Cerrar Sesión?</h2>
+                <p class="swal2-pro-html">Estás a punto de salir de tu panel de GesInventario.</p>
+            `,
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fas fa-sign-out-alt"></i> Sí, cerrar sesión',
-            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            confirmButtonText: 'Sí, cerrar sesión',
+            cancelButtonText: 'Cancelar',
             reverseButtons: true,
-            padding: '2em',
+            buttonsStyling: false,
             customClass: {
-                title: 'text-dark',
-                popup: 'rounded-lg shadow-lg'
-            }
+                popup: 'swal2-pro-popup',
+                confirmButton: 'swal2-pro-btn-confirm',
+                cancelButton: 'swal2-pro-btn-cancel'
+            },
+            backdrop: `rgba(102, 126, 234, 0.3)`
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Cerrando sesión...',
-                    html: 'Por favor, espere un momento.',
-                    timerProgressBar: true,
+                    html: `
+                        <div class="swal2-pro-icon-container" style="animation: pulse 1.5s infinite;">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h2 class="swal2-pro-title">¡Hasta pronto!</h2>
+                        <p class="swal2-pro-html">Cerrando sesión de forma segura...</p>
+                    `,
                     allowOutsideClick: false,
                     showConfirmButton: false,
+                    customClass: {
+                        popup: 'swal2-pro-popup'
+                    },
+                    backdrop: `rgba(102, 126, 234, 0.3)`,
                     didOpen: () => {
-                        Swal.showLoading();
+                        // Cambiar el color del loader de SweetAlert al estilo gradiente si se usa
+                        const loader = Swal.getPopup().querySelector('.swal2-loader');
+                        if (loader) {
+                            loader.style.borderColor = '#667eea transparent #764ba2 transparent';
+                        }
+                        
                         setTimeout(() => {
                             document.getElementById('logout-form').submit();
-                        }, 800);
+                        }, 900);
                     }
                 });
             }

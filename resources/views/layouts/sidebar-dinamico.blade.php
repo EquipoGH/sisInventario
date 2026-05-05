@@ -47,9 +47,7 @@
 
     <ul class="nav nav-treeview" style="{{ $open ? 'display: block;' : 'display: none;' }}">
       @forelse($perms as $perm)
-        @if(str_contains(strtolower(trim($perm->nombpermiso)), 'movimiento') && strtolower(trim($mod->nommodulo)) === 'reportes')
-            @continue
-        @endif
+
         @php
           $routeName = $perm->route_name;
           $hasRoute = $routeName && \Illuminate\Support\Facades\Route::has($routeName);
@@ -74,40 +72,7 @@
         </li>
       @endforelse
 
-      {{-- ⭐ INYECCIÓN MANUAL: Mostrar "Movimientos" dentro de "Gestión De Bienes" --}}
-      @if(strtolower(trim($mod->nommodulo)) === 'gestión de bienes')
-        <li class="nav-item">
-          <a href="{{ route('movimiento.index') }}"
-             class="nav-link {{ request()->routeIs('movimiento.*') ? 'active' : '' }}">
-            <i class="far {{ request()->routeIs('movimiento.*') ? 'fa-dot-circle text-info' : 'fa-circle' }} nav-icon"
-               style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
-            <p>Movimientos</p>
-          </a>
-        </li>
 
-        {{-- ⭐ Baja de Bienes — solo para administradores --}}
-        @if(auth()->check() && auth()->user()->esAdmin())
-        <li class="nav-item">
-          <a href="{{ route('baja.index') }}"
-             class="nav-link {{ request()->routeIs('baja.*') ? 'active' : '' }}">
-            <i class="far {{ request()->routeIs('baja.*') ? 'fa-dot-circle text-danger' : 'fa-circle' }} nav-icon"
-               style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
-            <p>Baja de Bienes</p>
-          </a>
-        </li>
-        @endif
-      @endif
-
-      {{-- ⭐ INYECCIÓN MANUAL: Mostrar "Generador Masivo QR" dentro de "Reportes" solo para Admin --}}
-      @if(strtolower(trim($mod->nommodulo)) === 'reportes' && auth()->check() && auth()->user()->esAdmin())
-        <li class="nav-item">
-          <a href="{{ route('qr-bienes.index') }}"
-             class="nav-link {{ request()->routeIs('qr-bienes.index') ? 'active' : '' }}">
-            <i class="far {{ request()->routeIs('qr-bienes.index') ? 'fa-dot-circle text-info' : 'fa-circle' }} nav-icon" style="font-size: 0.8rem; margin-left: 0.2rem;"></i>
-            <p>Generador Masivo QR</p>
-          </a>
-        </li>
-      @endif
 
     </ul>
   </li>

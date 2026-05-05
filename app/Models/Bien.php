@@ -328,4 +328,64 @@ class Bien extends Model
         return $this->hasOne(Movimiento::class, 'idbien', 'id_bien')
             ->latestOfMany(['fecha_mvto', 'id_movimiento']);
     }
+
+    // ==================== LÓGICA DE INVENTARIO ====================
+
+    /**
+     * Verifica si el bien pertenece a algún inventario actualmente en proceso.
+     */
+    public function estaEnInventarioActivo(): bool
+    {
+        return $this->getInventariosActivos()->isNotEmpty();
+    }
+
+    /**
+     * Obtiene los inventarios "En Proceso" que deberían incluir este bien.
+     */
+    public function getInventariosActivos()
+    {
+        $idBien = $this->id_bien;
+
+        // 1. Buscar inventarios donde este bien ya haya sido VERIFICADO (esté en detalles)
+        $inventariosPorDetalle = Inventario::where(function($q) {
+                $q->where('estadoinventario', 'en_proceso')
+                  ->orWhere('estadoinventario', 'pendiente');
+            })
+            ->whereIn('id_inventario', function($query) use ($idBien) {
+                $query->select('id_inventario')
+                    ->from('detalle_inventario')
+                    ->join('movimiento', 'detalle_inventario.id_movimiento', '=', 'movimiento.id_movimiento')
+                    ->where('movimiento.idbien', $idBien);
+            })
+            ->get();
+
+        // 2. Buscar inventarios donde el bien esté en el SCOPE (área del responsable)
+        $ultimoMovimiento = $this->latestMovimiento;
+        $idArea = null;
+        if ($ultimoMovimiento && $ultimoMovimiento->idubicacion) {
+            // Cargar ubicación si no está cargada
+            $ubicacion = $ultimoMovimiento->ubicacion;
+            if (!$ubicacion) {
+                $ubicacion = Ubicacion::find($ultimoMovimiento->idubicacion);
+            }
+            $idArea = $ubicacion ? $ubicacion->idarea : null;
+        }
+
+        $inventariosPorScope = collect();
+        if ($idArea) {
+            $inventariosPorScope = Inventario::where(function($q) {
+                    $q->where('estadoinventario', 'en_proceso')
+                      ->orWhere('estadoinventario', 'pendiente');
+                })
+                ->whereIn('responsable', function($query) use ($idArea) {
+                    $query->select('dni_responsable')
+                        ->from('responsable_area')
+                        ->where('idarea', $idArea);
+                })
+                ->get();
+        }
+
+        // Combinar y quitar duplicados
+        return $inventariosPorDetalle->concat($inventariosPorScope)->unique('id_inventario');
+    }
 }

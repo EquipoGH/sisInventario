@@ -100,10 +100,10 @@
         @if(!\App\Helpers\PermisosHelper::esInvitado())
         <div class="col-lg-2 col-md-4" id="wrapEstado">
           <div class="form-group">
-            <label class="text-muted">Estado (activos/inactivos)</label>
+            <label class="text-muted">Estado (activos/bajas)</label>
             <select class="form-control" name="estado" id="estado">
               <option value="activos" selected>Activos</option>
-              <option value="inactivos">Inactivos</option>
+              <option value="bajas">Bajas</option>
               <option value="todos">Todos</option>
             </select>
           </div>
@@ -341,7 +341,7 @@ $(function () {
         .html('<option value="">Cargando...</option>');
 
     try {
-      const res = await $.get("{{ route('ubicacion.porArea') }}", { area_id: areaId });
+      const res = await $.get("{{ route('catalogos.ubicacion.porArea') }}", { area_id: areaId });
       const data = res?.data || [];
       const areaNombre = $area.find('option:selected').text().trim();
 
@@ -466,3 +466,4 @@ $(function () {
 });
 </script>
 @stop
+
