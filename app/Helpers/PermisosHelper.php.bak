@@ -1,0 +1,182 @@
+<?php
+
+namespace App\Helpers;
+
+use Illuminate\Support\Facades\Auth;
+use App\Models\Bien;
+use App\Models\Area;
+
+class PermisosHelper
+{
+    /**
+     * ⭐ Verificar si es ADMIN
+     */
+    public static function esAdmin(): bool
+    {
+        return Auth::check() && strtoupper(Auth::user()->rol_usuario) === 'ADMIN';
+    }
+
+    /**
+     * ⭐ Verificar si es INFORMÁTICA
+     */
+    public static function esInformatica(): bool
+    {
+        return Auth::check() && strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA';
+    }
+
+    /**
+     * ⭐ Verificar si es INVITADO
+     */
+    public static function esInvitado(): bool
+    {
+        return Auth::check() && strtoupper(Auth::user()->rol_usuario) === 'INVITADO';
+    }
+
+    /**
+     * ⭐⭐⭐ FILTRAR BIENES POR ÁREAS DEL USUARIO (CORREGIDO) ⭐⭐⭐
+     */
+    public static function getBienesQuery()
+    {
+        $user = Auth::user();
+
+        // ⭐⭐⭐ ADMIN, INFORMATICA e INVITADO ven TODOS los bienes ⭐⭐⭐
+        if (self::esAdmin() || self::esInformatica() || self::esInvitado()) {
+            return Bien::query();
+        }
+
+        // ⭐⭐⭐ TODOS LOS DEMÁS (USUARIO, etc.) filtran por área ⭐⭐⭐
+        $areasPermitidas = $user->getIdsAreasPermitidas();
+
+        // Si no tiene áreas asignadas, no ve nada
+        if (empty($areasPermitidas)) {
+            return Bien::whereRaw('1 = 0'); // Query vacía
+        }
+
+        // ⭐⭐⭐ USUARIOS: Ven bienes con último movimiento en sus áreas ⭐⭐⭐
+        // ⭐⭐⭐ O bienes que ellos mismos registraron (aunque estén en ABASTECIMIENTO) ⭐⭐⭐
+        return Bien::where(function($q) use ($areasPermitidas, $user) {
+            $q->whereHas('latestMovimiento', function($q2) use ($areasPermitidas) {
+                $q2->where('anulado', false)
+                   ->whereHas('ubicacion', function($q3) use ($areasPermitidas) {
+                       $q3->whereIn('idarea', $areasPermitidas);
+                   });
+            })
+            ->orWhere('registrado_por', $user->id); // ⭐ También ver los que registró
+        });
+    }
+
+    /**
+     * ⭐ Verificar si puede ver un bien específico
+     */
+    public static function puedeVerBien($bien): bool
+    {
+        $user = Auth::user();
+
+        // ADMIN ve todo
+        if (self::esAdmin()) {
+            return true;
+        }
+
+        // ⭐ Si el usuario registró este bien, siempre puede verlo
+        if ($bien->registrado_por == $user->id) {
+            return true;
+        }
+
+        // Obtener último movimiento del bien
+        $ultimoMov = $bien->movimientos()
+            ->with('ubicacion')
+            ->where('anulado', false)
+            ->orderBy('fecha_mvto', 'desc')
+            ->first();
+
+        if (!$ultimoMov) {
+            return false;
+        }
+
+        // Verificar si la ubicación del último movimiento pertenece a sus áreas
+        $areaDelBien = $ultimoMov->ubicacion->idarea ?? null;
+        return $areaDelBien && $user->tieneAccesoArea($areaDelBien);
+    }
+
+    /**
+     * ⭐ Verificar si puede editar un bien
+     */
+    public static function puedeEditarBien($bien): bool
+    {
+        $user = Auth::user();
+
+        // ADMIN e INFORMÁTICA pueden editar todos los bienes que ven
+        if (self::esAdmin() || self::esInformatica()) {
+            return true;
+        }
+
+        // ⭐ Si el usuario registró este bien, puede editarlo
+        if ($bien->registrado_por == $user->id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * ⭐ Verificar si puede registrar bienes
+     */
+    public static function puedeRegistrarBien(): bool
+    {
+        return self::esAdmin() || self::esInformatica();
+    }
+
+    /**
+     * ⭐ Verificar si puede eliminar bienes (SOLO ADMIN)
+     */
+    public static function puedeEliminarBien(): bool
+    {
+        return self::esAdmin();
+    }
+
+    /**
+     * ⭐ Obtener ubicaciones permitidas según áreas del usuario
+     */
+    public static function getUbicacionesPermitidas()
+    {
+        $user = Auth::user();
+
+        // ADMIN, INFORMATICA e INVITADO ven todas las ubicaciones
+        if (self::esAdmin() || self::esInformatica() || self::esInvitado()) {
+            return \App\Models\Ubicacion::all();
+        }
+
+        // ⭐⭐⭐ TODOS LOS DEMÁS filtran por área ⭐⭐⭐
+        $areasPermitidas = $user->getIdsAreasPermitidas();
+
+        return \App\Models\Ubicacion::whereIn('idarea', $areasPermitidas)->get();
+    }
+
+    /**
+     * ⭐⭐⭐ FILTRAR MOVIMIENTOS POR ÁREAS DEL USUARIO (OPTIMIZADO) ⭐⭐⭐
+     */
+    public static function getMovimientosQuery()
+    {
+        $user = Auth::user();
+
+        // ⭐ ADMIN, INFORMATICA e INVITADO ven TODOS los movimientos
+        if (self::esAdmin() || self::esInformatica() || self::esInvitado()) {
+            return \App\Models\Movimiento::query();
+        }
+
+        // ⭐ TODOS LOS DEMÁS (USUARIO, etc.) filtran por área
+        $areasPermitidas = $user->getIdsAreasPermitidas();
+
+        if (empty($areasPermitidas)) {
+            return \App\Models\Movimiento::whereRaw('1 = 0'); // Query vacía
+        }
+
+        // ⭐⭐⭐ LÓGICA FILTRADA POR ÁREA ⭐⭐⭐
+        return \App\Models\Movimiento::where(function($query) use ($areasPermitidas) {
+            $query->whereHas('ubicacion', function($q) use ($areasPermitidas) {
+                $q->whereIn('idarea', $areasPermitidas);
+            });
+        });
+    }
+
+}

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Dashboard') | {{ config_sistema('nombre_sistema', 'GestInventario') }}</title>
+
+
+
+    {{-- ⭐ ESTILOS PARA BADGES DE ROL --}}
+<style>
+    /* Badge en navbar superior */
+    .navbar .nav-item.dropdown .badge {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    /* Badge en sidebar */
+    .user-panel .badge {
+        font-size: 9px !important;
+        padding: 3px 6px;
+        border-radius: 3px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    /* Ajuste del dropdown del usuario */
+    .navbar .nav-item.dropdown > .nav-link {
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+
+    /* Animación suave */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Responsive: ocultar badge en móviles pequeños */
+    @media (max-width: 576px) {
+        .navbar .nav-item.dropdown .badge {
+            display: none;
+        }
+    }
+</style>
+
+@php
+    $fav = setting('favicon_path');
+    $favExt = $fav ? strtolower(pathinfo($fav, PATHINFO_EXTENSION)) : '';
+    $favMime = ($favExt === 'ico') ? 'image/x-icon' : 'image/png';
+@endphp
+@if($fav)
+    <link rel="icon" type="{{ $favMime }}" href="{{ asset('storage/'.$fav) }}?v={{ filemtime(storage_path('app/public/'.$fav)) }}">
+    <link rel="shortcut icon" type="{{ $favMime }}" href="{{ asset('storage/'.$fav) }}?v={{ filemtime(storage_path('app/public/'.$fav)) }}">
+@endif
+
+
+
+
+    <!-- 1️⃣ Google Font: Inter -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+
+    <!-- 2️⃣ Font Awesome LOCAL -->
+    <link rel="stylesheet" href="{{ asset('fonts/fontawesome-free-6.5.1-web/css/all.min.css') }}">
+
+    <!-- 3️⃣ AdminLTE 3.2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+
+    <!-- 4️⃣ CSS GLOBAL PERSONALIZADO -->
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
+
+    <!-- 5️⃣ DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap4.min.css">
+
+    <!-- 6️⃣ SELECT2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.5.3/dist/select2-bootstrap4.min.css" rel="stylesheet" />
+
+    <!-- 7️⃣ CSS DINÁMICO DESDE BD -->
+    @include('components.dynamic-styles')
+
+
+
+
+    <!-- 8️⃣ CSS ESPECÍFICO DE CADA VISTA -->
+    @yield('css')
+
+    <!-- 9️⃣ SCRIPT ANTIPARPADEO SIDEBAR -->
+    <script>
+        if (localStorage.getItem('sidebar-collapsed') === '1') {
+            document.documentElement.classList.add('sidebar-collapse');
+        }
+    </script>
+</head>
+
+@php
+    // Estados para abrir/cerrar menús (Treeview)
+    $invOpen = request()->routeIs('area.*','responsable.*','responsable-area.*','ubicacion.*','movimiento.*','tipo-mvto.*','bien.*','documento-sustento.*');
+    $catOpen = request()->routeIs('tipo-bien.*','estado-bien.*');
+    $repOpen = request()->routeIs(['reportes.kardex.*', 'reportes.bienes.*']);
+    $repOpen = request()->routeIs('reportes.kardex.*');
+    $segOpen = request()->routeIs('user.*','perfil.*','permiso.*','modulo.*');
+    $confOpen = request()->routeIs('configuracion.*', 'configuracion.institucion*');
+@endphp
+@php
+    $user = Auth::user();
+    $photoUrl = null;
+
+    if ($user && $user->profile_photo_path) {
+        $photoUrl = Storage::url($user->profile_photo_path);
+    }
+@endphp
+
+<body class="hold-transition sidebar-mini layout-fixed layout-footer-fixed">
+<div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="fullscreen" href="#" role="button" aria-label="Fullscreen">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </a>
+            </li>
+
+            <li class="nav-item dropdown">
+    <a class="nav-link" data-toggle="dropdown" href="#" style="display:flex; align-items:center; gap:8px;">
+        @if($photoUrl)
+            <img src="{{ $photoUrl }}"
+                 alt="Foto de {{ $user->name }}"
+                 class="img-circle elevation-2"
+                 style="width:28px; height:28px; object-fit:cover;">
+        @else
+            <i class="fas fa-user"></i>
+        @endif
+
+        <span>{{ $user->name }}</span>
+
+        {{-- BADGE DEL ROL --}}
+        @php
+            $rol = $user->rol_usuario ?? 'USUARIO';
+            $colorRol = match(strtoupper($rol)) {
+                'ADMIN', 'ADMINISTRADOR' => 'badge-danger',
+                'ENCARGADO', 'SUPERVISOR' => 'badge-warning',
+                'USUARIO' => 'badge-info',
+                default => 'badge-secondary'
+            };
+        @endphp
+
+        <span class="badge {{ $colorRol }}" style="font-size: 9px; padding: 3px 8px; border-radius: 10px;">
+            {{ strtoupper($rol) }}
+        </span>
+    </a>
+
+    <div class="dropdown-menu dropdown-menu-right">
+        <a href="{{ route('profile.edit') }}" class="dropdown-item">
+            <i class="fas fa-user mr-2"></i> Mi Perfil
+        </a>
+        <div class="dropdown-divider"></div>
+        <form method="POST" action="{{ route('logout') }}" id="logout-form">
+            @csrf
+            <button type="button" class="dropdown-item" onclick="confirmLogout()">
+                <i class="fas fa-sign-out-alt mr-2 text-danger"></i> Cerrar Sesión
+            </button>
+        </form>
+    </div>
+</li>
+
+
+        </ul>
+    </nav>
+
+    <!-- Main Sidebar Container -->
+    <aside class="main-sidebar {{ setting('sidebar_theme','sidebar-dark-primary') }} elevation-4">
+
+        <!-- Brand Logo -->
+        @php
+    $logo = setting('logo_path');
+    $logoStoragePath = $logo ? storage_path('app/public/' . $logo) : null;
+    $logoExists = $logoStoragePath && file_exists($logoStoragePath);
+    $nombreSistema = setting('nombre_sistema', 'GesInventario');
+@endphp
+
+<a href="{{ route('dashboard') }}" class="brand-link">
+    @if($logo && $logoExists)
+        <img src="{{ asset('storage/'.$logo) }}?v={{ filemtime(storage_path('app/public/'.$logo)) }}"
+             class="brand-image img-circle elevation-3"
+             style="opacity:.9; width:33px; height:33px; object-fit:cover;"
+             alt="Logo"
+             onerror="this.style.display='none';">
+    @else
+        <i class="fas fa-box-open brand-image" style="opacity:.9"></i>
+    @endif
+
+    <span class="brand-text font-weight-light">{{ $nombreSistema }}</span>
+</a>
+
+
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+
+            <!-- Sidebar user panel -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="image">
+    @if($photoUrl)
+        <img src="{{ $photoUrl }}"
+             alt="Foto de {{ $user->name }}"
+             class="img-circle elevation-2"
+             style="width:34px; height:34px; object-fit:cover;">
+    @else
+        <i class="fas fa-user-circle fa-2x text-white"></i>
+    @endif
+</div>
+
+                <div class="info">
+                    <a href="{{ route('profile.edit') }}" class="d-block">{{ Auth::user()->name }}</a>
+                </div>
+            </div>
+
+            <!-- ✅ Sidebar Search (AdminLTE plugin) -->
+            <div class="form-inline mb-2">
+                <div class="input-group" data-widget="sidebar-search">
+                    <input class="form-control form-control-sidebar" type="search" placeholder="Buscar..." aria-label="Buscar">
+                    <div class="input-group-append">
+                        <button class="btn btn-sidebar" type="button">
+                            <i class="fas fa-search fa-fw"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column"
+                    data-widget="treeview" role="menu"
+                    data-accordion="false">
+                    @include('layouts.sidebar-dinamico')
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+
+        <!-- Content Header -->
+        @hasSection('content_header')
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-12">
+                            @yield('content_header')
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Main content -->
+        <div class="content">
+            <div class="container-fluid">
+                @yield('content')
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="float-right d-none d-sm-block">
+            <b>Version</b> 1.0.0
+        </div>
+        <strong>{{ config_sistema('nombre_sistema', 'Sistema de Inventario') }} &copy; {{ date('Y') }}</strong>
+    </footer>
+</div>
+
+{{-- ==========================================
+    ⭐⭐⭐ SCRIPTS EN ORDEN CORRECTO ⭐⭐⭐
+    ========================================== --}}
+
+<!-- 1️⃣ jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- 2️⃣ Bootstrap 4 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 3️⃣ AdminLTE App -->
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<!-- 4️⃣ DataTables -->
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap4.min.js"></script>
+
+<!-- 5️⃣ Select2 -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- 6️⃣ SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- 7️⃣ Moment.js -->
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/locale/es.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const key = 'sidebar-collapsed';
+
+        // Si la clase se agregó al HTML por el script del head, se la pasamos al body
+        if (document.documentElement.classList.contains('sidebar-collapse')) {
+            document.body.classList.add('sidebar-collapse');
+            document.documentElement.classList.remove('sidebar-collapse');
+        }
+
+        // Guardar cuando el usuario hace toggle
+        const btn = document.querySelector('[data-widget="pushmenu"]');
+        if (btn) {
+            btn.addEventListener('click', function () {
+                setTimeout(() => {
+                    localStorage.setItem(
+                        key,
+                        document.body.classList.contains('sidebar-collapse') ? '1' : '0'
+                    );
+                }, 50);
+            });
+        }
+    });
+</script>
+
+{{-- ✅ Script para confirmar cierre de sesión profesional y animado --}}
+<style>
+    /* Estilos profesionales para el modal de cierre de sesión (estilo Login) */
+    .swal2-pro-popup {
+        border-radius: 20px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        border: none !important;
+        padding: 2rem !important;
+    }
+    .swal2-pro-title {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 800 !important;
+        color: #2d3748 !important;
+        font-size: 1.8rem !important;
+        margin-top: 10px !important;
+    }
+    .swal2-pro-html {
+        color: #718096 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    .swal2-pro-btn-confirm {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 10px !important;
+        color: white !important;
+        font-weight: 700 !important;
+        padding: 12px 28px !important;
+        font-size: 1.05rem !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    .swal2-pro-btn-confirm:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.6) !important;
+    }
+    .swal2-pro-btn-cancel {
+        background: #f7fafc !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        color: #4a5568 !important;
+        font-weight: 700 !important;
+        padding: 10px 28px !important;
+        font-size: 1.05rem !important;
+        transition: all 0.3s ease !important;
+        margin-right: 15px !important;
+    }
+    .swal2-pro-btn-cancel:hover {
+        background: #edf2f7 !important;
+        border-color: #cbd5e0 !important;
+        color: #1a202c !important;
+    }
+    .swal2-pro-icon-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        border-radius: 50%;
+        background: rgba(102, 126, 234, 0.1);
+        margin-bottom: 1rem;
+    }
+    .swal2-pro-icon-container i {
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+
+<script>
+    function confirmLogout() {
+        Swal.fire({
+            html: `
+                <div class="swal2-pro-icon-container">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+                <h2 class="swal2-pro-title">¿Cerrar Sesión?</h2>
+                <p class="swal2-pro-html">Estás a punto de salir de tu panel de GesInventario.</p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cerrar sesión',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true,
+            buttonsStyling: false,
+            customClass: {
+                popup: 'swal2-pro-popup',
+                confirmButton: 'swal2-pro-btn-confirm',
+                cancelButton: 'swal2-pro-btn-cancel'
+            },
+            backdrop: `rgba(102, 126, 234, 0.3)`
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    html: `
+                        <div class="swal2-pro-icon-container" style="animation: pulse 1.5s infinite;">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h2 class="swal2-pro-title">¡Hasta pronto!</h2>
+                        <p class="swal2-pro-html">Cerrando sesión de forma segura...</p>
+                    `,
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'swal2-pro-popup'
+                    },
+                    backdrop: `rgba(102, 126, 234, 0.3)`,
+                    didOpen: () => {
+                        // Cambiar el color del loader de SweetAlert al estilo gradiente si se usa
+                        const loader = Swal.getPopup().querySelector('.swal2-loader');
+                        if (loader) {
+                            loader.style.borderColor = '#667eea transparent #764ba2 transparent';
+                        }
+                        
+                        setTimeout(() => {
+                            document.getElementById('logout-form').submit();
+                        }, 900);
+                    }
+                });
+            }
+        });
+    }
+</script>
+
+{{-- 8️⃣ SCRIPTS PERSONALIZADOS DE CADA VISTA --}}
+@yield('js')
+
+</body>
+</html>

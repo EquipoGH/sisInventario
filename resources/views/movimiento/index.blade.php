@@ -1,0 +1,3186 @@
+@extends('layouts.main')
+
+@section('title', 'Gestión de Movimientos')
+@section('content_header')
+
+@section('css')
+{{-- ⭐⭐⭐ COLORES POR TIPO DE MOVIMIENTO + HEADER COMPACTO ⭐⭐⭐ --}}
+<style>
+/* ==========================================
+   COLORES DE FONDO POR TIPO DE MOVIMIENTO
+   ========================================== */
+
+/* 🟦 SIN ASIGNAR */
+.tipo-sin-asignar {
+}
+
+/* 🟦 REGISTRO */
+.tipo-registro {
+}
+
+/* 🟢 ASIGNACIÓN */
+.tipo-asignacion {
+}
+
+/* 🔴 BAJA */
+.tipo-baja {
+}
+
+/* Badges de tipo (desactivados, se usan solo para referencia) */
+.badge-tipo-sin-asignar {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+.badge-tipo-registro {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+.badge-tipo-asignacion {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+.badge-tipo-baja {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+
+.responsable-text {
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+.responsable-text i {
+    color: #6c757d;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* ⭐ ESTILOS PARA TRAZABILIDAD */
+.timeline-item {
+    border-left: 2px solid #dee2e6;
+    padding-left: 15px;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #007bff;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: bold;
+}
+
+/* ==========================================
+   ⭐ MEJORAS VISUALES PROFESIONALES
+   ========================================== */
+
+/* BOTONES DE ACCIÓN */
+.btn-action {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-action i {
+    font-size: 1rem;
+}
+
+.btn-action .badge {
+    font-size: 0.75rem;
+    padding: 3px 7px;
+    border-radius: 10px;
+}
+
+/* CONTENEDOR DE BÚSQUEDA */
+.search-container {
+    position: relative;
+}
+
+.input-group-search {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.form-control-search {
+    border: 2px solid #e0e6ed;
+    padding: 0.625rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.form-control-search:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
+}
+
+.input-group-search .input-group-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.625rem 1rem;
+}
+
+.input-group-search .btn-outline-secondary {
+    border: 2px solid #e0e6ed;
+    border-left: none;
+    background: white;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.input-group-search .btn-outline-secondary:hover {
+    background: #f8f9fa;
+    color: #dc3545;
+    border-color: #e0e6ed;
+}
+
+/* ==========================================
+   ⭐ FILTROS AVANZADOS - DISEÑO PROFESIONAL
+   ========================================== */
+
+/* LABELS DE FILTROS */
+.filter-label,
+.filter-label-inline {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-label i,
+.filter-label-inline i {
+    margin-right: 5px;
+    font-size: 0.85rem;
+}
+
+/* SELECTS PERSONALIZADOS */
+.custom-select-filter {
+    border: 2px solid #e3e6f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #495057;
+    background-color: #fff;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.custom-select-filter:hover {
+    border-color: #d1d3e2;
+    background-color: #f8f9fc;
+}
+
+.custom-select-filter:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.15);
+    background-color: #fff;
+}
+
+/* INPUT DATE PERSONALIZADO */
+.custom-date-filter {
+    border: 2px solid #e3e6f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #495057;
+    background-color: #fff;
+    transition: all 0.3s ease;
+}
+
+.custom-date-filter:hover {
+    border-color: #d1d3e2;
+    background-color: #f8f9fc;
+}
+
+.custom-date-filter:focus {
+    border-color: #1cc88a;
+    box-shadow: 0 0 0 0.2rem rgba(28, 200, 138, 0.15);
+    background-color: #fff;
+}
+
+.custom-date-filter::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: opacity(0.6);
+    transition: filter 0.3s ease;
+}
+
+.custom-date-filter::-webkit-calendar-picker-indicator:hover {
+    filter: opacity(1);
+}
+
+/* BOTÓN APLICAR FILTROS */
+.btn-apply-filters {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+}
+
+.btn-apply-filters:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    color: white;
+}
+
+.btn-apply-filters:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.btn-apply-filters i {
+    margin-right: 6px;
+    font-size: 0.85rem;
+}
+
+/* ANIMACIONES */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#accionesMasivas {
+    animation: slideDown 0.3s ease;
+}
+
+/* MEJORA DE ICONOS */
+.fas.fa-database,
+.fas.fa-spinner {
+    font-size: 0.85rem;
+}
+
+/* HOVER EN INFO DE RESULTADOS */
+#infoResultados strong {
+    color: #007bff;
+    font-weight: 700;
+}
+
+
+
+/* ==========================================
+   DISEÑO COMPACTO DE FILTROS EN UNA FILA
+   ========================================== */
+
+/* Ajustar altura de inputs para uniformidad */
+.form-control-sm,
+.custom-select-filter,
+.custom-date-filter,
+.btn-apply-filters {
+    height: 38px !important;
+    font-size: 0.85rem;
+}
+
+/* Mejorar apariencia de placeholders */
+.custom-select-filter:invalid,
+.custom-select-filter option[value=""] {
+    color: #6c757d;
+}
+
+/* Icono de calendario más visible */
+.custom-date-filter::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(0.5);
+}
+
+/* Botón de filtrar con efecto hover */
+.btn-apply-filters:hover {
+    transform: scale(1.05);
+}
+
+/* Responsive: ajustar tamaños en tablets */
+@media (max-width: 1199px) {
+    .form-control-sm,
+    .custom-select-filter,
+    .custom-date-filter {
+        font-size: 0.8rem;
+    }
+}
+
+/* Responsive: en móviles, filtros en 2 columnas */
+@media (max-width: 767px) {
+    .col-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+/* Badge de filtros activos */
+#filtrosActivos .badge {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+
+
+
+
+
+
+/* ==========================================
+   ⭐ LEYENDA HORIZONTAL + INFO (NUEVA)
+   ========================================== */
+
+.leyenda-horizontal-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+    border: 1px solid #e3e6f0;
+    border-radius: 8px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.leyenda-inline {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.leyenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    color: #5a5c69;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.leyenda-item:hover {
+    transform: translateY(-2px);
+}
+
+.dot-inline {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid;
+    flex-shrink: 0;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.leyenda-item:hover .dot-inline {
+    transform: scale(1.2);
+}
+
+/* Dot leyenda SIN ASIGNAR - Celeste */
+.dot-inline.sin-asignar {
+    background-color: #e3f2fd;
+    border-color: #2196F3;
+}
+
+/* Dot leyenda REGISTRO - Mantener (fallback) */
+.dot-inline.registro {
+    background-color: #e3f2fd;
+    border-color: #2196F3;
+}
+
+
+.dot-inline.asignacion {
+    background-color: #e8f5e9;
+    border-color: #4CAF50;
+}
+
+.dot-inline.baja {
+    background-color: #ffebee;
+    border-color: #F44336;
+}
+
+.text-leyenda {
+    font-size: 0.85rem;
+    text-transform: lowercase;
+    letter-spacing: 0.3px;
+}
+
+.info-edicion {
+    color: #858796;
+    font-size: 0.82rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-edicion i {
+    color: #4e73df;
+    font-size: 0.9rem;
+}
+
+/* ⭐ Responsive: en móviles se apilan verticalmente */
+@media (max-width: 768px) {
+    .leyenda-horizontal-container {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        padding: 15px;
+    }
+
+    .leyenda-inline {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .info-edicion {
+        justify-content: center;
+    }
+}
+
+/* ⭐ En tablets: reducir espaciado */
+@media (max-width: 992px) {
+    .leyenda-inline {
+        gap: 18px;
+    }
+}
+
+
+</style>
+@endsection
+
+@stop
+
+
+
+@section('content')
+<h2>Gestión de Movimientos</h2>
+<br>
+<div class="card">
+
+<div class="card-body">
+    {{-- ═══════════════════════════════════════════════════════════ --}}
+{{-- FILA ÚNICA: Búsqueda + Filtros en línea horizontal --}}
+{{-- ═══════════════════════════════════════════════════════════ --}}
+
+{{-- FILA 1: Botones de acción masiva (solo visible cuando hay selección) --}}
+<div class="row mb-2" id="accionesMasivas" style="display:none;">
+    <div class="col-12">
+        <div class="btn-toolbar justify-content-center bg-light py-2 px-3 rounded" role="toolbar">
+            <div class="btn-group mr-2" role="group">
+                @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+                    <button type="button" class="btn btn-success btn-action" id="btnAsignarSeleccionados">
+                        <i class="fas fa-share-square"></i>
+                        <span class="d-none d-sm-inline">Asignar</span>
+                        <span class="badge badge-light ml-1" id="contadorAsignar">0</span>
+                    </button>
+                @endif
+                @if(Auth::user()->esAdmin())
+                    <button type="button" class="btn btn-warning btn-action" id="btnBajaSeleccionados">
+                        <i class="fas fa-ban"></i>
+                        <span class="d-none d-sm-inline">Anular Movimiento</span>
+                        <span class="badge badge-light ml-1" id="contadorBaja">0</span>
+                    </button>
+                @endif
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+    {{-- FILA 2: Búsqueda + Filtros con LABELS --}}
+    <div class="row mb-3 align-items-end">
+        {{-- Búsqueda (25% - REDUCIDO) --}}
+        <div class="col-xl-2 col-lg-2 col-md-4 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-search text-primary"></i> BÚSQUEDA
+            </label>
+            <div class="input-group input-group-search">
+                <input type="text" id="searchInput" class="form-control form-control-search"
+                    placeholder="Código, denominación..." autocomplete="off">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="btnLimpiar" title="Limpiar búsqueda">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Filtro: Tipo de Movimiento VISTA --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline" style="font-size: 0.70rem;">
+                <i class="fas fa-eye text-primary"></i> VISTA
+            </label>
+            <select id="filtroVista" class="form-control form-control-sm custom-select-filter">
+                <option value="activos" selected>Activos</option>
+                <option value="todos">Todos</option>
+            </select>
+        </div>
+
+        {{-- Filtro: Tipo de Mvto BD --}}
+        <div class="col-xl-2 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline" style="font-size: 0.70rem;">
+                <i class="fas fa-tags text-primary"></i> TIPO MVTO
+            </label>
+            <select id="filtroTipoMvto" class="form-control form-control-sm custom-select-filter">
+                <option value="" selected>Todos los tipos</option>
+                @foreach($tiposMovimiento as $tipo)
+                    <option value="{{ $tipo->id_tipo_mvto }}">
+                        {{ $tipo->tipo_mvto }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Filtro: Estado del Bien (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-toggle-on text-info"></i> ESTADO
+            </label>
+            <select id="filtroEstadoBien" class="form-control form-control-sm custom-select-filter">
+                <option value="todos">Todos</option>
+                <option value="1" selected>Activos</option>
+                <option value="0">Bajas</option>
+            </select>
+        </div>
+
+        {{-- ⭐⭐⭐ NUEVO: Filtro por ÁREA (12%) ⭐⭐⭐ --}}
+        <div class="col-xl-2 col-lg-2 col-md-4 col-5 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-building text-warning"></i> ÁREA
+            </label>
+            <select id="filtroArea" class="form-control form-control-sm custom-select-filter">
+                <option value="">Todas las áreas</option>
+                @foreach($areas as $area)
+                    <option value="{{ $area->id_area }}">
+                        {{ Str::limit($area->nombre_area, 20) }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="col-xl-2 col-lg-3 col-md-4 col-12 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-map-marker-alt text-danger"></i> UBICACIÓN
+            </label>
+            <select id="filtroUbicacion" class="form-control form-control-sm custom-select-filter">
+                <option value="">Todas</option>
+                @foreach($ubicaciones as $ubicacion)
+                    <option value="{{ $ubicacion->id_ubicacion }}"
+                            data-area="{{ $ubicacion->idarea ?? '' }}"
+                            title="{{ $ubicacion->ubicacion_completa }}">
+                        {{ $ubicacion->ambiente }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Filtro: Fecha Desde (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-calendar-alt text-success"></i> DESDE
+            </label>
+            <input type="date" id="filtroFechaDesde" class="form-control form-control-sm custom-date-filter">
+        </div>
+
+        {{-- Filtro: Fecha Hasta (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline">
+                <i class="fas fa-calendar-alt text-success"></i> HASTA
+            </label>
+            <input type="date" id="filtroFechaHasta" class="form-control form-control-sm custom-date-filter">
+        </div>
+
+
+
+
+        {{-- Botón Aplicar Filtros (8%) --}}
+        <div class="col-xl-1 col-lg-2 col-md-3 col-6 mb-2">
+            <label class="filter-label-inline d-none d-xl-block">&nbsp;</label>
+            <button type="button" id="btnAplicarFiltros" class="btn btn-apply-filters btn-sm btn-block">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+
+
+{{-- Información de resultados --}}
+<div class="row mb-2">
+    <div class="col-12">
+        <small class="text-muted">
+            <span id="infoResultados">
+                <i class="fas fa-database mr-1"></i>
+                Mostrando <strong id="from">{{ $movimientos->firstItem() ?? 0 }}</strong>
+                a <strong id="to">{{ $movimientos->lastItem() ?? 0 }}</strong>
+                de <strong id="resultadosCount">{{ $movimientos->total() }}</strong>
+                (<strong id="totalCount">{{ $total }}</strong> Total)
+            </span>
+            <span id="loadingSearch" style="display:none;">
+                <i class="fas fa-spinner fa-spin text-primary mr-1"></i>
+                <span class="text-primary">Buscando...</span>
+            </span>
+        </small>
+
+        {{-- Indicador de filtros activos --}}
+        <span id="filtrosActivos" style="display:none;" class="ml-3">
+            <span class="badge badge-warning">
+                <i class="fas fa-filter"></i>
+                <span id="filtrosActivosTexto"></span>
+            </span>
+            <button type="button" id="btnLimpiarFiltros" class="btn btn-link btn-sm text-danger p-0 ml-1"
+                    style="font-size: 0.75rem; vertical-align: middle;">
+                <i class="fas fa-times"></i> Limpiar
+            </button>
+        </span>
+    </div>
+</div>
+
+
+
+
+    {{-- Separador --}}
+    <hr class="mb-3 mt-2" style="border-top: 2px solid #e3e6f0;">
+
+    {{-- Texto de información reubicado --}}
+    <div class="d-flex justify-content-end mb-2">
+        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+            <span class="text-muted small">
+                <i class="fas fa-info-circle text-primary"></i> Doble clic en la fila para editar
+            </span>
+        @endif
+    </div>
+
+
+
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th width="3%">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="checkAll">
+                                <label class="custom-control-label" for="checkAll"></label>
+                            </div>
+                        </th>
+                        <th width="10%" class="sortable" data-column="fecha" style="cursor:pointer;">
+                            FECHA <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th width="10%">CÓDIGO</th>
+                        <th width="20%">DENOMINACIÓN</th>
+                        <th width="10%" class="sortable" data-column="tipo" style="cursor:pointer;">
+                            TIPO MVTO <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th width="12%">ÁREA</th>
+                        <th width="12%">UBICACIÓN</th>
+                        <th width="8%">ESTADO CONSERV.</th>
+                        <th width="10%">CONTROL</th>
+
+                    </tr>
+                </thead>
+
+                <tbody id="tablaMovimientos">
+                    @forelse($movimientos as $movimiento)
+                    {{-- ⭐ CLASE DINÁMICA PARA COLOR DE FILA --}}
+                    @php
+                        $tipoNormalizado = strtolower(str_replace(['á','é','í','ó','ú','ñ',' '], ['a','e','i','o','u','n','-'], $movimiento->tipoMovimiento->tipo_mvto));
+                        $badgeClass = 'badge-tipo-' . $tipoNormalizado;
+                    @endphp
+
+                    <tr id="row-{{ $movimiento->id_movimiento }}"
+                        class="fila-movimiento tipo-{{ $tipoNormalizado }}"
+                        data-id="{{ $movimiento->id_movimiento }}">
+
+                        <td class="text-center">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input checkbox-item"
+                                       id="check-{{ $movimiento->id_movimiento }}"
+                                       value="{{ $movimiento->id_movimiento }}"
+                                       data-bien-id="{{ $movimiento->idbien }}"
+                                       data-tipo-mvto="{{ strtoupper($movimiento->tipoMovimiento->tipo_mvto) }}"
+                                       data-tiene-asignacion="{{ $movimiento->bien->movimientos()->whereHas('tipoMovimiento', fn($q) => $q->where('tipo_mvto', 'ILIKE', '%asignacion%')->orWhere('tipo_mvto', 'ILIKE', '%asignaci%n%'))->where('anulado', false)->exists() ? '1' : '0' }}">
+                                <label class="custom-control-label" for="check-{{ $movimiento->id_movimiento }}"></label>
+                            </div>
+                        </td>
+
+                        <td>
+                            {{ \Carbon\Carbon::parse($movimiento->fecha_mvto)->format('d/m/Y') }}<br>
+                            <small class="text-muted">{{ \Carbon\Carbon::parse($movimiento->fecha_mvto)->format('H:i:s') }}</small>
+                        </td>
+
+                        <td>{{ $movimiento->bien->codigo_patrimonial }}</td>
+
+                        <td>
+                            {{ Str::limit($movimiento->bien->denominacion_bien, 30) }}<br>
+                            <small class="text-muted">{{ $movimiento->bien->tipoBien->nombre_tipo ?? '' }}</small>
+                        </td>
+
+                        <td>{{ $movimiento->tipoMovimiento->tipo_mvto }}</td>
+
+                        {{-- ÁREA --}}
+                        <td>
+                            @if($movimiento->ubicacion && $movimiento->ubicacion->area)
+                                <small><i class="fas fa-building text-muted"></i> {{ $movimiento->ubicacion->area->nombre_area }}</small>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+
+                        {{-- UBICACIÓN --}}
+                        <td>
+                            @if($movimiento->ubicacion)
+                                <small><i class="fas fa-map-marker-alt text-muted"></i> {{ $movimiento->ubicacion->ambiente }}</small>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+
+                        {{-- ESTADO CONSERVACIÓN --}}
+                        <td>
+                            @if($movimiento->estadoConservacion)
+                                {{ $movimiento->estadoConservacion->nombre_conservacion }}
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+
+                        {{-- CONTROL --}}
+                        <td class="text-center">
+                            <button type="button" class="btn btn-info btn-sm btn-ver"
+                                    title="Ver Detalles"
+                                    data-id="{{ $movimiento->id_movimiento }}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay movimientos registrados</p>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- PAGINACIÓN --}}
+        <div id="paginacionContainer" class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <small class="text-muted">
+                    Mostrando <strong id="paginaInfo">{{ $movimientos->firstItem() ?? 0 }} - {{ $movimientos->lastItem() ?? 0 }}</strong>
+                    de <strong>{{ $movimientos->total() }}</strong>
+                </small>
+            </div>
+            <div id="paginacionLinks">
+                @if($movimientos->hasPages())
+                    <ul class="pagination pagination-sm m-0">
+                        @if ($movimientos->onFirstPage())
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                            </li>
+                        @else
+                            <li class="page-item">
+                                <a class="page-link paginar-inicial" href="#" data-page="{{ $movimientos->currentPage() - 1 }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        @endif
+
+                        @foreach(range(1, $movimientos->lastPage()) as $page)
+                            @if ($page == $movimientos->currentPage())
+                                <li class="page-item active">
+                                    <span class="page-link">{{ $page }}</span>
+                                </li>
+                            @elseif ($page == 1 || $page == $movimientos->lastPage() || abs($page - $movimientos->currentPage()) <= 2)
+                                <li class="page-item">
+                                    <a class="page-link paginar-inicial" href="#" data-page="{{ $page }}">{{ $page }}</a>
+                                </li>
+                            @endif
+                        @endforeach
+
+                        @if ($movimientos->hasMorePages())
+                            <li class="page-item">
+                                <a class="page-link paginar-inicial" href="#" data-page="{{ $movimientos->currentPage() + 1 }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        @else
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                            </li>
+                        @endif
+                    </ul>
+                @endif
+            </div>
+        </div>
+
+        <div id="noResultados" class="text-center py-4" style="display:none;">
+            <i class="fas fa-search fa-3x text-muted mb-3 d-block"></i>
+            <h5>No se encontraron resultados</h5>
+            <p class="text-muted">No hay movimientos que coincidan con "<strong id="terminoBuscado"></strong>"</p>
+            <button class="btn btn-outline-primary" id="btnMostrarTodo">
+                <i class="fas fa-undo"></i> Mostrar todo
+            </button>
+        </div>
+    </div>
+</div>
+
+
+    {{-- ==========================================
+     ⭐⭐⭐ MODAL VER DETALLES (CON TRAZABILIDAD) ⭐⭐⭐
+     ========================================== --}}
+    <div class="modal fade" id="modalVer" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle"></i> Detalles del Movimiento #<span id="ver-id">-</span>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    {{-- ⭐ PESTAÑAS --}}
+                    <ul class="nav nav-tabs" id="tabsModalVer" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-detalles-tab" data-toggle="tab" href="#tab-detalles" role="tab">
+                                <i class="fas fa-file-alt"></i> Detalles
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-trazabilidad-tab" data-toggle="tab" href="#tab-trazabilidad" role="tab">
+                                <i class="fas fa-history"></i> Trazabilidad del Bien
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-3" id="tabsModalVerContent">
+                        {{-- ⭐ TAB 1: DETALLES DEL MOVIMIENTO --}}
+                        <div class="tab-pane fade show active" id="tab-detalles" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-5">Código Bien:</dt>
+                                        <dd class="col-sm-7"><span class="badge badge-info" id="ver-codigo">-</span></dd>
+
+                                        <dt class="col-sm-5">Denominación:</dt>
+                                        <dd class="col-sm-7" id="ver-denominacion">-</dd>
+
+                                        <dt class="col-sm-5">Tipo Movimiento:</dt>
+                                        <dd class="col-sm-7"><span class="badge badge-primary" id="ver-tipo">-</span></dd>
+
+                                        <dt class="col-sm-5">Fecha:</dt>
+                                        <dd class="col-sm-7" id="ver-fecha">-</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-5">Ubicación:</dt>
+                                        <dd class="col-sm-7" id="ver-ubicacion">-</dd>
+
+                                        <dt class="col-sm-5">Estado:</dt>
+                                        <dd class="col-sm-7" id="ver-estado">-</dd>
+
+                                        <dt class="col-sm-5">Doc. Sustento:</dt>
+                                        <dd class="col-sm-7" id="ver-documento">-</dd>
+
+                                        <dt class="col-sm-5">Nro. Documento:</dt>
+                                        <dd class="col-sm-7" id="ver-numdoc">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h6><strong>Detalle Técnico:</strong></h6>
+                                    <p class="text-muted border p-2 rounded" id="ver-detalle-tecnico">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ⭐⭐⭐ TAB 2: TRAZABILIDAD DEL BIEN ⭐⭐⭐ --}}
+                        <div class="tab-pane fade" id="tab-trazabilidad" role="tabpanel">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <h5 id="trazabilidad-titulo">Historial de Movimientos del Bien</h5>
+                                    <p class="text-muted" id="trazabilidad-info">
+                                        <i class="fas fa-box"></i> <strong id="trazabilidad-codigo">-</strong> -
+                                        <span id="trazabilidad-denominacion">-</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <label for="filtroTrazabilidad">Filtrar por:</label>
+                                    <select id="filtroTrazabilidad" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                                        <option value="mes">Último mes</option>
+                                        <option value="trimestre">Último trimestre</option>
+                                        <option value="año">Último año</option>
+                                    </select>
+
+                                    {{-- ⭐⭐⭐ BOTÓN DE IMPRESIÓN PDF ⭐⭐⭐ --}}
+                                    <button type="button" class="btn btn-sm btn-danger ml-2" id="btnImprimirTrazabilidad" title="Generar PDF">
+                                        <i class="fas fa-file-pdf"></i> Imprimir PDF
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="trazabilidad-loading" class="text-center py-4" style="display:none;">
+                                <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                                <p class="mt-2">Cargando historial...</p>
+                            </div>
+
+                            <div id="trazabilidad-content">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered table-hover">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th width="8%">ID</th>
+                                                <th width="12%">Fecha</th>
+                                                <th width="12%">Tipo</th>
+                                                <th width="15%">Usuario</th>
+                                                <th width="12%">Área</th>
+                                                <th width="15%">Ubicación</th>
+                                                <th width="8%">Estado</th>
+                                                <th width="10%">Documento</th>
+                                                <th width="8%">Detalle</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody id="tablaTrazabilidad">
+                                            <tr>
+                                                <td colspan="9" class="text-center text-muted">
+                                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                                    <p>No hay historial disponible</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div id="trazabilidad-estadisticas" class="mt-3 p-3 bg-light rounded" style="display:none;">
+                                    <h6><i class="fas fa-chart-bar"></i> Estadísticas</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <strong>Total de movimientos:</strong> <span id="stat-total">0</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Último movimiento:</strong> <span id="stat-ultimo">-</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Por tipo:</strong>
+                                            <ul id="stat-tipos" class="mb-0 pl-3">
+                                                <li>Sin datos</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="trazabilidad-error" class="alert alert-warning text-center" style="display:none;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Error al cargar historial</strong>
+                                <p id="trazabilidad-error-msg"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ⭐⭐⭐ FOOTER CON BOTONES ANULAR/RESTAURAR ⭐⭐⭐ --}}
+                <div class="modal-footer">
+                    {{-- ⭐ BOTÓN ANULAR (Solo si es VIGENTE y es ADMIN) --}}
+                    @if(Auth::user()->esAdmin())
+                
+                    {{-- ⭐ BOTÓN RESTAURAR (Solo si está ANULADO y es ADMIN) --}}
+                    <button type="button" class="btn btn-success" id="btnRestaurarDesdeModal" style="display:none;">
+                        <i class="fas fa-undo"></i> Restaurar Movimiento
+                    </button>
+                    @endif
+                    
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cerrar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+{{-- ==========================================
+     MODAL EDITAR MOVIMIENTO
+     ========================================== --}}
+<div class="modal fade" id="modalEdit" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Editar Movimiento #<span id="edit-id-display">-</span>
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="formEdit">
+                @csrf
+                @method('PUT')
+                <input type="hidden" id="edit_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_idbien">Bien <span class="text-danger">*</span></label>
+                                <select class="form-control" id="edit_idbien" name="idbien" required>
+                                    <option value="">Seleccione un bien</option>
+                                    @foreach($bienes as $bien)
+                                        <option value="{{ $bien->id_bien }}">
+                                            {{ $bien->codigo_patrimonial }} - {{ $bien->denominacion_bien }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="text-danger error-edit-idbien d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_tipo_mvto">Tipo de Movimiento <span class="text-danger">*</span></label>
+                                <select class="form-control" id="edit_tipo_mvto" name="tipo_mvto" required>
+                                    <option value="">Seleccione tipo</option>
+                                    @foreach($tiposMovimiento as $tipo)
+                                        <option value="{{ $tipo->id_tipo_mvto }}">{{ $tipo->tipo_mvto }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="text-danger error-edit-tipo_mvto d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_fecha_mvto">Fecha <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="edit_fecha_mvto" name="fecha_mvto" required>
+                                <span class="text-danger error-edit-fecha_mvto d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_idubicacion">Ubicación</label>
+                                <select class="form-control" id="edit_idubicacion" name="idubicacion">
+                                    <option value="">Sin ubicación</option>
+                                    @foreach($ubicaciones as $ubicacion)
+                                        <option value="{{ $ubicacion->id_ubicacion }}">
+                                            {{ $ubicacion->ambiente }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="text-danger error-edit-idubicacion d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="edit_id_estado_conservacion_bien">Estado de Conservación</label>
+                                <select class="form-control" id="edit_id_estado_conservacion_bien" name="id_estado_conservacion_bien">
+                                    <option value="">Sin estado</option>
+                                    @foreach($estadosConservacion as $estado)
+                                        <option value="{{ $estado->id_estado_conservacion }}">{{ $estado->nombre_conservacion }}</option>
+                                    @endforeach
+                                </select>
+                                <span class="text-danger error-edit-id_estado_conservacion_bien d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_documento_sustentatorio">
+                                    <i class="fas fa-file-invoice"></i> Documento Sustento
+                                </label>
+                                <select class="form-control" id="edit_documento_sustentatorio" name="documento_sustentatorio">
+                                    <option value="">Sin documento</option>
+                                    @foreach($documentos as $doc)
+                                        <option value="{{ $doc->id_documento }}">
+                                            {{ $doc->tipo_documento }} - {{ $doc->numero_documento }} ({{ $doc->fecha_formateada }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="text-danger error-edit-documento_sustentatorio d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="edit_NumDocto">
+                                    <i class="fas fa-hashtag"></i> Número de Documento
+                                </label>
+                                <input type="text"
+                                    class="form-control"
+                                    id="edit_NumDocto"
+                                    name="NumDocto"
+                                    maxlength="20">
+                                <span class="text-danger error-edit-NumDocto d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="edit_detalle_tecnico">Detalle Técnico</label>
+                                <textarea class="form-control" id="edit_detalle_tecnico" name="detalle_tecnico" rows="2" maxlength="500"></textarea>
+                                <span class="text-danger error-edit-detalle_tecnico d-block mt-1"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success" id="btnActualizar">
+                        <i class="fas fa-save"></i> Actualizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    {{-- ==========================================
+        MODAL ASIGNAR MASIVO
+        ========================================== --}}
+    <div class="modal fade" id="modalAsignarMasivo" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-share-square"></i> Asignar Bienes Masivamente
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="formAsignarMasivo">
+                    @csrf
+                    <input type="hidden" id="asignar_bienes_ids" name="bienes_ids">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Se crearán movimientos de <strong>ASIGNACIÓN</strong> para <strong id="cantidadAsignar">0</strong> bienes seleccionados
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="asignar_fecha_mvto">Fecha <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="asignar_fecha_mvto" name="fecha_mvto" required>
+                                    <span class="text-danger error-asignar-fecha_mvto d-block mt-1"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="asignar_idarea_masivo">Área <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="asignar_idarea_masivo" required>
+                                        <option value="">Seleccione un Área primero</option>
+                                        @foreach($areas as $area)
+                                            <option value="{{ $area->id_area }}">{{ Str::limit($area->nombre_area, 40) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="asignar_idubicacion">Ubicación <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="asignar_idubicacion" name="idubicacion" required disabled>
+                                        <option value="">Seleccione ubicación</option>
+                                        @foreach($ubicaciones as $ubicacion)
+                                            <option value="{{ $ubicacion->id_ubicacion }}" data-area="{{ $ubicacion->idarea ?? '' }}" class="d-none">
+                                                {{ $ubicacion->ambiente }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <span class="text-danger error-asignar-idubicacion d-block mt-1"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="asignar_id_estado_conservacion_bien">
+                                        Estado de Conservación
+                                        <small class="text-muted">(Por defecto: BUENO)</small>
+                                    </label>
+                                    <select class="form-control" id="asignar_id_estado_conservacion_bien" name="id_estado_conservacion_bien">
+                                        <option value="">Sin estado</option>
+                                        @foreach($estadosConservacion as $estado)
+                                            <option value="{{ $estado->id_estado_conservacion }}"
+                                                    @if(strtoupper(trim($estado->nombre_conservacion)) === 'BUENO') data-default="true" @endif>
+                                                {{ $estado->nombre_conservacion }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <span class="text-danger error-asignar-id_estado_conservacion_bien d-block mt-1"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="asignar_documento_sustentatorio">
+                                        Documento Sustento
+                                        <small class="text-muted">(Por defecto: OTRO)</small>
+                                    </label>
+                                    <select class="form-control" id="asignar_documento_sustentatorio" name="documento_sustentatorio">
+                                        <option value="">Sin documento</option>
+                                        @foreach($documentos as $doc)
+                                            <option value="{{ $doc->id_documento }}"
+                                                    @if(strtoupper(trim($doc->tipo_documento)) === 'OTRO' || strtoupper(trim($doc->tipo_documento)) === 'OTROS') data-default="true" @endif>
+                                                {{ $doc->tipo_documento }} - {{ $doc->numero_documento }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <span class="text-danger error-asignar-documento_sustentatorio d-block mt-1"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="asignar_NumDocto">Número de Documento</label>
+                                    <input type="text" class="form-control" id="asignar_NumDocto" name="NumDocto" maxlength="20">
+                                    <span class="text-danger error-asignar-NumDocto d-block mt-1"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="asignar_detalle_tecnico">Detalle Técnico</label>
+                                    <textarea class="form-control" id="asignar_detalle_tecnico" name="detalle_tecnico" rows="2" maxlength="500"></textarea>
+                                    <span class="text-danger error-asignar-detalle_tecnico d-block mt-1"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success" id="btnGuardarAsignar">
+                            <i class="fas fa-check"></i> Asignar Bienes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+{{-- ==========================================
+     ⭐⭐⭐ MODAL ANULAR MASIVAMENTE (CORREGIDO) ⭐⭐⭐
+     ========================================== --}}
+<div class="modal fade" id="modalAnularMasivo" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-ban"></i> Anular Movimientos Seleccionados
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="formAnularMasivo">
+                @csrf
+                <input type="hidden" id="anular_movimientos_ids" name="movimientos_ids">
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Se <strong>ANULARÁN</strong> los movimientos de <strong id="cantidadAnular">0</strong> bien(es) seleccionado(s).
+                        <br>
+                        <small class="text-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Regla:</strong> Los bienes retornarán automáticamente a su ubicación y estado del movimiento válido anterior.
+                        </small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="masivo_motivo_anulacion">Motivo de Anulación <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="masivo_motivo_anulacion" name="motivo_anulacion" rows="3" minlength="10" maxlength="200" placeholder="Ej: Error de digitación. El bien nunca se movió a esa ubicación." required></textarea>
+                                <small class="text-muted">Mínimo 10 caracteres. Máximo 200 caracteres.</small>
+                                <span class="text-danger error-anular-motivo d-block mt-1"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger" id="btnGuardarAnularMasivo">
+                        <i class="fas fa-ban"></i> Confirmar Anulación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+    {{-- ==========================================
+     ⭐⭐⭐ MODAL ANULAR MOVIMIENTO (NUEVO) ⭐⭐⭐
+     ========================================== --}}
+    <div class="modal fade" id="modalAnular" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-ban"></i> Anular Movimiento #<span id="anular-id">-</span>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="formAnular">
+                    @csrf
+                    <input type="hidden" id="anular_movimiento_id">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Advertencia:</strong> El movimiento se marcará como anulado pero se mantendrá en el historial para auditoría.
+                        </div>
+
+                        <div class="form-group">
+                            <label for="motivo_anulacion">
+                                <i class="fas fa-comment-alt text-danger"></i>
+                                Motivo de Anulación <span class="text-danger">*</span>
+                            </label>
+                            <textarea
+                                class="form-control"
+                                id="motivo_anulacion"
+                                name="motivo_anulacion"
+                                rows="3"
+                                minlength="10"
+                                maxlength="200"
+                                placeholder="Describa el motivo de la anulación (mínimo 10 caracteres)"
+                                required></textarea>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Máximo 200 caracteres. Este campo es obligatorio.
+                            </small>
+                            <span class="text-danger error-anular-motivo_anulacion d-block mt-1"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-danger" id="btnConfirmarAnular">
+                            <i class="fas fa-check"></i> Confirmar Anulación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+@stop
+
+@section('js')
+<script>
+$(document).ready(function() {
+
+        // ==========================================
+        // FILTRO EN CASCADA: ÁREA -> UBICACIÓN
+        // ==========================================
+        const $filtroArea = $('#filtroArea');
+        const $filtroUbicacion = $('#filtroUbicacion');
+        
+        // Guardar copia de todas las opciones originales de ubicación
+        const opcionesUbicacionOriginales = $filtroUbicacion.find('option').clone();
+
+        $filtroArea.on('change', function() {
+            const areaSeleccionada = $(this).val();
+            const ubicacionSeleccionadaActual = $filtroUbicacion.val();
+
+            // Limpiar dropdown de ubicaciones
+            $filtroUbicacion.empty();
+
+            if (!areaSeleccionada) {
+                // Si no hay área seleccionada ("Todas las áreas" o vacío)
+                $filtroUbicacion.append('<option value="">Seleccione un Área primero</option>');
+                $filtroUbicacion.prop('disabled', true);
+            } else {
+                // Si hay un área específica seleccionada
+                $filtroUbicacion.prop('disabled', false);
+                $filtroUbicacion.append('<option value="">Todas las ubicaciones del área</option>');
+
+                let existeSeleccionPrevia = false;
+
+                // Filtrar las opciones clonadas y agregarlas si coinciden con el área
+                opcionesUbicacionOriginales.each(function() {
+                    const valorOp = $(this).val();
+                    const areaOp = $(this).data('area');
+
+                    if (valorOp === "") return; // Ignorar el "Todas" original
+
+                    // Agregar opciones cuyo data-area coincide con el área seleccionada
+                    if (areaOp == areaSeleccionada) {
+                        $filtroUbicacion.append($(this).clone());
+                        
+                        if (valorOp === ubicacionSeleccionadaActual) {
+                            existeSeleccionPrevia = true;
+                        }
+                    }
+                });
+
+                // Restaurar la ubicación previamente seleccionada si aún es válida
+                if (existeSeleccionPrevia && ubicacionSeleccionadaActual !== "") {
+                    $filtroUbicacion.val(ubicacionSeleccionadaActual);
+                } else {
+                    $filtroUbicacion.val('');
+                }
+            }
+        });
+
+        // Disparar el cambio en la carga de la página para que aplique el bloqueo inicial
+        $filtroArea.trigger('change');
+
+        // Agregar evento para el botón "Aplicar Filtros"
+        $('#btnAplicarFiltros').on('click', function(e) {
+            e.preventDefault();
+            paginaActual = 1;
+            cargarMovimientos();
+        });
+
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let paginaActual = 1;
+        let ordenActual = 'id';        // ✅ CAMBIADO DE 'fecha' A 'id'
+        let direccionActual = 'desc';
+        let busquedaActual = '';
+        let bienesSeleccionados = [];
+        let movimientosIdsParaAnular = []; // ✅ Global: IDs de movimientos para anular masivamente
+        let currentBienIdForTrazabilidad = null;
+
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%'
+        });
+
+        const hoy = new Date().toISOString().split('T')[0];
+        $('#fecha_mvto').val(hoy);
+        $('#asignar_fecha_mvto').val(hoy);
+        $('#baja_fecha_mvto').val(hoy);
+
+
+
+        // ==========================================
+        // BÚSQUEDA EN TIEMPO REAL
+        // ==========================================
+        let timeoutBusqueda;
+        $('#searchInput').on('input', function() {
+            clearTimeout(timeoutBusqueda);
+            const termino = $(this).val().trim();
+
+            $('#loadingSearch').show();
+            $('#infoResultados').hide();
+
+            timeoutBusqueda = setTimeout(function() {
+                busquedaActual = termino;
+                paginaActual = 1;
+                cargarMovimientos();
+            }, 500);
+        });
+
+        $('#btnLimpiar').click(function() {
+            $('#searchInput').val('');
+            busquedaActual = '';
+            paginaActual = 1;
+            cargarMovimientos();
+        });
+
+        $('#btnMostrarTodo').click(function() {
+            $('#searchInput').val('');
+            busquedaActual = '';
+            paginaActual = 1;
+            cargarMovimientos();
+        });
+
+        // ==========================================
+        // ORDENAMIENTO
+        // ==========================================
+        $('.sortable').click(function() {
+            const columna = $(this).data('column');
+
+            if (ordenActual === columna) {
+                direccionActual = direccionActual === 'asc' ? 'desc' : 'asc';
+            } else {
+                ordenActual = columna;
+                direccionActual = 'desc';
+            }
+
+            $('.sort-icon').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
+
+            const icon = $(this).find('.sort-icon');
+            icon.removeClass('fa-sort').addClass(direccionActual === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+
+            paginaActual = 1;
+            cargarMovimientos();
+        });
+
+
+
+        // ==========================================
+        // SELECCIÓN MASIVA
+        // ==========================================
+        $('#checkAll').change(function() {
+            const isChecked = $(this).is(':checked');
+            $('.checkbox-item').prop('checked', isChecked);
+            actualizarBienesSeleccionados();
+        });
+
+        $(document).on('change', '.checkbox-item', function() {
+            actualizarBienesSeleccionados();
+
+            const totalCheckboxes = $('.checkbox-item').length;
+            const totalChecked = $('.checkbox-item:checked').length;
+            $('#checkAll').prop('checked', totalCheckboxes === totalChecked);
+        });
+
+        function actualizarBienesSeleccionados() {
+            bienesSeleccionados = [];
+            movimientosIdsParaAnular = []; // ✅ Reiniciar array global
+
+            let tieneBaja = false;
+            let todosConTipoAlta = true;     // true si TODOS son tipo ALTA/REGISTRO
+            let algunoEsAsignacion = false;  // true si al menos UNO es ASIGNACION
+
+            $('.checkbox-item:checked').each(function() {
+                const bienId = $(this).data('bien-id');
+                if (bienId && !bienesSeleccionados.includes(bienId)) {
+                    bienesSeleccionados.push(bienId);
+                }
+
+                // Recolectar ID del movimiento de la fila
+                const rowId = $(this).closest('tr').attr('id');
+                if (rowId) {
+                    movimientosIdsParaAnular.push(parseInt(rowId.replace('row-', '')));
+                }
+
+                const tipoMvto = ($(this).data('tipo-mvto') || '').toUpperCase();
+
+                if (tipoMvto.includes('BAJA')) {
+                    tieneBaja = true;
+                }
+
+                // Normalizar: eliminar tildes para comparación robusta
+                const tipoNorm = tipoMvto
+                    .replace(/[ÁÀÂÄ]/g, 'A')
+                    .replace(/[ÉÈÊË]/g, 'E')
+                    .replace(/[ÍÌÎÏ]/g, 'I')
+                    .replace(/[ÓÒÔÖ]/g, 'O')
+                    .replace(/[ÚÙÛÜ]/g, 'U')
+                    .replace(/Ñ/g, 'N');
+
+                // Si es ASIGNACION, TRASLADO o ACTUALIZACION → se puede anular
+                if (tipoNorm.includes('ASIGNACION') || tipoNorm.includes('TRASLADO') || tipoNorm.includes('ACTUALIZACION')) {
+                    algunoEsAsignacion = true;
+                    todosConTipoAlta = false;
+                }
+
+                // Si no es ALTA/REGISTRO, no todos son ALTA
+                if (!tipoNorm.includes('ALTA') && !tipoNorm.includes('REGISTRO')) {
+                    todosConTipoAlta = false;
+                }
+            });
+
+            const cantidad = bienesSeleccionados.length;
+
+            // ⭐ ACTUALIZAR CONTADORES
+            $('#contadorAsignar').text(cantidad);
+            $('#contadorBaja').text(cantidad);
+
+            // ⭐ MOSTRAR/OCULTAR BARRA DE ACCIONES
+            if (cantidad > 0) {
+                $('#accionesMasivas').fadeIn(300);
+            } else {
+                $('#accionesMasivas').fadeOut(300);
+            }
+
+            // ✅ BOTÓN ASIGNAR: visible siempre que haya selección y no haya bienes de BAJA
+            if (cantidad > 0 && !tieneBaja) {
+                $('#btnAsignarSeleccionados').fadeIn(200).removeClass('d-none');
+            } else {
+                $('#btnAsignarSeleccionados').fadeOut(200).addClass('d-none');
+            }
+
+            // ✅ BOTÓN ANULAR MOVIMIENTO:
+            // - Solo si al menos UNO es de tipo ASIGNACION/TRASLADO (no meramente ALTA)
+            // - Y NO hay bienes de BAJA seleccionados
+            if (cantidad > 0 && !tieneBaja && algunoEsAsignacion) {
+                $('#btnBajaSeleccionados').fadeIn(200).removeClass('d-none');
+            } else {
+                $('#btnBajaSeleccionados').fadeOut(200).addClass('d-none');
+            }
+        }
+
+
+
+    // ==========================================
+    // ⭐ BOTÓN ANULAR MOVIMIENTOS SELECCIONADOS
+    // ==========================================
+    $('#btnBajaSeleccionados').click(function() {
+        if (movimientosIdsParaAnular.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Sin selección', text: 'Debe seleccionar al menos un movimiento' });
+            return;
+        }
+
+        // Poblar el modal con los datos actuales
+        $('#cantidadAnular').text(movimientosIdsParaAnular.length);
+        $('#anular_movimientos_ids').val(JSON.stringify(movimientosIdsParaAnular));
+        $('#masivo_motivo_anulacion').val('');
+        $('.error-anular-motivo').text('');
+
+        $('#modalAnularMasivo').modal('show');
+    });
+
+    $('#formAnularMasivo').submit(function(e) {
+        e.preventDefault();
+
+        const motivo = $('#masivo_motivo_anulacion').val().trim();
+        const cantidad = movimientosIdsParaAnular.length;
+
+        if (motivo.length < 10) {
+            $('.error-anular-motivo').text('El motivo debe tener al menos 10 caracteres.');
+            return;
+        }
+
+        Swal.fire({
+            title: '⚠️ ¿Confirmar Anulación?',
+            html: `
+                <p>Se <strong class="text-danger">ANULARÁN</strong> los movimientos de <strong>${cantidad}</strong> bien(es).</p>
+                <p class="text-muted small mt-2">
+                    <i class="fas fa-info-circle"></i>
+                    Cada bien retornará automáticamente a su ubicación del movimiento válido anterior.
+                </p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-ban"></i> Sí, anular movimientos',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                enviarAnularMasivo();
+            }
+        });
+    });
+
+    function enviarAnularMasivo() {
+        const idsAnular = JSON.parse($('#anular_movimientos_ids').val() || '[]');
+        const motivo   = $('#masivo_motivo_anulacion').val().trim();
+
+        if (idsAnular.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Error', text: 'No se encontraron movimientos para anular.' });
+            return;
+        }
+
+        $('#btnGuardarAnularMasivo').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+
+        $.ajax({
+            url: '{{ route("movimiento.anular-masivo") }}',
+            method: 'POST',
+            data: {
+                movimientos_ids: idsAnular,
+                motivo_anulacion: motivo
+            },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function(response) {
+                if (response.success) {
+                    $('#modalAnularMasivo').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ ¡Anulación exitosa!',
+                        html: `
+                            <p>${response.message}</p>
+                            <hr>
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle text-success"></i>
+                                ${response.cantidad} movimiento(s) anulado(s). Los bienes han regresado a su ubicación anterior.
+                            </small>
+                        `,
+                        timer: 4000,
+                        timerProgressBar: true
+                    }).then(() => { cargarMovimientos(); });
+
+                    // Limpiar selección
+                    $('.checkbox-item').prop('checked', false);
+                    $('#checkAll').prop('checked', false);
+                    bienesSeleccionados = [];
+                    movimientosIdsParaAnular = [];
+                    actualizarBienesSeleccionados();
+                }
+            },
+            error: function(xhr) {
+                const msg = xhr.responseJSON?.message || 'Error desconocido al anular los movimientos.';
+                Swal.fire({
+                    icon: 'error',
+                    title: xhr.status === 400 ? '⚠️ Acción no permitida' : '❌ Error',
+                    text: msg
+                });
+            },
+            complete: function() {
+                $('#btnGuardarAnularMasivo').prop('disabled', false).html('<i class="fas fa-ban"></i> Confirmar Anulación');
+            }
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+
+    // ==========================================
+    // ⭐ BOTÓN ASIGNAR MASIVO
+    // ==========================================
+    $('#btnAsignarSeleccionados').click(function() {
+        if (bienesSeleccionados.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin selección',
+                text: 'Debe seleccionar al menos un bien'
+            });
+            return;
+        }
+
+        // ✅ VALIDACIÓN: No permitir asignar bienes que están de BAJA
+        let hayBaja = false;
+        let bienBaja = null;
+
+        $('.checkbox-item:checked').each(function() {
+            const fila = $(this).closest('tr');
+            const tipoBadge = fila.find('.badge-tipo-baja');
+
+            if (tipoBadge.length > 0) {
+                hayBaja = true;
+                bienBaja = fila.find('.badge-info').first().text().trim(); // Código del bien
+                return false; // break
+            }
+        });
+
+        if (hayBaja) {
+            Swal.fire({
+                icon: 'error',
+                title: '❌ Acción no permitida',
+                html: `
+                    <p>No puedes <strong>Asignar</strong> bienes que están dados de <strong>BAJA</strong>.</p>
+                    <div class="alert alert-warning mt-3 mb-3" style="font-size: 0.9rem;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Bien detectado: <strong>${bienBaja}</strong>
+                    </div>
+                    <p class="text-muted small">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Solución:</strong> Primero debes <strong>Revertir la Baja</strong> y luego podrás asignar el bien.
+                    </p>
+                `,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#6c757d'
+            });
+            return;
+        }
+
+        // ✅ TODO CORRECTO - PREPARAR MODAL
+        $('#cantidadAsignar').text(bienesSeleccionados.length);
+        $('#asignar_bienes_ids').val(JSON.stringify(bienesSeleccionados));
+        $('#asignar_fecha_mvto').val(new Date().toISOString().split('T')[0]);
+        $('#asignar_idubicacion').val(''); // Usuario debe seleccionar manualmente
+        $('#asignar_detalle_tecnico').val('');
+        $('#asignar_NumDocto').val('');
+
+        // ⭐⭐⭐ SELECCIÓN AUTOMÁTICA DE VALORES POR DEFECTO ⭐⭐⭐
+        // Estado de Conservación → BUENO (automático)
+        const estadoDefault = $('#asignar_id_estado_conservacion_bien option[data-default="true"]').first();
+        if (estadoDefault.length > 0) {
+            estadoDefault.prop('selected', true);
+            $('#asignar_id_estado_conservacion_bien').trigger('change'); // Forzar actualización visual
+        } else {
+            // Fallback: Si no hay data-default, limpiar
+            $('#asignar_id_estado_conservacion_bien').val('');
+        }
+
+        // Documento Sustentatorio → OTRO (automático)
+        const documentoDefault = $('#asignar_documento_sustentatorio option[data-default="true"]').first();
+        if (documentoDefault.length > 0) {
+            documentoDefault.prop('selected', true);
+            $('#asignar_documento_sustentatorio').trigger('change'); // Forzar actualización visual
+        } else {
+            // Fallback: Si no hay data-default, limpiar
+            $('#asignar_documento_sustentatorio').val('');
+        }
+
+        // Limpiar mensajes de error previos
+        $('.text-danger').text('');
+
+        $('#modalAsignarMasivo').modal('show');
+    });
+
+    $('#formAsignarMasivo').submit(function(e) {
+        e.preventDefault();
+
+        const formData = {
+            bienes_ids: bienesSeleccionados,
+            fecha_mvto: $('#asignar_fecha_mvto').val(),
+            idubicacion: $('#asignar_idubicacion').val(),
+            id_estado_conservacion_bien: $('#asignar_id_estado_conservacion_bien').val() || null,
+            detalle_tecnico: $('#asignar_detalle_tecnico').val() || null,
+            documento_sustentatorio: $('#asignar_documento_sustentatorio').val() || null,
+            NumDocto: $('#asignar_NumDocto').val() || null
+        };
+
+        $('#btnGuardarAsignar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+
+        $.ajax({
+            url: '{{ route("movimiento.asignar-masivo") }}',
+            method: 'POST',
+            data: formData,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#modalAsignarMasivo').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ ¡Asignación exitosa!',
+                        html: `
+                            <p>${response.message}</p>
+                            <hr>
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle text-success"></i>
+                                ${response.cantidad} bien(es) asignado(s) correctamente
+                            </small>
+                        `,
+                        timer: 3500,
+                        timerProgressBar: true
+                    });
+
+                    cargarMovimientos();
+
+
+                    // Limpiar selección
+                    $('.checkbox-item').prop('checked', false);
+                    $('#checkAll').prop('checked', false);
+                    bienesSeleccionados = [];
+                    actualizarBienesSeleccionados();
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    $('.text-danger').text('');
+
+                    $.each(errors, function(key, value) {
+                        $(`.error-asignar-${key}`).text(value[0]);
+                    });
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de validación',
+                        text: 'Revise los campos marcados en rojo'
+                    });
+                } else if (xhr.status === 400) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠️ No se puede asignar',
+                        text: xhr.responseJSON?.message || 'Uno o más bienes no pueden ser asignados'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Error al asignar bienes'
+                    });
+                }
+            },
+            complete: function() {
+                $('#btnGuardarAsignar').prop('disabled', false).html('<i class="fas fa-check"></i> Asignar Bienes');
+            }
+        });
+    });
+
+
+
+    // ==========================================
+    // ⭐ ELIMINAR MOVIMIENTOS SELECCIONADOS (HARD DELETE)
+    // ==========================================
+    $('#btnEliminarSeleccionados').click(function() {
+        if (bienesSeleccionados.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin selección',
+                text: 'Debe seleccionar al menos un movimiento'
+            });
+            return;
+        }
+
+        // ✅ OBTENER IDs DE LOS MOVIMIENTOS SELECCIONADOS (NO DE BIENES)
+        let movimientosIds = [];
+        $('.checkbox-item:checked').each(function() {
+            const fila = $(this).closest('tr');
+            const movimientoId = fila.attr('id').replace('row-', ''); // Extraer ID del movimiento
+            movimientosIds.push(parseInt(movimientoId));
+        });
+
+        Swal.fire({
+            title: '¿Eliminar movimientos?',
+            html: `
+                <p>Se eliminarán (lógico) <strong>${movimientosIds.length}</strong> movimiento(s).</p>
+                <p class="text-muted small mt-2">
+                    <i class="fas fa-info-circle"></i>
+                    Los bienes quedarán inactivos pero conservarán su historial de movimientos.
+                </p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check"></i> Sí, eliminar',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                eliminarMovimientosMasivo(movimientosIds);
+            }
+        });
+    });
+
+    // ==========================================
+    // ⭐⭐⭐ ANULAR MOVIMIENTO INDIVIDUAL ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '.btn-anular-individual', function() {
+        const movimientoId = $(this).data('id');
+        const fila = $(this).closest('tr');
+        const codigoBien = fila.find('.badge-info').first().text().trim();
+        
+        $('#anular-id').text(movimientoId);
+        $('#anular_movimiento_id').val(movimientoId);
+        $('#motivo_anulacion').val('');
+        $('.error-anular-motivo_anulacion').text('');
+        
+        $('#modalAnular').modal('show');
+    });
+
+    // ==========================================
+    // ⭐⭐⭐ SUBMIT FORMULARIO ANULAR ⭐⭐⭐
+    // ==========================================
+    // ==========================================
+    // ⭐⭐⭐ SUBMIT FORMULARIO ANULAR (INDIVIDUAL O MASIVO) ⭐⭐⭐
+    // ==========================================
+    $('#formAnular').submit(function(e) {
+        e.preventDefault();
+        
+        const movimientoIdRaw = $('#anular_movimiento_id').val();
+        const motivo = $('#motivo_anulacion').val().trim();
+        
+        // Validación básica
+        if (motivo.length < 10) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Motivo insuficiente',
+                text: 'El motivo debe tener al menos 10 caracteres'
+            });
+            return;
+        }
+        
+        // ⭐⭐⭐ DETECTAR SI ES INDIVIDUAL O MASIVO ⭐⭐⭐
+        let esIndividual = true;
+        let movimientoId;
+        let movimientosIds = [];
+        
+        try {
+            // Intentar parsear como JSON (si es masivo)
+            movimientosIds = JSON.parse(movimientoIdRaw);
+            esIndividual = false;
+        } catch (e) {
+            // Si falla, es individual
+            movimientoId = parseInt(movimientoIdRaw);
+            esIndividual = true;
+        }
+        
+        $('#btnConfirmarAnular').prop('disabled', true)
+            .html('<i class="fas fa-spinner fa-spin"></i> Anulando...');
+        
+        if (esIndividual) {
+            // ⭐ ANULAR INDIVIDUAL
+            $.ajax({
+                url: `/movimiento/${movimientoId}/anular`,
+                method: 'POST',
+                data: { motivo_anulacion: motivo },
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(response) {
+                    if (response.success) {
+                        $('#modalAnular').modal('hide');
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Movimiento anulado',
+                            html: `
+                                <p>${response.message}</p>
+                                <hr>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    El movimiento se mantiene en el historial para auditoría
+                                </small>
+                            `,
+                            timer: 3500,
+                            timerProgressBar: true
+                        });
+                        
+                        cargarMovimientos();
+                    }
+                },
+                error: function(xhr) {
+                    manejarErrorAnular(xhr);
+                },
+                complete: function() {
+                    $('#btnConfirmarAnular').prop('disabled', false)
+                        .html('<i class="fas fa-check"></i> Confirmar Anulación');
+                }
+            });
+        } else {
+            // ⭐ ANULAR MASIVO
+            $.ajax({
+                url: '{{ route("movimiento.anular-masivo") }}',
+                method: 'POST',
+                data: {
+                    movimientos_ids: movimientosIds,
+                    motivo_anulacion: motivo
+                },
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(response) {
+                    if (response.success) {
+                        $('#modalAnular').modal('hide');
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ Movimientos anulados',
+                            html: `
+                                <p>${response.message}</p>
+                                <hr>
+                                <small class="text-muted">
+                                    <i class="fas fa-check-circle"></i>
+                                    ${response.cantidad} movimiento(s) anulado(s)
+                                </small>
+                            `,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        
+                        cargarMovimientos();
+                        
+                        
+                        // Limpiar selección
+                        $('.checkbox-item').prop('checked', false);
+                        $('#checkAll').prop('checked', false);
+                        bienesSeleccionados = [];
+                        actualizarBienesSeleccionados();
+                    }
+                },
+                error: function(xhr) {
+                    manejarErrorAnular(xhr);
+                },
+                complete: function() {
+                    $('#btnConfirmarAnular').prop('disabled', false)
+                        .html('<i class="fas fa-check"></i> Confirmar Anulación');
+                }
+            });
+        }
+    });
+
+    // ⭐ FUNCIÓN AUXILIAR PARA MANEJAR ERRORES
+    function manejarErrorAnular(xhr) {
+        if (xhr.status === 422) {
+            const errors = xhr.responseJSON.errors;
+            $('.error-anular-motivo_anulacion').text(errors.motivo_anulacion ? errors.motivo_anulacion[0] : '');
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de validación',
+                text: 'Revise el motivo ingresado'
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: xhr.responseJSON?.message || 'Error al anular',
+                text: xhr.status === 403 ? 'Solo el administrador puede anular movimientos' : ''
+            });
+        }
+    }
+
+
+    // ==========================================
+    // ⭐⭐⭐ RESTAURAR MOVIMIENTO ANULADO ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '.btn-restaurar', function() {
+        const movimientoId = $(this).data('id');
+        const fila = $(this).closest('tr');
+        const codigoBien = fila.find('.badge-info').first().text().trim();
+        
+        Swal.fire({
+            title: '¿Restaurar movimiento?',
+            html: `
+                <p>Se restaurará el movimiento <strong>#${movimientoId}</strong></p>
+                <p class="text-muted small">
+                    <i class="fas fa-info-circle"></i> Bien: ${codigoBien}
+                </p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check"></i> Sí, restaurar',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                restaurarMovimiento(movimientoId);
+            }
+        });
+    });
+
+    /**
+     * ⭐ FUNCIÓN RESTAURAR MOVIMIENTO
+     */
+    function restaurarMovimiento(movimientoId) {
+        $.ajax({
+            url: `/movimiento/${movimientoId}/restaurar`,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Movimiento restaurado',
+                        text: response.message,
+                        timer: 2500,
+                        timerProgressBar: true
+                    });
+                    
+                    // Recargar tabla
+                    cargarMovimientos();
+                   
+                }
+            },
+            error: function(xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al restaurar',
+                    text: xhr.responseJSON?.message || 'Error desconocido',
+                    footer: xhr.status === 403 ? '<small>Solo el administrador puede restaurar movimientos</small>' : ''
+                });
+            }
+        });
+    }
+
+    // ==========================================
+    // ⭐⭐⭐ ANULAR MOVIMIENTOS MASIVAMENTE (CON MODAL DETALLADO) ⭐⭐⭐
+    // ==========================================
+    $('#btnAnularSeleccionados').click(function() {
+        if (bienesSeleccionados.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin selección',
+                text: 'Debe seleccionar al menos un movimiento'
+            });
+            return;
+        }
+        
+        // ⭐⭐⭐ OBTENER IDs DE MOVIMIENTOS SELECCIONADOS ⭐⭐⭐
+        let movimientosIds = [];
+        $('.checkbox-item:checked').each(function() {
+            const fila = $(this).closest('tr');
+            const movimientoId = fila.attr('id').replace('row-', '');
+            movimientosIds.push(parseInt(movimientoId));
+        });
+        
+        // ⭐⭐⭐ ABRIR MODAL DE ANULACIÓN (IGUAL QUE INDIVIDUAL) ⭐⭐⭐
+        $('#anular-id').text(movimientosIds.length + ' movimiento(s)');
+        $('#anular_movimiento_id').val(JSON.stringify(movimientosIds)); // Array en JSON
+        $('#motivo_anulacion').val('');
+        $('.error-anular-motivo_anulacion').text('');
+        
+        // ⭐ Cambiar título del modal para indicar que es masivo
+        $('#modalAnular .modal-title').html(`
+            <i class="fas fa-ban"></i> Anular ${movimientosIds.length} Movimiento(s)
+        `);
+        
+        $('#modalAnular').modal('show');
+    });
+
+
+
+
+
+
+
+
+
+    // ==========================================
+    // ⭐ VER MOVIMIENTO (CON TRAZABILIDAD Y BOTONES)
+    // ==========================================
+    $(document).on('click', '.btn-ver', function() {
+        const id = $(this).data('id');
+
+        $.ajax({
+            url: `/movimiento/${id}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+
+                    $('#ver-id').text(data.id_movimiento);
+                    $('#ver-codigo').text(data.bien.codigo_patrimonial);
+                    $('#ver-denominacion').text(data.bien.denominacion_bien);
+                    $('#ver-tipo').text(data.tipo_movimiento.tipo_mvto);
+                    $('#ver-fecha').text(typeof moment !== 'undefined' ? moment(data.fecha_mvto).format('DD/MM/YYYY HH:mm:ss') : data.fecha_mvto);
+                    $('#ver-ubicacion').text(data.ubicacion ? data.ubicacion.ambiente : 'Sin ubicación');
+                    $('#ver-estado').text(data.estado_conservacion ? data.estado_conservacion.nombre_conservacion : 'Sin estado');
+                    $('#ver-usuario').text(data.usuario.name);
+                    $('#ver-documento').text(data.documento_sustento ?
+                        `${data.documento_sustento.tipo_documento} - ${data.documento_sustento.numero_documento}` :
+                        'Sin documento');
+                    $('#ver-numdoc').text(data.NumDocto || 'Sin número');
+                    $('#ver-detalle-tecnico').text(data.detalle_tecnico || 'Sin detalle');
+
+                    currentBienIdForTrazabilidad = data.bien.id_bien;
+
+                    // ⭐⭐⭐ MOSTRAR/OCULTAR BOTONES SEGÚN ESTADO DEL MOVIMIENTO ⭐⭐⭐
+                    if (data.anulado) {
+                        // Si está ANULADO → mostrar botón RESTAURAR
+                        $('#btnRestaurarDesdeModal').show().data('id', id);
+                        $('#btnAnularDesdeModal').hide();
+                    } else {
+                        // Si está VIGENTE → mostrar botón ANULAR
+                        $('#btnAnularDesdeModal').show().data('id', id);
+                        $('#btnRestaurarDesdeModal').hide();
+                    }
+
+                    $('#tab-detalles-tab').tab('show');
+                    $('#modalVer').modal('show');
+                }
+            },
+            error: function(xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo cargar el movimiento'
+                });
+            }
+        });
+    });
+
+
+
+    // ==========================================
+    // ⭐⭐⭐ ANULAR DESDE MODAL DE DETALLES ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '#btnAnularDesdeModal', function() {
+        const movimientoId = $(this).data('id');
+        
+        // Cerrar modal de detalles
+        $('#modalVer').modal('hide');
+        
+        // Esperar a que el modal se cierre completamente antes de abrir el siguiente
+        setTimeout(function() {
+            // Abrir modal de anulación
+            $('#anular-id').text(movimientoId);
+            $('#anular_movimiento_id').val(movimientoId);
+            $('#motivo_anulacion').val('');
+            $('.error-anular-motivo_anulacion').text('');
+            
+            // Restaurar título del modal (por si venía de masivo)
+            $('#modalAnular .modal-title').html(`
+                <i class="fas fa-ban"></i> Anular Movimiento #${movimientoId}
+            `);
+            
+            $('#modalAnular').modal('show');
+        }, 300); // 300ms para que termine la animación de cierre
+    });
+
+    // ==========================================
+    // ⭐⭐⭐ RESTAURAR DESDE MODAL DE DETALLES ⭐⭐⭐
+    // ==========================================
+    $(document).on('click', '#btnRestaurarDesdeModal', function() {
+        const movimientoId = $(this).data('id');
+        
+        // Cerrar modal de detalles
+        $('#modalVer').modal('hide');
+        
+        // Esperar a que el modal se cierre antes de mostrar el SweetAlert
+        setTimeout(function() {
+            Swal.fire({
+                title: '¿Restaurar movimiento?',
+                html: `
+                    <p>Se restaurará el movimiento <strong>#${movimientoId}</strong></p>
+                    <p class="text-muted small mt-2">
+                        <i class="fas fa-info-circle"></i> 
+                        El movimiento volverá a estar activo en el sistema
+                    </p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-check"></i> Sí, restaurar',
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    restaurarMovimiento(movimientoId);
+                }
+            });
+        }, 300); // 300ms para que termine la animación
+    });
+
+
+
+    // ==========================================
+    // ⭐ CARGAR TRAZABILIDAD AL CAMBIAR TAB
+    // ==========================================
+    $('#tab-trazabilidad-tab').on('shown.bs.tab', function() {
+        if (currentBienIdForTrazabilidad) {
+            cargarTrazabilidad(currentBienIdForTrazabilidad, 'todos');
+        }
+    });
+
+    $('#filtroTrazabilidad').change(function() {
+        const filtro = $(this).val();
+        if (currentBienIdForTrazabilidad) {
+            cargarTrazabilidad(currentBienIdForTrazabilidad, filtro);
+        }
+    });
+
+    function cargarTrazabilidad(bienId, filtro = 'todos') {
+        $('#trazabilidad-loading').show();
+        $('#trazabilidad-content').hide();
+        $('#trazabilidad-error').hide();
+
+        $.ajax({
+            url: `/movimiento/trazabilidad/${bienId}`,
+            method: 'GET',
+            data: { filtro: filtro },
+            success: function(response) {
+                if (response.success) {
+                    const bien = response.bien;
+                    let movimientos = response.data;
+                    const stats = response.estadisticas;
+
+                    $('#trazabilidad-codigo').text(bien.codigo_patrimonial);
+                    $('#trazabilidad-denominacion').text(bien.denominacion_bien);
+
+                    $('#tablaTrazabilidad').empty();
+
+                    if (movimientos.length === 0) {
+                    $('#tablaTrazabilidad').html(`
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                    <p>No hay movimientos en este rango de tiempo</p>
+                                </td>
+                            </tr>
+                        `);
+                    } else {
+                        // ✅✅✅ ORDENAR POR ID DESCENDENTE (MÁS RECIENTE PRIMERO) ✅✅✅
+                        movimientos.sort((a, b) => {
+                            // Primero ordenar por fecha (descendente)
+                            const fechaA = new Date(a.fecha_mvto);
+                            const fechaB = new Date(b.fecha_mvto);
+
+                            if (fechaB.getTime() !== fechaA.getTime()) {
+                                return fechaB - fechaA;
+                            }
+
+                            // Si las fechas son iguales, ordenar por ID (descendente)
+                            return b.id_movimiento - a.id_movimiento;
+                        });
+
+                        movimientos.forEach(function(mov) {
+                            const fecha = typeof moment !== 'undefined' ?
+                                moment(mov.fecha_mvto).format('DD/MM/YYYY') :
+                                mov.fecha_mvto;
+                            const tipo = mov.tipo_movimiento ? mov.tipo_movimiento.tipo_mvto : '-';
+                            const usuario = mov.usuario ? mov.usuario.name : '-';
+
+                            // ⭐⭐⭐ NUEVO: EXTRAER ÁREA ⭐⭐⭐
+                            const area = (mov.ubicacion && mov.ubicacion.area) ?
+                                mov.ubicacion.area.nombre_area : '-';
+
+                            const ubicacion = mov.ubicacion ? mov.ubicacion.ambiente : '-';
+                            const estado = mov.estado_conservacion ? mov.estado_conservacion.nombre_conservacion : '-';
+                            const documento = mov.documento_sustento ?
+                                `${mov.documento_sustento.tipo_documento} ${mov.documento_sustento.numero_documento}` : '-';
+
+                            // ⭐ EXTRAER MOTIVO/DETALLE
+                            const detalle = mov.detalle_tecnico ?
+                                (mov.detalle_tecnico.length > 30 ?
+                                    mov.detalle_tecnico.substring(0, 30) + '...' :
+                                    mov.detalle_tecnico) :
+                                '-';
+
+
+                            let badgeClass = 'badge-secondary';
+
+                                // 🟦 SIN ASIGNAR o REGISTRO = Celeste/Azul
+                                if (tipo.toLowerCase().includes('sin asignar') || tipo.toLowerCase().includes('registro')) {
+                                    badgeClass = 'badge-primary';
+                                }
+                                // 🟩 ASIGNACIÓN = Verde
+                                else if (tipo.toLowerCase().includes('asignaci')) {
+                                    badgeClass = 'badge-success';
+                                }
+                                // 🟥 BAJA = Rojo
+                                else if (tipo.toLowerCase().includes('baja')) {
+                                    badgeClass = 'badge-danger';
+                                }
+                                // 🔵 REVERSIÓN = Azul Info
+                                else if (tipo.toLowerCase().includes('revers')) {
+                                    badgeClass = 'badge-info';
+                                }
+
+
+                            // ⚠️ INDICADOR VISUAL: fila anulada
+                            const esAnulado = mov.anulado === true || mov.anulado == 1;
+                            const filaEstilo = esAnulado ? 'style="background-color:#fff5f5; opacity:0.85;"' : '';
+                            const motivoCorto = esAnulado && mov.motivo_anulacion
+                                ? mov.motivo_anulacion.substring(0, 50) + (mov.motivo_anulacion.length > 50 ? '...' : '')
+                                : '';
+                            const badgeAnulado = esAnulado
+                                ? `<span class="badge badge-danger mt-1" style="font-size:0.68rem;" title="Motivo: ${mov.motivo_anulacion || 'Sin especificar'}"><i class="fas fa-ban"></i> ANULADO</span>`
+                                : '';
+
+                            $('#tablaTrazabilidad').append(`
+                                <tr ${filaEstilo}>
+                                    <td class="text-center"><strong>${mov.id_movimiento}</strong></td>
+                                    <td><strong>${fecha}</strong></td>
+                                    <td>
+                                        <span class="badge ${badgeClass}">${tipo}</span>
+                                        ${badgeAnulado}
+                                    </td>
+                                    <td><i class="fas fa-user"></i> ${usuario}</td>
+                                    <td>
+                                        <i class="fas fa-building text-warning"></i>
+                                        <strong>${area}</strong>
+                                    </td>
+                                    <td><i class="fas fa-map-marker-alt text-danger"></i> ${ubicacion}</td>
+                                    <td><small>${estado}</small></td>
+                                    <td><small>${documento}</small></td>
+                                    <td>
+                                        <small class="text-muted" title="${mov.detalle_tecnico || 'Sin detalle'}">
+                                            <i class="fas fa-comment-dots"></i> ${detalle}
+                                        </small>
+                                        ${esAnulado && motivoCorto ? `<br><small class="text-danger"><i class="fas fa-ban"></i> <em>${motivoCorto}</em></small>` : ''}
+                                    </td>
+                                </tr>
+                            `);
+
+                        });
+
+                        $('#stat-total').text(stats.total_movimientos);
+                        $('#stat-ultimo').text(stats.ultimo_movimiento ?
+                            (typeof moment !== 'undefined' ?
+                                moment(stats.ultimo_movimiento).format('DD/MM/YYYY HH:mm') :
+                                stats.ultimo_movimiento) : '-');
+
+                        $('#stat-tipos').empty();
+                        if (stats.tipos && Object.keys(stats.tipos).length > 0) {
+                            $.each(stats.tipos, function(tipo, cantidad) {
+                                $('#stat-tipos').append(`<li>${tipo}: ${cantidad}</li>`);
+                            });
+                        } else {
+                            $('#stat-tipos').append('<li>Sin datos</li>');
+                        }
+
+                        $('#trazabilidad-estadisticas').show();
+                    }
+
+                    $('#trazabilidad-loading').hide();
+                    $('#trazabilidad-content').show();
+                }
+            },
+            error: function(xhr) {
+                $('#trazabilidad-loading').hide();
+                $('#trazabilidad-error').show();
+                $('#trazabilidad-error-msg').text(xhr.responseJSON?.message || 'Error al cargar historial');
+            }
+        });
+    }
+
+
+
+
+    // ==========================================
+    // ⭐⭐⭐ IMPRIMIR TRAZABILIDAD EN PDF ⭐⭐⭐
+    // ==========================================
+    $('#btnImprimirTrazabilidad').on('click', function() {
+        if (!currentBienIdForTrazabilidad) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'No hay un bien seleccionado'
+            });
+            return;
+        }
+
+        const filtro = $('#filtroTrazabilidad').val();
+
+        // Mostrar loading
+        Swal.fire({
+            title: 'Generando PDF...',
+            html: '<i class="fas fa-spinner fa-spin fa-3x text-danger"></i><br><small>Esto puede tardar unos segundos</small>',
+            showConfirmButton: false,
+            allowOutsideClick: false
+        });
+
+        // Generar URL con filtro
+        const url = `/movimiento/pdf-trazabilidad/${currentBienIdForTrazabilidad}?filtro=${filtro}`;
+
+        // Abrir en nueva pestaña (el navegador lo descargará automáticamente)
+        window.open(url, '_blank');
+
+        // Cerrar el loading después de 1 segundo
+        setTimeout(() => {
+            Swal.fire({
+                icon: 'success',
+                title: '¡PDF Generado!',
+                text: 'El documento se está descargando',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }, 1000);
+    });
+
+
+    // ==========================================
+    // EDITAR MOVIMIENTO
+    // ==========================================
+    $(document).on('dblclick', '.fila-movimiento', function() {
+        @if(Auth::user()->esAdmin() || strtoupper(Auth::user()->rol_usuario) === 'INFORMATICA')
+            const id = $(this).data('id');
+
+            $.ajax({
+                url: `/movimiento/${id}/edit`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const data = response.data;
+
+                        $('#edit_id').val(data.id_movimiento);
+                        $('#edit-id-display').text(data.id_movimiento);
+                        $('#edit_idbien').val(data.idbien);
+                        $('#edit_tipo_mvto').val(data.tipo_mvto);
+                        $('#edit_fecha_mvto').val(typeof moment !== 'undefined' ? moment(data.fecha_mvto).format('YYYY-MM-DD') : data.fecha_mvto.split(' ')[0]);
+                        $('#edit_idubicacion').val(data.idubicacion || '');
+                        $('#edit_id_estado_conservacion_bien').val(data.id_estado_conservacion_bien || '');
+                        $('#edit_detalle_tecnico').val(data.detalle_tecnico || '');
+                        $('#edit_documento_sustentatorio').val(data.documento_sustentatorio || '');
+                        $('#edit_NumDocto').val(data.NumDocto || '');
+
+                        $('.text-danger').text('');
+
+                        $('#modalEdit').modal('show');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo cargar el movimiento'
+                    });
+                }
+            });
+        @endif
+    });
+
+    $('#formEdit').submit(function(e) {
+        e.preventDefault();
+
+        const id = $('#edit_id').val();
+        const formData = $(this).serialize();
+
+        $('#btnActualizar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
+        $('.text-danger').text('');
+
+        $.ajax({
+            url: `/movimiento/${id}`,
+            method: 'PUT',
+            data: formData,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#modalEdit').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Actualizado!',
+                        text: response.message,
+                        timer: 2000
+                    });
+
+                    cargarMovimientos();
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    $.each(errors, function(key, value) {
+                        $(`.error-edit-${key}`).text(value[0]);
+                    });
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de validación',
+                        text: 'Revise los campos marcados'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: xhr.responseJSON?.message || 'Error al actualizar'
+                    });
+                }
+            },
+            complete: function() {
+                $('#btnActualizar').prop('disabled', false).html('<i class="fas fa-save"></i> Actualizar');
+            }
+        });
+    });
+
+    // ==========================================
+    // PAGINACIÓN
+    // ==========================================
+    $(document).on('click', '.paginar-inicial', function(e) {
+        e.preventDefault();
+        paginaActual = $(this).data('page');
+        cargarMovimientos();
+    });
+
+
+
+    // ==========================================
+    // ⭐ CARGAR MOVIMIENTOS (CORREGIDO CON CARDS DINÁMICOS + ÁREA)
+    // ==========================================
+    function cargarMovimientos() {
+        // ✅ OBTENER VALORES DE FILTROS DE TIPO
+        let filtroVistaValor = $('#filtroVista').val();
+        let filtroTipoMvtoValor = $('#filtroTipoMvto').val();
+
+        // ✅ PARÁMETROS PARA ENVIAR AL BACKEND
+        const params = {
+            search: busquedaActual,
+            orden: ordenActual,
+            direccion: direccionActual,
+            page: paginaActual,
+            vista: filtroVistaValor,           // ⭐ RENOMBRADO A vista
+            tipo_mvto: filtroTipoMvtoValor,    // ⭐ NUEVO (el BD)
+            estado_bien: $('#filtroEstadoBien').val(),
+            area: $('#filtroArea').val(),
+            ubicacion: $('#filtroUbicacion').val(),
+            fecha_desde: $('#filtroFechaDesde').val(),
+            fecha_hasta: $('#filtroFechaHasta').val(),
+            mostrar_anulados: $('#filtroAnulados').val() || '0'  // ⭐ NUEVO
+        };
+
+
+        $.ajax({
+            url: '{{ route("movimiento.index") }}',
+            method: 'GET',
+            data: params,
+            success: function(response) {
+                if (response.success) {
+                    // 1️⃣ RENDERIZAR TABLA
+                    renderizarMovimientos(response.data);
+                    actualizarPaginacion(response);
+
+                   
+
+                    // 3️⃣ MANEJO DE UI
+                    $('#loadingSearch').hide();
+                    $('#infoResultados').show();
+
+                    if (response.data.length === 0) {
+                        $('#noResultados').show();
+                        $('#terminoBuscado').text(busquedaActual);
+                        $('#paginacionContainer').hide();
+                    } else {
+                        $('#noResultados').hide();
+                        $('#paginacionContainer').show();
+                    }
+
+                
+                }
+            },
+            error: function(xhr) {
+                console.error('Error al cargar movimientos:', xhr);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar los movimientos'
+                });
+            }
+        });
+    }
+
+
+
+
+
+    function renderizarMovimientos(movimientos) {
+    const tbody = $('#tablaMovimientos');
+    tbody.empty();
+
+    if (!movimientos || movimientos.length === 0) {
+        tbody.html(`
+            <tr>
+                <td colspan="11" class="text-center text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p>No hay movimientos registrados</p>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+
+    movimientos.forEach(function(mov) {
+        const tipoNormalizado = mov.tipo_movimiento.tipo_mvto.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, '-');
+
+        const fecha = typeof moment !== 'undefined' ? moment(mov.fecha_mvto).format('DD/MM/YYYY') : mov.fecha_mvto.split(' ')[0];
+
+        const denominacion = mov.bien.denominacion_bien || '';
+        const denominacionCorta = denominacion.length > 30 ? denominacion.substring(0, 30) + '...' : denominacion;
+        const tipoNombre = mov.bien.tipo_bien ? mov.bien.tipo_bien.nombre_tipo : '';
+        const ubicacionNombre = mov.ubicacion ? mov.ubicacion.ambiente : '';
+        const areaNombre = (mov.ubicacion && mov.ubicacion.area) ? mov.ubicacion.area.nombre_area : '-';
+
+        // Estado de conservación: texto plano
+        const estadoConservacion = mov.estado_conservacion ? mov.estado_conservacion.nombre_conservacion : '-';
+
+        // Estado movimiento: texto plano con ícono
+        const estadoMovimiento = mov.anulado
+            ? `<span title="Anulado el ${mov.fecha_anulacion || 'N/A'}"><i class="fas fa-times-circle text-danger"></i> Anulado</span>`
+            : `<span><i class="fas fa-check-circle text-success"></i> Vigente</span>`;
+
+        // Clase anulado (solo para estilo de fila, no colores de fondo)
+        const claseAnulado = mov.anulado ? 'tipo-anulado' : '';
+
+        // Tipo MVTO normalizado para data attribute
+        const tipoMvtoUpper = mov.tipo_movimiento.tipo_mvto.toUpperCase();
+
+        const row = `
+            <tr id="row-${mov.id_movimiento}" 
+                class="fila-movimiento ${claseAnulado}" 
+                data-id="${mov.id_movimiento}">
+                
+                <td class="text-center">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input checkbox-item"
+                            id="check-${mov.id_movimiento}"
+                            value="${mov.id_movimiento}"
+                            data-bien-id="${mov.idbien}"
+                            data-tipo-mvto="${tipoMvtoUpper}"
+                            data-tiene-asignacion="${mov.tiene_asignacion ? '1' : '0'}"
+                            ${mov.anulado ? 'disabled' : ''}>
+                        <label class="custom-control-label" for="check-${mov.id_movimiento}"></label>
+                    </div>
+                </td>
+                
+                <td>${fecha}</td>
+                <td>${mov.bien.codigo_patrimonial}</td>
+                
+                <td>
+                    ${denominacionCorta}<br>
+                    <small class="text-muted">${tipoNombre}</small>
+                </td>
+
+                <td>${mov.tipo_movimiento.tipo_mvto}</td>
+
+                <td><small><i class="fas fa-building text-muted"></i> ${areaNombre}</small></td>
+
+                <td>
+                    ${ubicacionNombre ? `<small><i class="fas fa-map-marker-alt text-muted"></i> ${ubicacionNombre}</small>` : '<span class="text-muted">-</span>'}
+                </td>
+                
+                <td>${estadoConservacion}</td>
+                
+                <td class="text-center">
+                    <button type="button" class="btn btn-info btn-sm btn-ver" 
+                            title="Ver Detalles" 
+                            data-id="${mov.id_movimiento}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        tbody.append(row);
+    });
+
+    }
+
+
+        function actualizarPaginacion(response) {
+        $('#from').text(response.from || 0);
+        $('#to').text(response.to || 0);
+        $('#resultadosCount').text(response.resultados);
+        $('#totalCount').text(response.total);
+        $('#paginaInfo').text(`${response.from || 0} - ${response.to || 0}`);
+
+        const linksContainer = $('#paginacionLinks');
+        linksContainer.empty();
+
+        if (response.last_page > 1) {
+            let paginationHTML = '<ul class="pagination pagination-sm m-0">';
+
+            if (response.current_page === 1) {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link paginar-inicial" href="#" data-page="${response.current_page - 1}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                `;
+            }
+
+            for (let i = 1; i <= response.last_page; i++) {
+                if (i === response.current_page) {
+                    paginationHTML += `
+                        <li class="page-item active">
+                            <span class="page-link">${i}</span>
+                        </li>
+                    `;
+                } else if (i === 1 || i === response.last_page || Math.abs(i - response.current_page) <= 2) {
+                    paginationHTML += `
+                        <li class="page-item">
+                            <a class="page-link paginar-inicial" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+            }
+
+            if (response.current_page === response.last_page) {
+                paginationHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                    </li>
+                `;
+            } else {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link paginar-inicial" href="#" data-page="${response.current_page + 1}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                `;
+            }
+
+            paginationHTML += '</ul>';
+            linksContainer.html(paginationHTML);
+        }
+    }
+
+    // ==========================================
+    // ⭐ VERIFICAR FILTROS ACTIVOS (CON ÁREA)
+    // ==========================================
+    function verificarFiltrosActivos() {
+        const vistaSeleccionada = $('#filtroVista').val();
+        const tipoMvtoSeleccionado = $('#filtroTipoMvto').val();
+        const estadoBien = $('#filtroEstadoBien').val();
+        const areaSeleccionada = $('#filtroArea').val();  // ⭐ NUEVO
+        const ubicacionSeleccionada = $('#filtroUbicacion').val();
+        const fechaDesde = $('#filtroFechaDesde').val();
+        const fechaHasta = $('#filtroFechaHasta').val();
+
+        let filtrosTexto = [];
+
+        // ✅ FILTRO DE VISTA
+        if (vistaSeleccionada && vistaSeleccionada !== 'activos') {
+            const textoVista = $('#filtroVista option:selected').text();
+            filtrosTexto.push(`Vista: ${textoVista}`);
+        }
+
+        // ✅ FILTRO DE TIPO DE MOVIMIENTO
+        if (tipoMvtoSeleccionado && tipoMvtoSeleccionado !== '') {
+            const textoTipo = $('#filtroTipoMvto option:selected').text().trim();
+            filtrosTexto.push(`Tipo: ${textoTipo}`);
+        }
+
+        // ✅ FILTRO DE ESTADO DEL BIEN
+        if (estadoBien && estadoBien !== '1' && estadoBien !== '') {
+            const textoEstado = $('#filtroEstadoBien option:selected').text();
+            filtrosTexto.push(`Estado: ${textoEstado}`);
+        }
+
+        // ⭐⭐⭐ FILTRO DE ÁREA (NUEVO) ⭐⭐⭐
+        if (areaSeleccionada && areaSeleccionada !== '') {
+            const textoArea = $('#filtroArea option:selected').text();
+            filtrosTexto.push(`Área: ${textoArea}`);
+        }
+
+        // ✅ FILTRO DE UBICACIÓN
+        if (ubicacionSeleccionada && ubicacionSeleccionada !== '' && ubicacionSeleccionada !== 'todas') {
+            const textoUbicacion = $('#filtroUbicacion option:selected').text();
+            filtrosTexto.push(`Ubicación: ${textoUbicacion}`);
+        }
+
+        // ✅ FILTRO DE RANGO DE FECHAS
+        if (fechaDesde && fechaHasta) {
+            filtrosTexto.push(`Período: ${fechaDesde} al ${fechaHasta}`);
+        } else if (fechaDesde) {
+            filtrosTexto.push(`Desde: ${fechaDesde}`);
+        } else if (fechaHasta) {
+            filtrosTexto.push(`Hasta: ${fechaHasta}`);
+        }
+
+        // ✅ MOSTRAR/OCULTAR INDICADOR DE FILTROS
+        if (filtrosTexto.length > 0) {
+            $('#filtrosActivosTexto').html(filtrosTexto.join(' <span class="text-muted">|</span> '));
+            $('#filtrosActivos').fadeIn(200);
+        } else {
+            $('#filtrosActivos').fadeOut(200, function() {
+                $('#filtrosActivosTexto').empty();
+            });
+        }
+    }
+
+    // ✅ DETECTAR CAMBIOS EN FILTROS
+        $('#filtroVista, #filtroTipoMvto, #filtroEstadoBien, #filtroArea, #filtroUbicacion, #filtroFechaDesde, #filtroFechaHasta').on('change', function() {
+        verificarFiltrosActivos();
+    });
+
+    // ==========================================
+    // ⭐ FILTRO CASCADA: ÁREA → UBICACIÓN
+    // ==========================================
+    $('#filtroArea').on('change', function() {
+        const areaId = $(this).val();
+        const $ubicacion = $('#filtroUbicacion');
+        const $opciones = $ubicacion.find('option[data-area]');
+
+        // Resetear selección de ubicación
+        $ubicacion.val('');
+
+        if (areaId === '' || areaId === null) {
+            // Sin área seleccionada: mostrar TODAS
+            $opciones.show();
+        } else {
+            // Filtrar: mostrar solo las de esa área
+            $opciones.each(function() {
+                if ($(this).data('area').toString() === areaId.toString()) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+    });
+
+
+    // ✅ APLICAR FILTROS CON VALIDACIÓN
+    $('#btnAplicarFiltros').click(function() {
+        const fechaDesde = $('#filtroFechaDesde').val();
+        const fechaHasta = $('#filtroFechaHasta').val();
+
+        // 1. VALIDAR RANGO DE FECHAS
+        if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Rango de fechas inválido',
+                text: 'La fecha "Desde" debe ser menor o igual a la fecha "Hasta"',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#f39c12'
+            });
+            return;
+        }
+
+        // 2. ACTUALIZAR INDICADOR
+        verificarFiltrosActivos();
+
+        // 3. RESETEAR Y RECARGAR
+        paginaActual = 1;
+        cargarMovimientos();
+
+        // 4. FEEDBACK VISUAL
+        const btnTexto = $(this).html();
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> ');
+
+        setTimeout(() => {
+            $(this).prop('disabled', false).html(btnTexto);
+        }, 500);
+    });
+
+    // ✅ LIMPIAR FILTROS (CORREGIDO)
+    $('#btnLimpiarFiltros').click(function() {
+        // 1. RESTAURAR VALORES POR DEFECTO
+        $('#filtroVista').val('activos'); 
+        $('#filtroTipoMvto').val('');
+        $('#filtroEstadoBien').val('1');
+        $('#filtroArea').val('');  // ⭐ NUEVO
+        $('#filtroUbicacion').val('');
+        $('#filtroFechaDesde').val('');
+        $('#filtroFechaHasta').val('');
+
+        // 2. OCULTAR BADGE INMEDIATAMENTE
+        $('#filtrosActivos').hide();
+        $('#filtrosActivosTexto').empty();
+
+        // 3. VERIFICAR ESTADO
+        verificarFiltrosActivos();
+
+        // 4. RECARGAR TABLA
+        paginaActual = 1;
+        cargarMovimientos();
+
+        // 5. NOTIFICACIÓN
+        Swal.fire({
+            icon: 'info',
+            title: 'Filtros restaurados',
+            text: 'Mostrando movimientos activos (Registro y Asignación)',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    });
+
+
+    // ==========================================
+    // 🚀 INICIALIZACIÓN FINAL
+    // ==========================================
+
+    // 1. ⭐ OCULTAR BADGE DE FILTROS AL CARGAR LA PÁGINA
+    $('#filtrosActivos').hide();
+    $('#filtrosActivosTexto').empty();
+    // ✅ CORRECTO: No muestra badge al inicio (filtro default no necesita badge)
+
+    // 2. ⭐ VERIFICAR ESTADO INICIAL DE FILTROS
+    verificarFiltrosActivos();
+    // ✅ CORRECTO: Verifica si hay filtros activos (no debería haber ninguno al inicio)
+
+    // 3. ⭐ CARGAR MOVIMIENTOS CON FILTROS DEFAULT (solo activos)
+    cargarMovimientos();
+    // ✅ CORRECTO: Carga movimientos con el filtro por defecto (activos)
+
+
+
+
+
+    // ==========================================
+    // ⭐⭐⭐ LÓGICA DE ÁREA -> UBICACIÓN (ASIGNACIÓN MASIVA)
+    // ==========================================
+    const $asigArea = $('#asignar_idarea_masivo');
+    const $asigUbicacion = $('#asignar_idubicacion');
+    const asigUbicacionOriginalOptions = $asigUbicacion.find('option[data-area]').clone();
+
+    $asigArea.on('change', function() {
+        const selectedArea = $(this).val();
+        
+        // Limpiar opciones actuales manteniendo el placeholder
+        $asigUbicacion.empty().append('<option value="">Seleccione ubicación</option>');
+        
+        if (!selectedArea) {
+            $asigUbicacion.prop('disabled', true);
+        } else {
+            $asigUbicacion.prop('disabled', false);
+            // Agregar las opciones que corresponden al área
+            asigUbicacionOriginalOptions.each(function() {
+                if ($(this).data('area') == selectedArea) {
+                    $asigUbicacion.append($(this).clone().removeClass('d-none'));
+                }
+            });
+        }
+    });
+
+}); // ✅ CIERRE ÚNICO DE $(document).ready()
+</script>
+@stop
+

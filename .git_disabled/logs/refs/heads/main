@@ -1,0 +1,12 @@
+0000000000000000000000000000000000000000 11ef8a25e689ee505aa825f38abcafd29bbcd424 AndersonPiscoya <HP@DESKTOP-N1ACBV1.(none)> 1772334252 -0500	clone: from https://github.com/EquipoGH/sisInventario.git
+11ef8a25e689ee505aa825f38abcafd29bbcd424 3ec7d9207bb2198a47c3450dad11d986b72a286d AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1772479705 -0500	commit: reportes QR solo con Admin
+3ec7d9207bb2198a47c3450dad11d986b72a286d e50769e2d2eedb00b5ae03ef779f312f9610f52f AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1772482046 -0500	commit: generacion de QR mejorado
+e50769e2d2eedb00b5ae03ef779f312f9610f52f 6dd381370fff772d1f7ad6e8343a5bc44cf2292b AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1772946248 -0500	commit: mod de codigo
+6dd381370fff772d1f7ad6e8343a5bc44cf2292b 5e2c9f07ec246c03d505282b1e9236dbb9251ad7 AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1772947123 -0500	commit: mod de codigo1.0
+5e2c9f07ec246c03d505282b1e9236dbb9251ad7 b63772a56b01bd79304fdfd13db225619ce1c7b0 AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1774147223 -0500	commit: Presentacion SisInventario2
+b63772a56b01bd79304fdfd13db225619ce1c7b0 54580c0af51e4c593f50dde0298f654c772625cd AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1774540505 -0500	commit: mod del codigo y actualizacion de tablas
+54580c0af51e4c593f50dde0298f654c772625cd df26ae02cf9de3453ca01dc3807d751d107beb60 AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1774673199 -0500	commit: Mejora: Optimización UI, reportes PDF (bienes agrupados, QRs 4x4) y lógica de asignaciones.
+df26ae02cf9de3453ca01dc3807d751d107beb60 77500281bd7d90b5baddd25932ecabaaf8fabb6d AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1775097103 -0500	commit: fix: corregir carga de favicon .ico y visualizacion del logo en sidebar
+77500281bd7d90b5baddd25932ecabaaf8fabb6d e9c9ac577a527282cdc8fac3ef8cca2dc8b79c67 AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1775097200 -0500	commit: feat: modulo de usuarios con contrasena movil y mejoras en movimientos
+e9c9ac577a527282cdc8fac3ef8cca2dc8b79c67 d401182b2677062cbef3bcff13fc7eb8072cd27f AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1777095067 -0500	commit: feat: completar reestructuración de patrimonios, módulo de bajas, controlador API móvil y correcciones generales
+d401182b2677062cbef3bcff13fc7eb8072cd27f 4261476d512f3753f7b3074013a8c68a31ea288b AndersonPiscoya <mpiscoyaaq.13@gmail.com> 1777946600 -0500	pull origin main: Fast-forward

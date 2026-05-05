@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SisInventario — IESTP Enrique López Albújar</title>
+  <meta name="description" content="Sistema de Gestión de Inventarios Institucional · IESTP Enrique López Albújar · 21 módulos, 4 roles, reportes PDF, códigos QR y app móvil." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* ══════════════════════════════════════
+       VARIABLES
+    ══════════════════════════════════════ */
+    :root {
+      --color-bg:             #ffffff;
+      --color-bg-soft:        #f5f7fa;
+      --color-bg-dark:        #0a0f1e;
+      --color-surface:        #ffffff;
+      --color-primary:        #0057b8;
+      --color-primary-hover:  #004494;
+      --color-primary-dark:   #003070;
+      --color-primary-light:  #e8f0fb;
+      --color-primary-mid:    #b8d0f0;
+      --color-text:           #0a0f1e;
+      --color-text-2:         #4a5568;
+      --color-text-3:         #8a96a8;
+      --color-border:         #e4e8ef;
+      --shadow-card:          0 1px 3px rgba(10,15,30,.05), 0 4px 16px rgba(10,15,30,.06);
+      --shadow-hover:         0 4px 24px rgba(0,87,184,.14);
+      --font-title: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body:  'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+      --transition: 0.2s ease;
+      --max-w: 1200px;
+      --mx: -500px;
+      --my: -500px;
+    }
+
+    /* ══════════════════════════════════════
+       RESET
+    ══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      color: var(--color-text);
+      background: var(--color-bg);
+      overflow-x: hidden;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    img  { max-width: 100%; display: block; }
+    a    { text-decoration: none; color: inherit; }
+    ul   { list-style: none; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--color-bg-soft); }
+    ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 99px; }
+
+    /* ══════════════════════════════════════
+       KEYFRAMES — M1 blobs + M5 label pulse
+    ══════════════════════════════════════ */
+    @keyframes blobFloat1 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%     { transform: translate(70px,50px) scale(1.06); }
+      66%     { transform: translate(-40px,70px) scale(0.94); }
+    }
+    @keyframes blobFloat2 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%     { transform: translate(-55px,35px) scale(1.09); }
+      66%     { transform: translate(50px,-50px) scale(0.95); }
+    }
+    @keyframes blobFloat3 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%     { transform: translate(35px,-60px) scale(1.05); }
+      66%     { transform: translate(-70px,25px) scale(1.03); }
+    }
+    @keyframes labelPulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%     { opacity:.25; transform:scale(.75); }
+    }
+
+    /* Reveal */
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .55s ease, transform .55s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: .08s; }
+    .reveal-d2 { transition-delay: .16s; }
+    .reveal-d3 { transition-delay: .24s; }
+    .reveal-d4 { transition-delay: .32s; }
+    .reveal-d5 { transition-delay: .40s; }
+
+    /* ══════════════════════════════════════
+       SCROLL PROGRESS
+    ══════════════════════════════════════ */
+    #progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, #0057b8, #0ea5e9);
+      z-index: 1000; width: 0%; transition: width .06s linear;
+    }
+
+    /* ══════════════════════════════════════
+       M6 — MOUSE SPOTLIGHT
+    ══════════════════════════════════════ */
+    #spotlight {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 1;
+      background: radial-gradient(
+        500px circle at var(--mx) var(--my),
+        rgba(0,87,184,.04), transparent 60%
+      );
+      opacity: 0; transition: opacity .3s ease;
+    }
+
+    /* ══════════════════════════════════════
+       NAVBAR — M2
+    ══════════════════════════════════════ */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 900;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
+      padding: 0;
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    .navbar.scrolled {
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 2px 20px rgba(10,15,30,.10);
+    }
+    .navbar-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 0 32px; height: 64px;
+      display: flex; align-items: center; gap: 40px;
+    }
+    .navbar-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; text-decoration: none; }
+
+    /* M2 — logo gradient */
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #0057b8, #0ea5e9);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,87,184,.30);
+    }
+    .logo-name { font-weight: 700; font-size: 16px; color: var(--color-text); line-height: 1.2; }
+    .logo-inst { font-size: 11px; color: var(--color-text-3); font-weight: 400; }
+
+    .navbar-nav {
+      display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center;
+    }
+    .navbar-nav a {
+      font-size: 14px; font-weight: 500; color: var(--color-text-2);
+      padding: 8px 14px; border-radius: var(--radius-sm); transition: color var(--transition); position: relative;
+    }
+    .navbar-nav a::after {
+      content: ''; position: absolute; bottom: 4px; left: 14px; right: 14px;
+      height: 2px; background: var(--color-primary); border-radius: 99px;
+      transform: scaleX(0); transition: transform var(--transition);
+    }
+    .navbar-nav a:hover, .navbar-nav a.active { color: var(--color-primary); }
+    .navbar-nav a:hover::after, .navbar-nav a.active::after { transform: scaleX(1); }
+
+    /* M2 — CTA gradient */
+    .navbar-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, #0057b8, #0284c7);
+      color: #fff; font-size: 14px; font-weight: 600;
+      padding: 10px 22px; border-radius: var(--radius-md);
+      border: none; cursor: pointer; font-family: var(--font-body);
+      transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+      flex-shrink: 0; text-decoration: none;
+    }
+    .navbar-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0,87,184,.35);
+      filter: brightness(1.08);
+    }
+
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; margin-left: auto; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--color-text); border-radius: 99px; transition: all .3s ease; }
+    .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+    .mobile-menu { display: none; position: fixed; inset: 0; background: var(--color-bg); z-index: 899; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { color: var(--color-text); font-size: 22px; font-weight: 700; padding: 12px 0; transition: color var(--transition); }
+    .mobile-menu a:hover { color: var(--color-primary); }
+
+    /* ══════════════════════════════════════
+       HERO — M1 (dark + blobs + canvas)
+    ══════════════════════════════════════ */
+    .hero {
+      padding: 144px 32px 100px;
+      background: linear-gradient(135deg, #0a0f1e 0%, #0d1b3e 100%);
+      min-height: 100vh;
+      display: flex; align-items: center;
+      position: relative; overflow: hidden;
+    }
+
+    /* Animated blobs */
+    .hero-blob {
+      position: absolute; border-radius: 50%; pointer-events: none;
+    }
+    .hero-blob-1 {
+      width: 640px; height: 640px;
+      background: radial-gradient(circle, rgba(0,87,184,.18) 0%, transparent 70%);
+      filter: blur(90px); top: -160px; left: -120px;
+      animation: blobFloat1 16s ease-in-out infinite;
+    }
+    .hero-blob-2 {
+      width: 520px; height: 520px;
+      background: radial-gradient(circle, rgba(14,165,233,.14) 0%, transparent 70%);
+      filter: blur(100px); top: 30%; right: -140px;
+      animation: blobFloat2 14s ease-in-out infinite;
+    }
+    .hero-blob-3 {
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, rgba(0,87,184,.12) 0%, transparent 70%);
+      filter: blur(80px); bottom: -80px; left: 38%;
+      animation: blobFloat3 18s ease-in-out infinite;
+    }
+
+    #hero-canvas {
+      position: absolute; inset: 0;
+      pointer-events: none; z-index: 1;
+    }
+
+    .hero-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      display: grid; grid-template-columns: 3fr 2fr;
+      gap: 72px; align-items: center; width: 100%;
+      position: relative; z-index: 2;
+    }
+
+    /* M1 — badge glassmorphism */
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      color: #93c5fd;
+      font-size: 12.5px; font-weight: 600;
+      padding: 6px 14px; border-radius: 99px;
+      margin-bottom: 24px; letter-spacing: .2px;
+      backdrop-filter: blur(8px);
+    }
+    .hero-badge .dot {
+      width: 7px; height: 7px; background: #60a5fa;
+      border-radius: 50%; flex-shrink: 0;
+    }
+
+    .hero-institution {
+      display: inline-block; font-size: 12.5px; font-weight: 600;
+      color: rgba(255,255,255,.45); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 14px;
+    }
+
+    /* M1 — h1 gradient text */
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 60px);
+      font-weight: 800; line-height: 1.12; letter-spacing: -1.5px;
+      margin-bottom: 22px;
+      border-left: 4px solid #60a5fa; padding-left: 20px;
+      background: linear-gradient(135deg, #60a5fa 0%, #e0f2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero h1 em { font-style: normal; }
+
+    .hero-desc {
+      font-size: 17px; color: rgba(255,255,255,.65);
+      max-width: 520px; line-height: 1.75; margin-bottom: 40px;
+    }
+    .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+    /* M1 — buttons on dark hero */
+    .btn-primary {
+      background: linear-gradient(135deg, #0057b8, #0284c7);
+      color: #fff; font-weight: 600; font-size: 15px; padding: 14px 28px;
+      border-radius: var(--radius-md); border: none; cursor: pointer;
+      font-family: var(--font-body);
+      transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,87,184,.40);
+      filter: brightness(1.08);
+    }
+    .btn-outline {
+      background: rgba(255,255,255,.07); color: rgba(255,255,255,.85);
+      font-weight: 600; font-size: 15px; padding: 13px 28px;
+      border-radius: var(--radius-md); border: 1.5px solid rgba(255,255,255,.20);
+      cursor: pointer; font-family: var(--font-body);
+      transition: border-color var(--transition), color var(--transition), background var(--transition);
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      backdrop-filter: blur(8px);
+    }
+    .btn-outline:hover {
+      border-color: #60a5fa; color: #60a5fa;
+      background: rgba(96,165,250,.08);
+    }
+
+    /* M1 — Hero stats glassmorphism */
+    .hero-stats-block { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .hero-stat-card {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius-lg); padding: 24px 20px;
+      text-align: center;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    }
+    .hero-stat-card .s-value {
+      font-size: 36px; font-weight: 800; color: #fff;
+      line-height: 1; margin-bottom: 6px; font-family: var(--font-title);
+    }
+    .hero-stat-card .s-label {
+      font-size: 12px; color: rgba(255,255,255,.45);
+      font-weight: 500; text-transform: uppercase; letter-spacing: .6px;
+    }
+    .hero-stat-card.wide {
+      grid-column: span 2; display: flex; align-items: center;
+      justify-content: center; gap: 32px; padding: 18px 24px;
+    }
+    .hero-stat-card.wide .pair { text-align: center; }
+    .hero-stat-card.wide .pair .s-value { font-size: 26px; }
+    .hero-stat-sep { width: 1px; height: 40px; background: rgba(255,255,255,.12); }
+
+    /* ══════════════════════════════════════
+       SECTION COMMONS
+    ══════════════════════════════════════ */
+    .section { padding: 120px 32px; }
+    .section-inner { max-width: var(--max-w); margin: 0 auto; }
+    .section-white { background: var(--color-bg); }
+
+    /* M5 — section-soft gradient */
+    .section-soft { background: linear-gradient(180deg, #f8faff 0%, #f0f6ff 100%); }
+
+    .section-header { margin-bottom: 72px; }
+
+    /* M5 — section-label with pulse ::before */
+    .section-label {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--color-primary-light); color: var(--color-primary);
+      font-size: 12px; font-weight: 700; letter-spacing: .8px;
+      text-transform: uppercase; padding: 5px 12px 5px 10px;
+      border-radius: 99px; margin-bottom: 16px;
+    }
+    .section-label::before {
+      content: ''; display: inline-block;
+      width: 7px; height: 7px;
+      background: var(--color-primary); border-radius: 50%;
+      flex-shrink: 0;
+      animation: labelPulse 1.6s ease-in-out infinite;
+    }
+
+    /* M5 — accent-word class */
+    .accent-word { color: var(--color-primary); }
+
+    .section-title {
+      font-family: var(--font-title);
+      font-size: clamp(28px, 4vw, 44px); font-weight: 800;
+      line-height: 1.2; letter-spacing: -1px; color: var(--color-text); margin-bottom: 16px;
+    }
+    .section-desc { font-size: 17px; color: var(--color-text-2); max-width: 560px; line-height: 1.75; }
+
+    /* Dividers */
+    .divider { height: 1px; background: var(--color-border); max-width: var(--max-w); margin: 0 auto; }
+
+    /* ══════════════════════════════════════
+       MODULE ROWS
+    ══════════════════════════════════════ */
+    .module-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center; margin-bottom: 120px;
+    }
+    .module-row:last-child { margin-bottom: 0; }
+    .module-row.reverse .module-visual { order: 2; }
+    .module-row.reverse .module-text   { order: 1; }
+
+    /* M3 — module card */
+    .module-card-visual {
+      background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
+      border: 1px solid rgba(0,87,184,.15);
+      border-radius: var(--radius-xl); padding: 40px 36px;
+      min-height: 300px; display: flex; flex-direction: column;
+      align-items: flex-start; gap: 16px;
+      position: relative; overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,87,184,.10), 0 1px 3px rgba(0,87,184,.06);
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .module-card-visual .card-media { width:100%; border-radius: 8px; overflow:hidden; margin-bottom:12px; }
+    .module-card-visual .card-media img { width:100%; height:180px; object-fit:cover; display:block; }
+    .module-card-visual .card-media figcaption { font-size:12px; color:var(--color-text-3); margin-top:8px; }
+    .module-card-visual:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(0,87,184,.18), 0 2px 8px rgba(0,87,184,.10);
+    }
+    .module-card-visual::after {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(0,87,184,.10) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none;
+    }
+
+    /* M3 — mod-icon gradient */
+    .mod-icon {
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, #0057b8, #0ea5e9);
+      color: #fff; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; position: relative; z-index: 1;
+      box-shadow: 0 4px 12px rgba(0,87,184,.30);
+    }
+    .mod-icon i { width: 22px; height: 22px; stroke-width: 1.8; }
+
+    .module-card-visual h3 { font-size: 18px; font-weight: 700; color: var(--color-text); position: relative; z-index: 1; }
+    .module-card-visual p.card-desc { font-size: 14px; color: var(--color-text-2); line-height: 1.65; position: relative; z-index: 1; }
+
+    .module-text h2 {
+      font-family: var(--font-title); font-size: clamp(22px, 3vw, 32px);
+      font-weight: 800; letter-spacing: -.6px; line-height: 1.22;
+      color: var(--color-text); margin-bottom: 14px;
+    }
+    .module-text .mod-desc { font-size: 16px; color: var(--color-text-2); line-height: 1.75; margin-bottom: 28px; }
+    .feature-list { display: flex; flex-direction: column; gap: 10px; }
+    .feature-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; color: var(--color-text-2); }
+    .feature-item .fcheck {
+      width: 20px; height: 20px; background: var(--color-primary-light); color: var(--color-primary);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+    .feature-item strong { color: var(--color-text); font-weight: 600; }
+
+    /* ══════════════════════════════════════
+       INLINE TABLE / BADGES / TAGS
+    ══════════════════════════════════════ */
+    .mini-table { width: 100%; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border); position: relative; z-index: 1; }
+    .mini-table-head { display: grid; font-size: 11px; font-weight: 700; color: var(--color-text-3); padding: 8px 14px; background: var(--color-bg); text-transform: uppercase; letter-spacing: .4px; }
+    .mini-table-row { display: grid; font-size: 13px; padding: 8px 14px; border-top: 1px solid var(--color-border); color: var(--color-text-2); background: var(--color-bg); }
+    .mini-table-row:nth-child(odd) { background: var(--color-bg-soft); }
+    .mini-pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--color-primary-light); color: var(--color-primary); }
+
+    .doc-types { display: flex; gap: 8px; flex-wrap: wrap; position: relative; z-index: 1; }
+    .doc-type { background: var(--color-primary-light); color: var(--color-primary); font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: var(--radius-sm); letter-spacing: .3px; }
+    .doc-type.muted { background: var(--color-bg); color: var(--color-text-3); border: 1px solid var(--color-border); }
+
+    .movement-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .mvt-tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 13px; border-radius: 99px; font-size: 12.5px; font-weight: 600; background: var(--color-primary-light); color: var(--color-primary); }
+    .mvt-tag .td { width: 7px; height: 7px; border-radius: 50%; }
+    .mvt-tag-blue  { background: #e8f0fb; color: #0057b8; }
+    .mvt-tag-blue .td  { background: #0057b8; }
+    .mvt-tag-slate { background: #f1f5f9; color: #4a5568; }
+    .mvt-tag-slate .td { background: #64748b; }
+    .mvt-tag-dark  { background: #f1f5f9; color: #0a0f1e; }
+    .mvt-tag-dark .td  { background: #0a0f1e; }
+
+    /* ══════════════════════════════════════
+       M7 — CARDS WITH MICRO-INTERACTIONS
+    ══════════════════════════════════════ */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-top: 2px solid transparent;
+      border-radius: var(--radius-lg); padding: 28px 24px;
+      box-shadow: var(--shadow-card); cursor: default;
+      transition: transform var(--transition), box-shadow var(--transition), border-top-color var(--transition);
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-top-color: var(--color-primary); }
+    .card-icon {
+      width: 46px; height: 46px; background: var(--color-primary-light); color: var(--color-primary);
+      border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; transition: transform .3s ease;
+    }
+    .card-icon i { width: 22px; height: 22px; stroke-width: 1.8; }
+    .card:hover .card-icon { transform: rotate(5deg) scale(1.1); }
+    .card h4 { font-size: 15.5px; font-weight: 700; color: var(--color-text); margin-bottom: 12px; }
+    .card ul { display: flex; flex-direction: column; gap: 7px; }
+    .card ul li { font-size: 13.5px; color: var(--color-text-2); padding-left: 14px; position: relative; line-height: 1.5; }
+    .card ul li::before { content: '–'; position: absolute; left: 0; color: var(--color-text-3); }
+    .card p.card-body { font-size: 13.5px; color: var(--color-text-2); line-height: 1.6; margin-top: 6px; }
+    .cards-grid-5 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+    /* ══════════════════════════════════════
+       USER LIST + APP GRID
+    ══════════════════════════════════════ */
+    .user-list { width: 100%; display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+    .user-row { display: flex; align-items: center; justify-content: space-between; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 11px 16px; font-size: 13.5px; color: var(--color-text-2); }
+    .role-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--color-primary-light); color: var(--color-primary); letter-spacing: .2px; }
+    .role-badge-muted { background: var(--color-bg-soft); color: var(--color-text-3); }
+    .app-feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; position: relative; z-index: 1; }
+    .app-feat { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px; text-align: center; font-size: 12.5px; color: var(--color-text-2); font-weight: 500; }
+    .app-feat .af-icon { display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .app-feat .af-icon i { width: 20px; height: 20px; color: var(--color-primary); stroke-width: 1.8; }
+
+    /* ══════════════════════════════════════
+       M4 — METRICS WITH GLOW + BORDER-TOP
+    ══════════════════════════════════════ */
+    .metrics-strip { background: var(--color-bg-soft); padding: 100px 32px; }
+    .metrics-inner { max-width: var(--max-w); margin: 0 auto; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .metric-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-top: 3px solid transparent;
+      border-image: linear-gradient(90deg, #0057b8, #0ea5e9) 1;
+      border-radius: var(--radius-lg); padding: 36px 28px;
+      text-align: center; box-shadow: var(--shadow-card);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .metric-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,87,184,.16); }
+    .metric-icon {
+      width: 48px; height: 48px; background: var(--color-primary-light); color: var(--color-primary);
+      border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+    }
+    .metric-icon i { width: 24px; height: 24px; stroke-width: 1.8; }
+    .metric-number {
+      font-size: 64px; font-weight: 800; color: var(--color-primary);
+      line-height: 1; margin-bottom: 8px; letter-spacing: -3px;
+      text-shadow: 0 0 30px rgba(0,87,184,.25);
+      display: inline-block; transition: transform .3s ease;
+    }
+    .metric-card:hover .metric-number { transform: scale(1.05); }
+    .metric-label { font-size: 13px; color: var(--color-text-3); font-weight: 500; text-transform: uppercase; letter-spacing: .6px; }
+
+    /* ══════════════════════════════════════
+       ROLES TABLE
+    ══════════════════════════════════════ */
+    .roles-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--color-border); box-shadow: var(--shadow-card); }
+    .roles-table { width: 100%; border-collapse: collapse; background: var(--color-surface); font-size: 14px; }
+    .roles-table thead th { background: var(--color-bg-soft); color: var(--color-text); font-weight: 700; font-size: 13px; padding: 16px 20px; text-align: center; border-bottom: 1px solid var(--color-border); }
+    .roles-table thead th:first-child { text-align: left; }
+    .roles-table thead .th-primary { color: var(--color-primary); }
+    .roles-table tbody tr { border-bottom: 1px solid var(--color-border); transition: background var(--transition); }
+    .roles-table tbody tr:last-child { border-bottom: none; }
+    .roles-table tbody tr:hover { background: var(--color-bg-soft); }
+    .roles-table td { padding: 14px 20px; text-align: center; vertical-align: middle; }
+    .roles-table td:first-child { text-align: left; font-weight: 600; color: var(--color-text); font-size: 14px; }
+    .rpill { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .rpill-full    { background: var(--color-primary-light); color: var(--color-primary); }
+    .rpill-partial { background: #f1f5f9; color: #4a5568; }
+    .rpill-read    { background: #f5f7fa; color: #64748b; border: 1px solid var(--color-border); }
+    .rpill-none    { color: var(--color-text-3); font-size: 16px; }
+    .roles-legend  { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+    .roles-legend .rpill { font-size: 12px; }
+
+    /* ══════════════════════════════════════
+       M7 — TECH CARDS MICRO-INTERACTIONS
+    ══════════════════════════════════════ */
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; }
+    .tech-card {
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-top: 2px solid transparent;
+      border-radius: var(--radius-lg); padding: 28px 22px; text-align: center;
+      box-shadow: var(--shadow-card); cursor: default;
+      transition: transform var(--transition), box-shadow var(--transition), border-top-color var(--transition);
+      transform-style: preserve-3d;
+    }
+    .tech-card:hover { box-shadow: var(--shadow-hover); border-top-color: var(--color-primary); }
+    .tech-icon {
+      width: 46px; height: 46px; background: var(--color-primary-light); color: var(--color-primary);
+      border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; transition: transform .3s ease;
+    }
+    .tech-icon i { width: 22px; height: 22px; stroke-width: 1.8; }
+    .tech-card:hover .tech-icon { transform: rotate(5deg) scale(1.1); }
+    .tech-card h4 { font-size: 15px; font-weight: 700; color: var(--color-text); margin-bottom: 7px; }
+    .tech-card p  { font-size: 13px; color: var(--color-text-2); line-height: 1.55; }
+    .tech-tag { display: inline-block; margin-top: 12px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--color-primary-light); color: var(--color-primary); letter-spacing: .3px; }
+
+    /* QR / REPORTS */
+    .qr-stub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 16px; background: var(--color-bg); border-radius: var(--radius-md); border: 1px solid var(--color-border); position: relative; z-index: 1; }
+    .qr-stub { aspect-ratio: 1; background: var(--color-bg-soft); border-radius: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border); }
+    .qr-inner { width: 58%; aspect-ratio: 1; background: repeating-linear-gradient(0deg,#0057b820 0,#0057b820 2px,transparent 2px,transparent 5px), repeating-linear-gradient(90deg,#0057b820 0,#0057b820 2px,transparent 2px,transparent 5px); border-radius: 2px; border: 2px solid #0057b820; }
+    .report-rows { width: 100%; display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
+    .report-row-item { display: flex; align-items: center; gap: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 11px 16px; font-size: 13.5px; color: var(--color-text-2); }
+    .report-format { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: var(--color-primary-light); color: var(--color-primary); flex-shrink: 0; }
+
+    /* ══════════════════════════════════════
+       TOC SIDEBAR
+    ══════════════════════════════════════ */
+    .toc-sidebar { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 80; display: flex; flex-direction: column; gap: 9px; }
+    .toc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-border); cursor: pointer; transition: all .25s ease; position: relative; }
+    .toc-dot:hover, .toc-dot.active { background: var(--color-primary); transform: scale(1.6); }
+    .toc-tip { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); background: var(--color-text); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; padding: 4px 10px; border-radius: 6px; pointer-events: none; opacity: 0; transition: opacity .18s; }
+    .toc-dot:hover .toc-tip { opacity: 1; }
+
+    /* ══════════════════════════════════════
+       M8 — FOOTER + GRADIENT LINE
+    ══════════════════════════════════════ */
+    .footer-line {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #0057b8 30%, #0ea5e9 70%, transparent);
+    }
+    footer { background: var(--color-bg-dark); padding: 72px 32px 36px; }
+    .footer-inner { max-width: var(--max-w); margin: 0 auto; }
+    .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 56px; }
+    .footer-brand .fb-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    /* M8 — fb-name gradient text */
+    .footer-brand .fb-name {
+      font-size: 18px; font-weight: 800;
+      background: linear-gradient(135deg, #ffffff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .footer-brand p { font-size: 14px; color: #64748b; line-height: 1.7; max-width: 280px; }
+    .footer-col h5 { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
+    .footer-col ul { display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul li a { font-size: 14px; color: #64748b; transition: color var(--transition); }
+    .footer-col ul li a:hover { color: #fff; }
+    .footer-bottom { border-top: 1px solid #111829; padding-top: 28px; }
+    .footer-bottom p { font-size: 13px; color: #475569; }
+    .footer-bottom a { color: var(--color-primary); }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .hero-stats-block { grid-template-columns: repeat(4, 1fr); }
+      .hero-stat-card.wide { grid-column: span 4; }
+      .module-row { grid-template-columns: 1fr; gap: 40px; }
+      .module-row.reverse .module-visual, .module-row.reverse .module-text { order: unset; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 36px; }
+      .toc-sidebar { display: none; }
+    }
+    @media (max-width: 768px) {
+      .navbar-nav, .navbar-cta { display: none; }
+      .hamburger { display: flex; }
+      .hero { padding: 110px 20px 72px; }
+      .hero h1 { padding-left: 14px; }
+      .hero-stats-block { grid-template-columns: 1fr 1fr; }
+      .hero-stat-card.wide { grid-column: span 2; }
+      .section { padding: 72px 20px; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .tech-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-top { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .metrics-grid { grid-template-columns: 1fr; }
+      .hero-stats-block { grid-template-columns: 1fr 1fr; }
+      .hero-buttons { flex-direction: column; }
+      .btn-primary, .btn-outline { width: 100%; justify-content: center; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .tech-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; }
+    }
+
+    /* ══════════════════════════════════════
+       PREFERS-REDUCED-MOTION
+    ══════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      .hero-blob-1, .hero-blob-2, .hero-blob-3 { animation: none !important; }
+      .section-label::before { animation: none !important; }
+      #hero-canvas { display: none; }
+      .module-card-visual, .metric-card, .card, .tech-card { transition: none !important; }
+      .reveal { transition: none !important; opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- M6 — Spotlight div -->
+<div id="spotlight"></div>
+
+<!-- PROGRESS BAR -->
+<div id="progress-bar"></div>
+
+<!-- TOC SIDEBAR -->
+<nav class="toc-sidebar" aria-label="Índice de secciones">
+  <div class="toc-dot active" data-sec="hero"><span class="toc-tip">Inicio</span></div>
+  <div class="toc-dot" data-sec="sec-bienes"><span class="toc-tip">Bienes</span></div>
+  <div class="toc-dot" data-sec="sec-movimientos"><span class="toc-tip">Movimientos</span></div>
+  <div class="toc-dot" data-sec="sec-estructura"><span class="toc-tip">Estructura</span></div>
+  <div class="toc-dot" data-sec="sec-catalogos"><span class="toc-tip">Catálogos</span></div>
+  <div class="toc-dot" data-sec="sec-reportes"><span class="toc-tip">Reportes</span></div>
+  <div class="toc-dot" data-sec="sec-usuarios"><span class="toc-tip">Usuarios</span></div>
+  <div class="toc-dot" data-sec="sec-config"><span class="toc-tip">Configuración</span></div>
+  <div class="toc-dot" data-sec="sec-roles"><span class="toc-tip">Roles</span></div>
+  <div class="toc-dot" data-sec="sec-tech"><span class="toc-tip">Tecnología</span></div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#hero" onclick="closeMobile()">Inicio</a>
+  <a href="#sec-bienes" onclick="closeMobile()">Bienes</a>
+  <a href="#sec-movimientos" onclick="closeMobile()">Movimientos</a>
+  <a href="#sec-estructura" onclick="closeMobile()">Estructura</a>
+  <a href="#sec-reportes" onclick="closeMobile()">Reportes</a>
+  <a href="#sec-usuarios" onclick="closeMobile()">Usuarios</a>
+  <a href="#sec-roles" onclick="closeMobile()">Roles</a>
+  <a href="#sec-tech" onclick="closeMobile()">Tecnología</a>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="navbar-inner">
+    <a class="navbar-logo" href="#hero">
+      <div class="logo-mark"><i data-lucide="package" style="width:18px;height:18px;stroke-width:2.5"></i></div>
+      <div>
+        <div class="logo-name">SisInventario</div>
+        <div class="logo-inst">IESTP E. López Albújar</div>
+      </div>
+    </a>
+    <div class="navbar-nav">
+      <a href="#sec-bienes">Bienes</a>
+      <a href="#sec-movimientos">Movimientos</a>
+      <a href="#sec-estructura">Estructura</a>
+      <a href="#sec-reportes">Reportes &amp; QR</a>
+      <a href="#sec-usuarios">Usuarios</a>
+      <a href="#sec-roles">Roles</a>
+      <a href="#sec-tech">Tecnología</a>
+    </div>
+    <a href="#sec-bienes" class="navbar-cta">Ver sistema →</a>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO — M1 -->
+<section class="hero" id="hero">
+  <div class="hero-blob hero-blob-1"></div>
+  <div class="hero-blob hero-blob-2"></div>
+  <div class="hero-blob hero-blob-3"></div>
+  <canvas id="hero-canvas"></canvas>
+
+  <div class="hero-inner">
+    <div class="hero-left reveal">
+      <div class="hero-badge"><span class="dot"></span>Documentación Institucional 2025</div>
+      <span class="hero-institution">IESTP Enrique López Albújar</span>
+      <h1>Sistema de Gestión<br />de <em>Inventarios</em></h1>
+      <p class="hero-desc">
+        Plataforma integral para el control, trazabilidad y administración
+        del patrimonio institucional. Registro de bienes, movimientos,
+        reportes PDF, etiquetas QR y app móvil Android.
+      </p>
+      <div class="hero-buttons">
+        <a href="#sec-bienes" class="btn-primary">Explorar módulos →</a>
+        <a href="#sec-tech"   class="btn-outline">Ver tecnología</a>
+      </div>
+    </div>
+
+    <div class="hero-stats-block reveal reveal-d2">
+      <div class="hero-stat-card">
+        <div class="s-value counter" data-target="21">0</div>
+        <div class="s-label">Módulos</div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="s-value counter" data-target="4">0</div>
+        <div class="s-label">Roles de acceso</div>
+      </div>
+      <div class="hero-stat-card wide">
+        <div class="pair"><div class="s-value">PDF</div><div class="s-label">Reportes</div></div>
+        <div class="hero-stat-sep"></div>
+        <div class="pair"><div class="s-value">QR</div><div class="s-label">Etiquetas</div></div>
+        <div class="hero-stat-sep"></div>
+        <div class="pair"><div class="s-value">APK</div><div class="s-label">App móvil</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECCIÓN 1 — BIENES -->
+<section class="section section-white" id="sec-bienes">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 01</div>
+      <h2 class="section-title">Gestión de Bienes Patrimoniales</h2>
+      <p class="section-desc">Control completo del patrimonio institucional con registro fotográfico, búsqueda instantánea, código QR individual y operaciones masivas.</p>
+    </div>
+
+    <div class="module-row reveal">
+      <div class="module-visual">
+        <div class="module-card-visual">
+          <figure class="card-media">
+            <img src="/images/bienes/pat-001.svg" alt="Laptop DELL — PAT-001" loading="lazy">
+            <figcaption>PAT-001 · Laptop DELL</figcaption>
+          </figure>
+          <div class="mod-icon"><i data-lucide="package"></i></div>
+          <h3>Inventario de Bienes</h3>
+          <p class="card-desc">Registro centralizado con código patrimonial único y búsqueda en tiempo real. Fotos reales del bien ayudan a identificar visualmente el activo.</p>
+          <div class="mini-table">
+            <div class="mini-table-head" style="grid-template-columns:1fr 1.5fr 1fr"><span>Código</span><span>Bien</span><span>Estado</span></div>
+            <div class="mini-table-row" style="grid-template-columns:1fr 1.5fr 1fr"><span style="color:var(--color-primary);font-weight:600">PAT-001</span><span>Laptop DELL</span><span><span class="mini-pill">Bueno</span></span></div>
+            <div class="mini-table-row" style="grid-template-columns:1fr 1.5fr 1fr"><span style="color:var(--color-primary);font-weight:600">PAT-002</span><span>Proyector Epson</span><span style="color:var(--color-text-3);font-size:12px;font-weight:600">Regular</span></div>
+            <div class="mini-table-row" style="grid-template-columns:1fr 1.5fr 1fr"><span style="color:var(--color-primary);font-weight:600">PAT-003</span><span>Escritorio</span><span><span class="mini-pill">Bueno</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="module-text">
+        <div class="section-label">— Módulo principal</div>
+        <h2>Inventario de Bienes</h2>
+        <p class="mod-desc">Núcleo del sistema. Gestiona todos los activos patrimoniales de la institución con identificación única, fotografía adjunta y funciones avanzadas de búsqueda y edición.</p>
+        <div class="feature-list">
+          <div class="feature-item"><span class="fcheck">✓</span><span>Registro con <strong>código patrimonial único</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Subida de fotografía</strong> del bien</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Búsqueda instantánea</strong> en tiempo real</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Vista detallada <strong>sin recargar la página</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Edición rápida</strong> con doble clic</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Generación de <strong>código QR individual</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Selección y operaciones masivas</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Filtros por estado, tipo, área y año</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Activar / desactivar bienes · <strong>paginación inteligente</strong></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin-bottom:120px"></div>
+
+    <div class="module-row reverse reveal">
+      <div class="module-visual">
+        <div class="module-card-visual">
+          <div class="mod-icon"><i data-lucide="file-text"></i></div>
+          <h3>Documentos de Sustento</h3>
+          <p class="card-desc">Gestiona los documentos que respaldan el ingreso de cada bien.</p>
+          <div class="doc-types">
+            <span class="doc-type">FACTURA</span>
+            <span class="doc-type">NEA</span>
+            <span class="doc-type">ACTA</span>
+            <span class="doc-type muted">+ más tipos</span>
+          </div>
+          <div style="width:100%;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px 16px;position:relative;z-index:1;margin-top:4px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--color-text-2);margin-bottom:8px"><span>FAC-2024-0042</span><span style="color:var(--color-primary);font-weight:600">3 bienes</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--color-text-2)"><span>NEA-2024-0019</span><span style="color:var(--color-primary);font-weight:600">7 bienes</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="module-text">
+        <div class="section-label">— Módulo complementario</div>
+        <h2>Documentos de Sustento</h2>
+        <p class="mod-desc">Gestiona los documentos que respaldan el ingreso de cada bien patrimonial. Con validación de duplicados y protección de integridad referencial.</p>
+        <div class="feature-list">
+          <div class="feature-item"><span class="fcheck">✓</span><span>Tipos: <strong>FACTURA, NEA, ACTA</strong> y más</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Validación de <strong>número duplicado</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Muestra cuántos <strong>bienes tiene cada documento</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Protección: <strong>no elimina si tiene bienes asociados</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Eliminación masiva con <strong>advertencias de seguridad</strong></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECCIÓN 2 — MOVIMIENTOS -->
+<section class="section section-soft" id="sec-movimientos">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 02</div>
+      <h2 class="section-title">Movimientos y Trazabilidad</h2>
+      <p class="section-desc">Historial completo de cada bien desde su recepción hasta su baja definitiva, con posibilidad de reversión y exportación en PDF.</p>
+    </div>
+    <div class="module-row reveal">
+      <div class="module-visual">
+        <div class="module-card-visual">
+          <div class="mod-icon"><i data-lucide="arrow-right-left"></i></div>
+          <h3>Movimientos de Bienes</h3>
+          <p class="card-desc">Flujo completo: asignación, baja y reversión con PDF de historial.</p>
+          <div class="movement-tags">
+            <span class="mvt-tag mvt-tag-slate"><span class="td"></span>SIN ASIGNAR</span>
+            <span class="mvt-tag mvt-tag-blue"><span class="td"></span>ASIGNACIÓN</span>
+            <span class="mvt-tag mvt-tag-dark"><span class="td"></span>BAJA</span>
+          </div>
+          <div style="width:100%;display:flex;flex-direction:column;gap:6px;position:relative;z-index:1">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:var(--color-text-2)"><span>PAT-001 · Laptop DELL</span><span class="mvt-tag mvt-tag-blue" style="font-size:11px;padding:3px 10px"><span class="td"></span>ASIGNACIÓN</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:var(--color-text-2)"><span>PAT-004 · Silla ergonómica</span><span class="mvt-tag mvt-tag-dark" style="font-size:11px;padding:3px 10px"><span class="td"></span>BAJA</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="module-text">
+        <div class="section-label">— Trazabilidad completa</div>
+        <h2>Movimientos de Bienes</h2>
+        <p class="mod-desc">Cada desplazamiento queda registrado con fecha, responsable y área destino. Permite auditoría total del ciclo de vida patrimonial.</p>
+        <div class="feature-list">
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Asignación masiva</strong> a área/ambiente</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Baja masiva</strong> de múltiples bienes</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Reversión de baja</strong> (restaurar bien)</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Trazabilidad completa</strong> por bien</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>PDF de historial</strong> por bien</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Filtros por tipo, área, fechas y estado</span></div>
+        </div>
+        <div class="movement-tags" style="margin-top:28px">
+          <span class="mvt-tag mvt-tag-slate"><span class="td"></span>SIN ASIGNAR</span>
+          <span class="mvt-tag mvt-tag-blue"><span class="td"></span>ASIGNACIÓN</span>
+          <span class="mvt-tag mvt-tag-dark"><span class="td"></span>BAJA</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECCIÓN 3 — ESTRUCTURA -->
+<section class="section section-white" id="sec-estructura">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 03</div>
+      <h2 class="section-title">Estructura Organizativa</h2>
+      <p class="section-desc">Define la arquitectura física e institucional: áreas, ambientes, ubicaciones y los responsables asignados a cada bien.</p>
+    </div>
+    <div class="cards-grid">
+      <div class="card reveal reveal-d1"><div class="card-icon"><i data-lucide="building-2"></i></div><h4>Áreas Institucionales</h4><ul><li>Registro y edición de áreas</li><li>Búsqueda en tiempo real</li><li>Eliminación segura sin dependencias</li></ul></div>
+      <div class="card reveal reveal-d2"><div class="card-icon"><i data-lucide="map-pin"></i></div><h4>Ubicaciones y Ambientes</h4><ul><li>Aulas, oficinas, laboratorios</li><li>Punto de "Recepción Inicial" de bienes nuevos</li><li>Filtro por área, sede, ambiente y piso</li></ul></div>
+      <div class="card reveal reveal-d3"><div class="card-icon"><i data-lucide="user-check"></i></div><h4>Responsables de Bienes</h4><ul><li>DNI, nombre, apellidos y cargo</li><li>Búsqueda por DNI o nombre</li><li>Vinculación con cuentas de usuario</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECCIÓN 4 — CATÁLOGOS -->
+<section class="section section-soft" id="sec-catalogos">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 04 · Solo Admin</div>
+      <h2 class="section-title">Catálogos Maestros</h2>
+      <p class="section-desc">Tablas de referencia que parametrizan el comportamiento del sistema. Accesibles únicamente por el Administrador.</p>
+    </div>
+    <div class="cards-grid cards-grid-5">
+      <div class="card reveal reveal-d1"><div class="card-icon"><i data-lucide="tag"></i></div><h4>Tipos de Bien</h4><p class="card-body">Mueble · Equipo · Vehículo y más categorías configurables.</p></div>
+      <div class="card reveal reveal-d2"><div class="card-icon"><i data-lucide="shield-check"></i></div><h4>Estados de Conservación</h4><p class="card-body">BUENO · REGULAR · MALO · EN REPARACIÓN</p></div>
+      <div class="card reveal reveal-d3"><div class="card-icon"><i data-lucide="repeat"></i></div><h4>Tipos de Movimiento</h4><p class="card-body">SIN ASIGNAR · ASIGNACIÓN · BAJA</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECCIÓN 5 — REPORTES Y QR -->
+<section class="section section-white" id="sec-reportes">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 05</div>
+      <h2 class="section-title">Reportes y Códigos QR</h2>
+      <p class="section-desc">Exporta el inventario en PDF o Excel con filtros combinables. Genera etiquetas QR masivas: 16 por hoja A4 listas para imprimir.</p>
+    </div>
+
+    <div class="module-row reveal">
+      <div class="module-visual">
+        <div class="module-card-visual">
+          <div class="mod-icon"><i data-lucide="bar-chart-2"></i></div>
+          <h3>Reportes Institucionales</h3>
+          <p class="card-desc">Exporta en PDF y Excel con filtros avanzados</p>
+          <div class="report-rows">
+            <div class="report-row-item"><span class="report-format">PDF</span>Inventario General</div>
+            <div class="report-row-item"><span class="report-format">PDF</span>Por Área y Ubicación</div>
+            <div class="report-row-item"><span class="report-format">XLS</span>Por Estado de Conservación</div>
+            <div class="report-row-item"><span class="report-format">PDF</span>Por Responsable</div>
+          </div>
+        </div>
+      </div>
+      <div class="module-text">
+        <div class="section-label">— Exportación avanzada</div>
+        <h2>Reportes de Inventario</h2>
+        <p class="mod-desc">Genera documentos formales del patrimonio institucional con filtros combinables y exportación en múltiples formatos.</p>
+        <div class="feature-list">
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Inventario General</strong> completo</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Por <strong>Área y Ubicación</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Por <strong>Estado de Conservación</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Por <strong>Responsable</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Exportar a <strong>Excel .xlsx</strong></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin-bottom:120px"></div>
+
+    <div class="module-row reverse reveal">
+      <div class="module-visual">
+        <div class="module-card-visual">
+          <div class="mod-icon"><i data-lucide="qr-code"></i></div>
+          <h3>Generador de Códigos QR</h3>
+          <p class="card-desc">16 QR por hoja A4 · individual PNG · filtros combinables</p>
+          <div class="qr-stub-grid">
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+            <div class="qr-stub"><div class="qr-inner"></div></div>
+          </div>
+          <p style="font-size:11px;color:var(--color-text-3);position:relative;z-index:1">Vista previa — 8 de 16 QR por hoja A4</p>
+        </div>
+      </div>
+      <div class="module-text">
+        <div class="section-label">— Etiquetado patrimonial</div>
+        <h2>Generador de Códigos QR</h2>
+        <p class="mod-desc">Imprime etiquetas QR para pegarlas en cada bien. Al escanear con la app móvil se obtiene la ficha completa del activo.</p>
+        <div class="feature-list">
+          <div class="feature-item"><span class="fcheck">✓</span><span>PDF masivo: <strong>16 QRs por hoja A4</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>QR individual descargable como <strong>PNG</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Filtros combinables</strong> antes de generar</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Vinculado a la <strong>app móvil Android</strong></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MÉTRICAS -->
+<div class="metrics-strip" id="sec-metrics">
+  <div class="metrics-inner">
+    <div class="metrics-grid">
+      <div class="metric-card reveal reveal-d1"><div class="metric-icon"><i data-lucide="grid-2x2"></i></div><div class="metric-number">21</div><div class="metric-label">Módulos del Sistema</div></div>
+      <div class="metric-card reveal reveal-d2"><div class="metric-icon"><i data-lucide="shield"></i></div><div class="metric-number">4</div><div class="metric-label">Roles de Acceso</div></div>
+      <div class="metric-card reveal reveal-d3"><div class="metric-icon"><i data-lucide="file-bar-chart"></i></div><div class="metric-number">9</div><div class="metric-label">Tipos de Reporte</div></div>
+      <div class="metric-card reveal reveal-d4"><div class="metric-icon"><i data-lucide="printer"></i></div><div class="metric-number">16</div><div class="metric-label">QR por hoja A4</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN 6 — USUARIOS Y MÓVIL -->
+<section class="section section-white" id="sec-usuarios">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 06</div>
+      <h2 class="section-title">Usuarios</h2>
+      <p class="section-desc">Administra cuentas y credenciales del sistema con control granular de roles y accesos.</p>
+    </div>
+
+    <div class="module-row reveal">
+      <div class="module-visual">
+        <div class="module-card-visual">
+          <div class="mod-icon"><i data-lucide="users"></i></div>
+          <h3>Gestión de Usuarios</h3>
+          <p class="card-desc">Credenciales web y móvil independientes por usuario.</p>
+          <div class="user-list">
+            <div class="user-row"><span>admin@iestp.edu</span><span class="role-badge">ADMIN</span></div>
+            <div class="user-row"><span>info@iestp.edu</span><span class="role-badge">INFORMÁTICA</span></div>
+            <div class="user-row"><span>invitado@iestp.edu</span><span class="role-badge role-badge-muted">INVITADO</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="module-text">
+        <div class="section-label">— Control de acceso</div>
+        <h2>Gestión de Usuarios</h2>
+        <p class="mod-desc">Administra credenciales diferenciadas para acceso web y móvil. Control granular de roles, estado y último acceso registrado.</p>
+        <div class="feature-list">
+          <div class="feature-item"><span class="fcheck">✓</span><span><strong>Contraseña web y contraseña móvil</strong> independientes</span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Asignación de rol: <strong>Admin / Informática / Invitado</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Activar / desactivar <strong>usuarios en lote</strong></span></div>
+          <div class="feature-item"><span class="fcheck">✓</span><span>Registro de <strong>último ingreso</strong></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aplicación móvil eliminada: contenido gestionado por otro colaborador -->
+  </div>
+</section>
+
+<!-- SECCIÓN 7 — CONFIGURACIÓN -->
+<section class="section section-soft" id="sec-config">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 07 · Solo Admin</div>
+      <h2 class="section-title">Configuración del Sistema</h2>
+      <p class="section-desc">Personaliza identidad, contacto, configuración regional y parámetros de reportes desde un panel centralizado.</p>
+    </div>
+    <div class="cards-grid cards-grid-5">
+      <div class="card reveal reveal-d1"><div class="card-icon"><i data-lucide="settings"></i></div><h4>Identidad</h4><ul><li>Nombre del sistema</li><li>Logo, slogan y favicon</li></ul></div>
+      <div class="card reveal reveal-d2"><div class="card-icon"><i data-lucide="mail"></i></div><h4>Contacto</h4><ul><li>Email institucional</li><li>Teléfono y dirección</li></ul></div>
+      <div class="card reveal reveal-d3"><div class="card-icon"><i data-lucide="globe"></i></div><h4>Regional</h4><ul><li>Moneda PEN</li><li>Zona horaria y formato de fecha</li></ul></div>
+      <div class="card reveal reveal-d4"><div class="card-icon"><i data-lucide="file-output"></i></div><h4>Reportes PDF</h4><ul><li>Pie de página en PDFs</li><li>Leyenda legal</li></ul></div>
+      <div class="card reveal reveal-d5"><div class="card-icon"><i data-lucide="headphones"></i></div><h4>Soporte Técnico</h4><ul><li>Correo del área técnica</li><li>Teléfono de soporte</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECCIÓN 8 — ROLES -->
+<section class="section section-white" id="sec-roles">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 08</div>
+      <h2 class="section-title">Roles y Permisos</h2>
+      <p class="section-desc">Cada rol tiene un conjunto preciso de permisos. El control de acceso garantiza que cada actor solo ejecute lo que le corresponde.</p>
+    </div>
+    <div class="roles-wrap reveal">
+      <table class="roles-table">
+        <thead>
+          <tr><th style="min-width:200px">Módulo</th><th class="th-primary">Admin</th><th>Informática</th><th>Usuario</th><th>Invitado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Inventario de Bienes</td><td><span class="rpill rpill-full">Total</span></td><td><span class="rpill rpill-full">Total</span></td><td><span class="rpill rpill-read">Lectura</span></td><td><span class="rpill rpill-read">Lectura</span></td></tr>
+          <tr><td>Movimientos</td><td><span class="rpill rpill-full">Total</span></td><td><span class="rpill rpill-partial">Sin baja</span></td><td><span class="rpill rpill-read">Consulta</span></td><td><span class="rpill-none">—</span></td></tr>
+          <tr><td>Reportes PDF / Excel</td><td><span class="rpill rpill-full">Total</span></td><td><span class="rpill rpill-partial">Básicos</span></td><td><span class="rpill-none">—</span></td><td><span class="rpill rpill-partial">Limitado</span></td></tr>
+          <tr><td>Generador QR</td><td><span class="rpill rpill-full">Sí</span></td><td><span class="rpill rpill-full">Sí</span></td><td><span class="rpill-none">—</span></td><td><span class="rpill-none">—</span></td></tr>
+          <tr><td>Áreas y Ubicaciones</td><td><span class="rpill rpill-full">CRUD</span></td><td><span class="rpill rpill-read">Lectura</span></td><td><span class="rpill-none">—</span></td><td><span class="rpill-none">—</span></td></tr>
+          <tr><td>Usuarios</td><td><span class="rpill rpill-full">Total</span></td><td><span class="rpill-none">—</span></td><td><span class="rpill-none">—</span></td><td><span class="rpill-none">—</span></td></tr>
+          <tr><td>Configuración</td><td><span class="rpill rpill-full">Total</span></td><td><span class="rpill-none">—</span></td><td><span class="rpill-none">—</span></td><td><span class="rpill-none">—</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="roles-legend reveal">
+      <span class="rpill rpill-full">Total — acceso completo</span>
+      <span class="rpill rpill-partial">Parcial — acceso limitado</span>
+      <span class="rpill rpill-read">Lectura — solo consulta</span>
+      <span class="rpill-none" style="font-size:13px;color:var(--color-text-3)">— Sin acceso</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECCIÓN 9 — TECNOLOGÍA -->
+<section class="section section-soft" id="sec-tech">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-label">— Sección 09</div>
+      <h2 class="section-title">Stack Tecnológico</h2>
+      <p class="section-desc">Tecnologías consolidadas que garantizan escalabilidad, seguridad y una experiencia de usuario óptima.</p>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-card reveal reveal-d1"><div class="tech-icon"><i data-lucide="code-2"></i></div><h4>Laravel (PHP)</h4><p>Backend, lógica de negocio y API REST del sistema</p><span class="tech-tag">Backend</span></div>
+      <div class="tech-card reveal reveal-d2"><div class="tech-icon"><i data-lucide="database"></i></div><h4>PostgreSQL</h4><p>Base de datos relacional principal y almacenamiento</p><span class="tech-tag">Base de datos</span></div>
+      <div class="tech-card reveal reveal-d3"><div class="tech-icon"><i data-lucide="smartphone"></i></div><h4>Flutter</h4><p>Aplicación móvil Android nativa con modo offline</p><span class="tech-tag">Móvil</span></div>
+      <div class="tech-card reveal reveal-d4"><div class="tech-icon"><i data-lucide="layout"></i></div><h4>Bootstrap 5</h4><p>Interfaz web responsiva y componentes UI modernos</p><span class="tech-tag">Frontend</span></div>
+      <div class="tech-card reveal reveal-d1"><div class="tech-icon"><i data-lucide="zap"></i></div><h4>jQuery / AJAX</h4><p>Interactividad dinámica sin recargar la página</p><span class="tech-tag">Interactividad</span></div>
+      <div class="tech-card reveal reveal-d2"><div class="tech-icon"><i data-lucide="file-down"></i></div><h4>DomPDF</h4><p>Generación de reportes PDF institucionales</p><span class="tech-tag">Reportes PDF</span></div>
+      <div class="tech-card reveal reveal-d3"><div class="tech-icon"><i data-lucide="qr-code"></i></div><h4>QR Code Generator</h4><p>Etiquetas QR individuales y masivas (hoja A4)</p><span class="tech-tag">QR / Etiquetas</span></div>
+      <div class="tech-card reveal reveal-d4"><div class="tech-icon"><i data-lucide="server"></i></div><h4>Node.js</h4><p>Servidor de producción de alto rendimiento</p><span class="tech-tag">Servidor</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- M8 — Gradient line -->
+<div class="footer-line"></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="fb-logo">
+          <div class="logo-mark"><i data-lucide="package" style="width:18px;height:18px;stroke-width:2.5"></i></div>
+          <span class="fb-name">SisInventario</span>
+        </div>
+        <p>Sistema de Gestión de Inventarios Institucional del IESTP Enrique López Albújar. Control patrimonial completo con trazabilidad, reportes y app móvil.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Módulos</h5>
+        <ul><li><a href="#sec-bienes">Inventario de Bienes</a></li><li><a href="#sec-movimientos">Movimientos</a></li><li><a href="#sec-estructura">Estructura</a></li><li><a href="#sec-catalogos">Catálogos</a></li></ul>
+      </div>
+      <div class="footer-col">
+        <h5>Reportes</h5>
+        <ul><li><a href="#sec-reportes">Reportes PDF</a></li><li><a href="#sec-reportes">Exportar Excel</a></li><li><a href="#sec-reportes">Códigos QR</a></li><li><a href="#sec-usuarios">App Móvil</a></li></ul>
+      </div>
+      <div class="footer-col">
+        <h5>Sistema</h5>
+        <ul><li><a href="#sec-usuarios">Usuarios</a></li><li><a href="#sec-config">Configuración</a></li><li><a href="#sec-roles">Roles y Permisos</a></li><li><a href="#sec-tech">Tecnología</a></li></ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 SisInventario — IESTP Enrique López Albújar</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ─── 1. NAVBAR SCROLL ─── */
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => { navbar.classList.toggle('scrolled', window.scrollY > 20); }, { passive: true });
+
+/* ─── 2. PROGRESS BAR ─── */
+const bar = document.getElementById('progress-bar');
+window.addEventListener('scroll', () => { const t = document.documentElement.scrollHeight - window.innerHeight; bar.style.width = (window.scrollY / t * 100) + '%'; }, { passive: true });
+
+/* ─── 3. MOBILE MENU ─── */
+function toggleMenu() { const m = document.getElementById('mobileMenu'), h = document.getElementById('hamburger'); const o = m.classList.toggle('open'); h.classList.toggle('open', o); document.body.style.overflow = o ? 'hidden' : ''; }
+function closeMobile() { document.getElementById('mobileMenu').classList.remove('open'); document.getElementById('hamburger').classList.remove('open'); document.body.style.overflow = ''; }
+
+/* ─── 4. REVEAL ─── */
+const revealObs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }), { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+/* ─── 5. COUNTERS — M4 easeOutQuart ─── */
+function animateCount(el, target, dur) {
+  let s = null;
+  const run = ts => {
+    if (!s) s = ts;
+    const p    = Math.min((ts - s) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 4); // easeOutQuart
+    el.textContent = Math.floor(ease * target);
+    if (p < 1) requestAnimationFrame(run); else el.textContent = target;
+  };
+  requestAnimationFrame(run);
+}
+const heroObs = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { document.querySelectorAll('.counter[data-target]').forEach(el => animateCount(el, parseInt(el.dataset.target), 1400)); heroObs.disconnect(); } }); }, { threshold: 0.5 });
+const heroBlock = document.querySelector('.hero-stats-block');
+if (heroBlock) heroObs.observe(heroBlock);
+
+/* ─── 6. 3D TECH HOVER ─── */
+document.querySelectorAll('.tech-card').forEach(card => {
+  card.addEventListener('mousemove', e => { const r = card.getBoundingClientRect(), dx = (e.clientX - r.left - r.width/2)/(r.width/2), dy = (e.clientY - r.top - r.height/2)/(r.height/2); card.style.transform = `perspective(600px) rotateX(${-dy*6}deg) rotateY(${dx*6}deg) translateZ(6px)`; });
+  card.addEventListener('mouseleave', () => { card.style.transition = 'transform .4s ease, box-shadow .2s ease, border-top-color .2s ease'; card.style.transform = ''; });
+  card.addEventListener('mouseenter', () => { card.style.transition = 'transform .06s ease, box-shadow .2s ease, border-top-color .2s ease'; });
+});
+
+/* ─── 7. TOC ─── */
+const sections = ['hero','sec-bienes','sec-movimientos','sec-estructura','sec-catalogos','sec-reportes','sec-usuarios','sec-config','sec-roles','sec-tech'];
+const tocDots  = document.querySelectorAll('.toc-dot');
+const navLinks = document.querySelectorAll('.navbar-nav a');
+function updateActive() {
+  const mid = window.scrollY + window.innerHeight / 2;
+  let active = 0;
+  sections.forEach((id, i) => { const el = document.getElementById(id); if (el && el.offsetTop <= mid) active = i; });
+  tocDots.forEach((d, i) => d.classList.toggle('active', i === active));
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sections[active]));
+}
+window.addEventListener('scroll', updateActive, { passive: true });
+updateActive();
+tocDots.forEach((d, i) => d.addEventListener('click', () => { const el = document.getElementById(sections[i]); if (el) el.scrollIntoView({ behavior: 'smooth' }); }));
+
+/* ─── M1 — HERO PARTICLE CANVAS ─── */
+(function () {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas = document.getElementById('hero-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0;
+  const mouse = { x: -9999, y: -9999 };
+  const COUNT = 50, pts = [];
+
+  function resize() { const hero = document.getElementById('hero'); W = canvas.width = hero.offsetWidth; H = canvas.height = hero.offsetHeight; }
+
+  function Particle() { this.x = Math.random()*W; this.y = Math.random()*H; this.vx = (Math.random()-.5)*.35; this.vy = (Math.random()-.5)*.35; this.r = Math.random()*1.6+.5; this.a = Math.random()*.45+.12; this.ba = this.a; }
+  Particle.prototype.update = function () {
+    const dx = this.x - mouse.x, dy = this.y - mouse.y, d = Math.sqrt(dx*dx+dy*dy);
+    if (d < 130 && d > 0) { const f=(130-d)/130; this.vx += (dx/d)*f*.9; this.vy += (dy/d)*f*.9; this.a = Math.min(this.ba+f*.5,.9); }
+    else { this.a += (this.ba-this.a)*.04; }
+    this.vx *= .965; this.vy *= .965; this.x += this.vx; this.y += this.vy;
+    if (this.x<0) this.x=W; if (this.x>W) this.x=0; if (this.y<0) this.y=H; if (this.y>H) this.y=0;
+  };
+  Particle.prototype.draw = function () { ctx.save(); ctx.globalAlpha=this.a; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fillStyle='#60a5fa'; ctx.fill(); ctx.restore(); };
+
+  function drawLines() {
+    for (let i=0;i<pts.length;i++) for (let j=i+1;j<pts.length;j++) {
+      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+      if (d<110) { ctx.save(); ctx.globalAlpha=(1-d/110)*.18; ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.strokeStyle='#93c5fd'; ctx.lineWidth=.7; ctx.stroke(); ctx.restore(); }
+    }
+  }
+
+  function init() { resize(); pts.length=0; for (let i=0;i<COUNT;i++) pts.push(new Particle()); }
+  function loop() { ctx.clearRect(0,0,W,H); drawLines(); pts.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(loop); }
+
+  const hero = document.getElementById('hero');
+  hero.addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; }, { passive: true });
+  hero.addEventListener('mouseleave', () => { mouse.x=-9999; mouse.y=-9999; });
+  window.addEventListener('resize', init, { passive: true });
+  init(); loop();
+})();
+
+/* ─── M6 — MOUSE SPOTLIGHT ─── */
+(function () {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const spotlight = document.getElementById('spotlight');
+  const hero      = document.getElementById('hero');
+  document.addEventListener('mousemove', e => {
+    document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--my', e.clientY + 'px');
+    const r = hero.getBoundingClientRect();
+    const inHero = e.clientY >= r.top && e.clientY <= r.bottom && e.clientX >= r.left && e.clientX <= r.right;
+    spotlight.style.opacity = inHero ? '0' : '1';
+  }, { passive: true });
+  document.addEventListener('mouseleave', () => { spotlight.style.opacity = '0'; });
+})();
+
+/* ─── LUCIDE ICONS ─── */
+lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+/* ==================== COLORES PERSONALIZADOS DE BOOTSTRAP ==================== */
+
+/* 🎨 PRIMARY (Azul) - Lo usamos en Bienes */
+.btn-primary,
+.bg-primary,
+.badge-primary {
+    background: #007bff !important;
+    border-color: #007bff !important;
+    color: white !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: #0056b3 !important;
+    border-color: #0056b3 !important;
+    color: white !important;
+}
+
+/* 🎨 INFO (Celeste) - Lo usamos en modales de Editar */
+.btn-info,
+.bg-info,
+.badge-info {
+    background: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    color: white !important;
+}
+
+.btn-info:hover,
+.btn-info:focus {
+    background: #117a8b !important;
+    border-color: #117a8b !important;
+    color: white !important;
+}
+
+/* 🎨 DANGER (Rojo) - Botones de eliminar */
+.btn-danger,
+.bg-danger {
+    background: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+    background: #c82333 !important;
+    border-color: #c82333 !important;
+    color: white !important;
+}
+
+/* 🎨 SUCCESS (Verde) - No se usa mucho pero por si acaso */
+.btn-success,
+.bg-success {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background: #218838 !important;
+    border-color: #218838 !important;
+    color: white !important;
+}
+
+/* ==================== TABLAS PERSONALIZADAS ==================== */
+
+/* Encabezado de tabla oscuro */
+.thead-dark th {
+    background: #343a40 !important;
+    color: white !important;
+    border-color: #454d55 !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 15px 10px;
+    vertical-align: middle;
+}
+
+/* Hover en filas */
+.table-hover tbody tr:hover {
+    background-color: #f0f4ff !important;
+    transition: all 0.2s ease;
+}
+
+/* ==================== MODALES ==================== */
+
+/* Modal con bg-primary */
+.modal-header.bg-primary {
+    background: #007bff !important;
+    color: white !important;
+    border-bottom: none !important;
+}
+
+/* Modal con bg-info */
+.modal-header.bg-info {
+    background: #17a2b8 !important;
+    color: white !important;
+    border-bottom: none !important;
+}
+
+.modal-header .close {
+    color: white !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+}
+
+.modal-header .close:hover {
+    color: white !important;
+    opacity: 0.8 !important;
+}
+
+/* ==================== ORDENAMIENTO ==================== */
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.sortable:hover {
+    background-color: #495057 !important;
+}
+
+.sort-icon {
+    font-size: 0.75rem;
+    margin-left: 5px;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.sortable:hover .sort-icon {
+    opacity: 1;
+}
+
+/* ==================== EDICIÓN INLINE ==================== */
+
+.editable-cell {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.editable-cell:hover {
+    background-color: #e3f2fd !important;
+    font-weight: 600;
+}
+
+/* ==================== BUSCADOR ==================== */
+
+#searchInput:focus,
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* ==================== BADGES ==================== */
+
+.badge-info {
+    background: #17a2b8 !important;
+    border: none;
+    font-weight: 500;
+}
+
+/* ==================== BOTONES PEQUEÑOS ==================== */
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* ==================== ANIMACIONES ==================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ==================== PAGINACIÓN ==================== */
+
+.pagination .page-link {
+    border-radius: 5px;
+    margin: 0 2px;
+    color: #007bff;
+    border: 1px solid #e0e0e0;
+}
+
+.pagination .page-link:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination .page-item.active .page-link {
+    background: #007bff;
+    border-color: #007bff;
+}
+
+/* ==================== CHECKBOXES ==================== */
+
+.custom-control-input:checked ~ .custom-control-label::before {
+    background: #007bff;
+    border-color: #007bff;
+}
+
+/* ==================== PREVIEW DE IMAGEN ==================== */
+
+#preview_create,
+#preview_edit {
+    border: 2px dashed #dee2e6;
+    transition: all 0.3s ease;
+}
+
+#preview_create:hover,
+#preview_edit:hover {
+    border-color: #007bff;
+    background-color: #f8f9ff !important;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+    .thead-dark th {
+        font-size: 0.75rem;
+        padding: 10px 5px;
+    }
+
+    .btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+}

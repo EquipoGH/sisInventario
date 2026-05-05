@@ -1,0 +1,693 @@
+@extends('layouts.main')
+
+@section('title', 'Tipos de Movimiento')
+
+@section('content_header')
+    <h1>Gestión de Tipos de Movimiento</h1>
+@stop
+
+@section('content')
+<div class="card">
+    <div class="card-header">
+        <div class="row mb-3">
+            @if(Auth::user()->esAdmin())
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modalCreate">
+                    <i class="fas fa-plus"></i> Nuevo Tipo
+                </button>
+                <button type="button" class="btn btn-danger ml-2" id="btnEliminarSeleccionados" style="display:none;">
+                    <i class="fas fa-trash-alt"></i> Eliminar (<span id="contadorSeleccionados">0</span>)
+                </button>
+            @endif
+            <div class="col-md-8">
+                <div class="float-right" style="width: 100%; max-width: 500px;">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-primary">
+                                <i class="fas fa-search text-white"></i>
+                            </span>
+                        </div>
+                        <input type="text"
+                               id="searchInput"
+                               class="form-control"
+                               placeholder="Buscar por nombre o ID..."
+                               autocomplete="off">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="btnLimpiar">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small class="text-muted mt-1 d-block text-right">
+                        <span id="infoResultados">
+                            Mostrando <strong id="from">{{ $tiposMvto->firstItem() ?? 0 }}</strong>
+                            a <strong id="to">{{ $tiposMvto->lastItem() ?? 0 }}</strong>
+                            de <strong id="resultadosCount">{{ $tiposMvto->total() }}</strong>
+                            (<strong id="totalCount">{{ $total }}</strong> total)
+                        </span>
+                        <span id="loadingSearch" style="display:none;">
+                            <i class="fas fa-spinner fa-spin text-primary"></i> Buscando...
+                        </span>
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        @if(Auth::user()->esAdmin())
+        <div class="text-right">
+            <small class="text-muted"><i class="fas fa-info-circle"></i> Doble click en el nombre para editar</small>
+        </div>
+        @endif
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        @if(Auth::user()->esAdmin())
+                        <th width="8%">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="checkAll">
+                                <label class="custom-control-label" for="checkAll"></label>
+                            </div>
+                        </th>
+                        @endif
+                        <th width="62%" class="sortable" data-column="nombre" style="cursor:pointer;">
+                            Tipo de Movimiento <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th width="30%" class="sortable" data-column="fecha" style="cursor:pointer;">
+                            Fecha Registro <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="tablaTiposMvto">
+                    @forelse($tiposMvto as $tipo)
+                    <tr id="row-{{ $tipo->id_tipo_mvto }}">
+                        @if(Auth::user()->esAdmin())
+                        <td class="text-center">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input checkbox-item"
+                                       id="check-{{ $tipo->id_tipo_mvto }}"
+                                       value="{{ $tipo->id_tipo_mvto }}">
+                                <label class="custom-control-label" for="check-{{ $tipo->id_tipo_mvto }}"></label>
+                            </div>
+                        </td>
+                        @endif
+                        <td class="{{ Auth::user()->esAdmin() ? 'editable-cell' : '' }}"
+                            data-id="{{ $tipo->id_tipo_mvto }}"
+                            data-nombre="{{ $tipo->tipo_mvto }}"
+                            style="{{ Auth::user()->esAdmin() ? 'cursor: pointer;' : '' }}"
+                            title="{{ Auth::user()->esAdmin() ? 'Doble click para editar' : '' }}">
+                            {{ $tipo->tipo_mvto }}
+                        </td>
+                        <td>{{ $tipo->created_at->format('d/m/Y H:i') }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="{{ Auth::user()->esAdmin() ? 3 : 2 }}" class="text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay registros disponibles</p>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div id="paginacionContainer" class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <small class="text-muted">
+                    Mostrando <strong id="paginaInfo">{{ $tiposMvto->firstItem() ?? 0 }} - {{ $tiposMvto->lastItem() ?? 0 }}</strong>
+                    de <strong>{{ $tiposMvto->total() }}</strong>
+                </small>
+            </div>
+            <div id="paginacionLinks">
+                <!-- Links de paginación AJAX -->
+            </div>
+        </div>
+
+        <!-- Sin resultados -->
+        <div id="noResultados" class="text-center py-4" style="display:none;">
+            <i class="fas fa-search fa-3x text-muted mb-3 d-block"></i>
+            <h5>No se encontraron resultados</h5>
+            <p class="text-muted">No hay tipos de movimiento que coincidan con "<strong id="terminoBuscado"></strong>"</p>
+            <button class="btn btn-outline-primary" id="btnMostrarTodo">
+                <i class="fas fa-undo"></i> Mostrar todo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear -->
+<div class="modal fade" id="modalCreate" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle"></i> Nuevo Tipo de Movimiento
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="formCreate">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="tipo_mvto">Tipo de Movimiento <span class="text-danger">*</span></label>
+                        <input type="text"
+                               name="tipo_mvto"
+                               id="tipo_mvto"
+                               class="form-control"
+                               maxlength="20"
+                               required
+                               placeholder="Ej: Asignación, Devolución, Traslado..."
+                               autocomplete="off">
+                        <small class="form-text text-muted">Máximo 20 caracteres</small>
+                        <span class="text-danger error-tipo_mvto d-block mt-1"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success" id="btnGuardar">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar -->
+<div class="modal fade" id="modalEdit" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Editar Tipo de Movimiento
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="formEdit">
+                @csrf
+                @method('PUT')
+                <input type="hidden" id="edit_id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit_tipo_mvto">Tipo de Movimiento <span class="text-danger">*</span></label>
+                        <input type="text"
+                               name="tipo_mvto"
+                               id="edit_tipo_mvto"
+                               class="form-control"
+                               maxlength="20"
+                               required
+                               autocomplete="off">
+                        <span class="text-danger error-edit-tipo_mvto d-block mt-1"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btnActualizar">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@stop
+
+@section('js')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+const esAdmin = {{ Auth::user()->esAdmin() ? 'true' : 'false' }};
+</script>
+<script>
+$(document).ready(function() {
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    let paginaActual = 1;
+    let searchTimeout;
+    let ordenActual = { columna: 'id', direccion: 'desc' }; // 🔥 ORDEN POR DEFECTO
+
+    // 🔥 ESTABLECER ICONO INICIAL
+    actualizarIconosOrdenamiento();
+
+    // ==================== INICIALIZAR PAGINACIÓN ====================
+    actualizarPaginacion({
+        current_page: {{ $tiposMvto->currentPage() }},
+        last_page: {{ $tiposMvto->lastPage() }}
+    }, '');
+
+    // ===============================
+    // 🔥 ORDENAMIENTO AL HACER CLICK EN COLUMNAS
+    // ===============================
+    $('.sortable').on('click', function() {
+        const columna = $(this).data('column');
+
+        // Toggle dirección si es la misma columna
+        if (ordenActual.columna === columna) {
+            ordenActual.direccion = ordenActual.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+            ordenActual.columna = columna;
+            // Por defecto: ID y Fecha DESC, Nombre ASC
+            ordenActual.direccion = (columna === 'fecha' || columna === 'id') ? 'desc' : 'asc';
+        }
+
+        actualizarIconosOrdenamiento();
+        paginaActual = 1;
+        buscar($('#searchInput').val().trim(), paginaActual);
+    });
+
+    function actualizarIconosOrdenamiento() {
+        // Resetear todos los iconos
+        $('.sortable .sort-icon')
+            .removeClass('fa-sort-up fa-sort-down')
+            .addClass('fa-sort');
+
+        // Aplicar icono activo
+        if (ordenActual.columna) {
+            const iconoActivo = $(`.sortable[data-column="${ordenActual.columna}"] .sort-icon`);
+            iconoActivo
+                .removeClass('fa-sort')
+                .addClass(ordenActual.direccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+        }
+    }
+
+    // ===============================
+    // BÚSQUEDA EN VIVO
+    // ===============================
+    $('#searchInput').on('keyup', function() {
+        const termino = $(this).val().trim();
+        clearTimeout(searchTimeout);
+        paginaActual = 1;
+        searchTimeout = setTimeout(() => buscar(termino, paginaActual), 400);
+    });
+
+    function buscar(termino, page = 1) {
+        $('#loadingSearch').show();
+        $('#infoResultados').hide();
+
+        $.ajax({
+            url: '{{ route("catalogos.tipo-mvto.index") }}',
+            method: 'GET',
+            data: {
+                search: termino,
+                page: page,
+                orden: ordenActual.columna,      // 🔥 ENVIAR ORDEN
+                direccion: ordenActual.direccion // 🔥 ENVIAR DIRECCIÓN
+            },
+            dataType: 'json',
+            success: function(res) {
+                actualizarTabla(res.data);
+                actualizarContadores(res);
+                actualizarPaginacion(res, termino);
+                $('#loadingSearch').hide();
+                $('#infoResultados').show();
+
+                if (res.resultados === 0) {
+                    $('.table-responsive').hide();
+                    $('#paginacionContainer').hide();
+                    $('#terminoBuscado').text(termino);
+                    $('#noResultados').fadeIn();
+                } else {
+                    $('#noResultados').hide();
+                    $('.table-responsive').show();
+                    $('#paginacionContainer').show();
+                }
+            },
+            error: function() {
+                $('#loadingSearch').hide();
+                $('#infoResultados').show();
+                Swal.fire('Error', 'Error en la búsqueda', 'error');
+            }
+        });
+    }
+
+    function actualizarTabla(tipos) {
+        const tbody = $('#tablaTiposMvto');
+        tbody.empty();
+
+        if (tipos.length === 0) return;
+
+        tipos.forEach(t => {
+            const fecha = new Date(t.created_at).toLocaleDateString('es-PE', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            const checkboxCol = esAdmin
+                ? `<td class="text-center">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input checkbox-item"
+                                   id="check-${t.id_tipo_mvto}" value="${t.id_tipo_mvto}">
+                            <label class="custom-control-label" for="check-${t.id_tipo_mvto}"></label>
+                        </div>
+                   </td>`
+                : '';
+
+            const nombreCell = esAdmin
+                ? `<td class="editable-cell" data-id="${t.id_tipo_mvto}" data-nombre="${t.tipo_mvto}"
+                       style="cursor:pointer" title="Doble click para editar">
+                       ${t.tipo_mvto.toUpperCase()}
+                   </td>`
+                : `<td>${t.tipo_mvto.toUpperCase()}</td>`;
+
+            tbody.append(`
+                <tr id="row-${t.id_tipo_mvto}" class="fade-in">
+                    ${checkboxCol}
+                    ${nombreCell}
+                    <td>${fecha}</td>
+                </tr>
+            `);
+        });
+
+        if (esAdmin) {
+            $('.checkbox-item').on('change', actualizarBotonEliminar);
+            $('#checkAll').prop('checked', false);
+        }
+    }
+
+    function actualizarContadores(res) {
+        $('#from').text(res.from || 0);
+        $('#to').text(res.to || 0);
+        $('#resultadosCount').text(res.resultados);
+        $('#totalCount').text(res.total);
+        $('#paginaInfo').text((res.from || 0) + ' - ' + (res.to || 0));
+    }
+
+    function actualizarPaginacion(res, termino) {
+        const links = $('#paginacionLinks');
+        links.empty();
+
+        if (res.last_page <= 1) return;
+
+        let html = '<ul class="pagination pagination-sm m-0">';
+
+        if (res.current_page > 1) {
+            html += `<li class="page-item">
+                        <a class="page-link paginar" href="#" data-page="${res.current_page - 1}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                     </li>`;
+        } else {
+            html += `<li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                     </li>`;
+        }
+
+        for (let i = 1; i <= res.last_page; i++) {
+            if (i == res.current_page) {
+                html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+            } else if (i == 1 || i == res.last_page || Math.abs(i - res.current_page) <= 2) {
+                html += `<li class="page-item">
+                            <a class="page-link paginar" href="#" data-page="${i}">${i}</a>
+                         </li>`;
+            } else if (i == res.current_page - 3 || i == res.current_page + 3) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        if (res.current_page < res.last_page) {
+            html += `<li class="page-item">
+                        <a class="page-link paginar" href="#" data-page="${res.current_page + 1}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                     </li>`;
+        } else {
+            html += `<li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                     </li>`;
+        }
+
+        html += '</ul>';
+        links.html(html);
+
+        $('.paginar').on('click', function(e) {
+            e.preventDefault();
+            paginaActual = $(this).data('page');
+            buscar(termino, paginaActual);
+            $('html, body').animate({ scrollTop: 0 }, 300);
+        });
+    }
+
+    $('#btnLimpiar, #btnMostrarTodo').on('click', function() {
+        $('#searchInput').val('');
+        paginaActual = 1;
+        ordenActual = { columna: 'id', direccion: 'desc' }; // 🔥 RESETEAR ORDEN
+        actualizarIconosOrdenamiento();
+        buscar('', 1);
+    });
+
+    // ===============================
+    // CHECKBOX: Seleccionar todos
+    // ===============================
+    $('#checkAll').on('change', function() {
+        let isChecked = $(this).is(':checked');
+        $('.checkbox-item').prop('checked', isChecked);
+        actualizarBotonEliminar();
+    });
+
+    $(document).on('change', '.checkbox-item', function() {
+        actualizarBotonEliminar();
+
+        if (!$(this).is(':checked')) {
+            $('#checkAll').prop('checked', false);
+        }
+
+        if ($('.checkbox-item:checked').length === $('.checkbox-item').length && $('.checkbox-item').length > 0) {
+            $('#checkAll').prop('checked', true);
+        }
+    });
+
+    function actualizarBotonEliminar() {
+        let seleccionados = $('.checkbox-item:checked').length;
+        $('#contadorSeleccionados').text(seleccionados);
+
+        if (seleccionados > 0) {
+            $('#btnEliminarSeleccionados').fadeIn();
+        } else {
+            $('#btnEliminarSeleccionados').fadeOut();
+        }
+    }
+
+    // ===============================
+    // ELIMINAR SELECCIONADOS
+    // ===============================
+    $('#btnEliminarSeleccionados').on('click', function() {
+        let seleccionados = [];
+        $('.checkbox-item:checked').each(function() {
+            seleccionados.push($(this).val());
+        });
+
+        if (seleccionados.length === 0) {
+            Swal.fire('Aviso', 'No hay registros seleccionados', 'info');
+            return;
+        }
+
+        Swal.fire({
+            title: '¿Eliminar ' + seleccionados.length + ' registro(s)?',
+            text: "Esta acción no se puede revertir",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                eliminarMultiples(seleccionados);
+            }
+        });
+    });
+
+    function eliminarMultiples(ids) {
+        Swal.fire({
+            title: 'Eliminando...',
+            html: 'Eliminando <b>0</b> de <b>' + ids.length + '</b> registros',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        let eliminados = 0;
+        let errores = 0;
+
+        let promesas = ids.map(id => {
+            return $.ajax({
+                url: '/catalogos/tipo-mvto/' + id,
+                method: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: '{{ csrf_token() }}'
+                }
+            }).then(() => {
+                eliminados++;
+                Swal.update({
+                    html: 'Eliminando <b>' + eliminados + '</b> de <b>' + ids.length + '</b> registros'
+                });
+            }).catch(() => {
+                errores++;
+            });
+        });
+
+        Promise.allSettled(promesas).then(() => {
+            if (errores === 0) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: eliminados + ' registro(s) eliminado(s) correctamente',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => buscar($('#searchInput').val(), paginaActual));
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Completado con errores',
+                    html: '<p>Eliminados: <b>' + eliminados + '</b></p><p>Errores: <b>' + errores + '</b></p>',
+                    confirmButtonText: 'Aceptar'
+                }).then(() => buscar($('#searchInput').val(), paginaActual));
+            }
+        });
+    }
+
+    // DOBLE CLICK PARA EDITAR — Solo ADMIN
+    if (esAdmin) {
+        $(document).on('dblclick', '.editable-cell', function() {
+            let id = $(this).data('id');
+            let nombre = $(this).data('nombre');
+
+            $('.error-edit-tipo_mvto').text('');
+            $('#edit_id').val(id);
+            $('#edit_tipo_mvto').val(nombre);
+            $('#modalEdit').modal('show');
+
+            $('#modalEdit').on('shown.bs.modal', function() {
+                $('#edit_tipo_mvto').focus().select();
+            });
+        });
+    }
+
+    // ===============================
+    // CREAR
+    // ===============================
+    $('#formCreate').on('submit', function(e) {
+        e.preventDefault();
+
+        $('.error-tipo_mvto').text('');
+        let btnGuardar = $('#btnGuardar');
+        btnGuardar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+        $.ajax({
+            url: '{{ route("catalogos.tipo-mvto.store") }}',
+            method: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(response) {
+                btnGuardar.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
+
+                if(response.success) {
+                    $('#modalCreate').modal('hide');
+                    $('#formCreate')[0].reset();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => buscar('', 1));
+                }
+            },
+            error: function(xhr) {
+                btnGuardar.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
+
+                if(xhr.status === 422) {
+                    let errors = xhr.responseJSON.errors;
+                    if(errors.tipo_mvto) {
+                        $('.error-tipo_mvto').text(errors.tipo_mvto[0]);
+                    }
+                } else {
+                    Swal.fire('Error', 'No se pudo guardar el registro', 'error');
+                }
+            }
+        });
+    });
+
+    // ===============================
+    // ACTUALIZAR
+    // ===============================
+    $('#formEdit').on('submit', function(e) {
+        e.preventDefault();
+
+        $('.error-edit-tipo_mvto').text('');
+        let btnActualizar = $('#btnActualizar');
+        btnActualizar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Actualizando...');
+
+        let id = $('#edit_id').val();
+
+        $.ajax({
+            url: '/catalogos/tipo-mvto/' + id,
+            method: 'POST',
+            data: $(this).serialize() + '&_method=PUT',
+            dataType: 'json',
+            success: function(response) {
+                btnActualizar.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
+
+                if(response.success) {
+                    $('#modalEdit').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Actualizado!',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => buscar($('#searchInput').val(), paginaActual));
+                }
+            },
+            error: function(xhr) {
+                btnActualizar.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Actualizar');
+
+                if(xhr.status === 422) {
+                    let errors = xhr.responseJSON.errors;
+                    if(errors.tipo_mvto) {
+                        $('.error-edit-tipo_mvto').text(errors.tipo_mvto[0]);
+                    }
+                } else {
+                    Swal.fire('Error', 'No se pudo actualizar el registro', 'error');
+                }
+            }
+        });
+    });
+
+    // Limpiar formularios al cerrar
+    $('#modalCreate').on('hidden.bs.modal', function() {
+        $('#formCreate')[0].reset();
+        $('.error-tipo_mvto').text('');
+    });
+
+    $('#modalEdit').on('hidden.bs.modal', function() {
+        $('#formEdit')[0].reset();
+        $('.error-edit-tipo_mvto').text('');
+    });
+
+    // Focus automático al abrir modal de crear
+    $('#modalCreate').on('shown.bs.modal', function() {
+        $('#tipo_mvto').focus();
+    });
+});
+</script>
+@stop
+
