@@ -29,6 +29,11 @@ class Inventario extends Model
     const TIPO_BAJA                = 'Inventario de Baja';
     const TIPO_SORPRESA            = 'Inventario Sorpresa';
 
+    // Tags de Alcance (para usar en el campo observación sin migraciones)
+    const TAG_ALCANCE_GENERAL = '[ALCANCE_GENERAL]';
+    const TAG_ALCANCE_AREA    = '[ALCANCE_AREA:'; // Se completa con ID y ']'
+    const TAG_ALCANCE_UBICACION = '[ALCANCE_UBICACION:'; // Se completa con ID y ']'
+
     protected $fillable = [
         'fecha_inicio',
         'fecha_fin',
@@ -77,6 +82,12 @@ class Inventario extends Model
         return $this->hasMany(DetalleInventario::class, 'id_inventario', 'id_inventario');
     }
 
+    public function incidencias()
+    {
+        return $this->hasMany(Incidencia::class, 'id_inventario', 'id_inventario');
+    }
+
+
     // ==================== ACCESSORS ====================
 
     protected function estadoinventario(): Attribute
@@ -91,10 +102,10 @@ class Inventario extends Model
     public function getBadgeEstado(): string
     {
         return match (strtolower($this->getRawOriginal('estadoinventario') ?? 'pendiente')) {
-            'pendiente'  => '<span class="badge badge-warning"><i class="fas fa-clock"></i> Pendiente</span>',
-            'en_proceso' => '<span class="badge badge-info"><i class="fas fa-spinner fa-spin"></i> En Proceso</span>',
-            'cerrado'    => '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Cerrado</span>',
-            'anulado'    => '<span class="badge badge-danger"><i class="fas fa-ban"></i> Anulado</span>',
+            'pendiente'  => '<span class="badge badge-warning" id="estado_actual_badge"><i class="fas fa-clock"></i> Pendiente</span>',
+            'en_proceso' => '<span class="badge badge-info" id="estado_actual_badge"><i class="fas fa-spinner fa-spin"></i> En Proceso</span>',
+            'cerrado'    => '<span class="badge badge-success" id="estado_actual_badge"><i class="fas fa-check-circle"></i> Cerrado</span>',
+            'anulado'    => '<span class="badge badge-danger" id="estado_actual_badge"><i class="fas fa-ban"></i> Anulado</span>',
             default      => '<span class="badge badge-secondary">' . htmlspecialchars($this->estadoinventario) . '</span>',
         };
     }
@@ -169,28 +180,51 @@ class Inventario extends Model
 
     /**
      * Obtiene los IDs de los bienes que se "esperan" encontrar en este inventario.
-     * (Bienes activos cuyo último movimiento apunta a un área del responsable).
+     * Soporta alcance por Responsable, Área específica o General.
      */
     public function getBienesEsperadosIds(): array
     {
+        $obs = $this->observacion ?? '';
+
+        // 1. ALCANCE GENERAL [ALCANCE_GENERAL]
+        if (str_contains($obs, self::TAG_ALCANCE_GENERAL)) {
+            return $this->getBienesPorFiltroUbicacion(null);
+        }
+
+        // 2. ALCANCE POR UBICACIÓN ESPECÍFICA [ALCANCE_UBICACION:ID]
+        if (preg_match('/\[ALCANCE_UBICACION:(\d+)\]/', $obs, $matches)) {
+            $idUbicacion = $matches[1];
+            return $this->getBienesPorFiltroUbicacion([$idUbicacion]);
+        }
+
+        // 3. ALCANCE POR ÁREA ESPECÍFICA [ALCANCE_AREA:ID]
+        if (preg_match('/\[ALCANCE_AREA:(\d+)\]/', $obs, $matches)) {
+            $idArea = $matches[1];
+            $ubicaciones = Ubicacion::where('idarea', $idArea)->pluck('id_ubicacion')->toArray();
+            return $this->getBienesPorFiltroUbicacion($ubicaciones);
+        }
+
+        // 4. ALCANCE POR RESPONSABLE (Bienes en áreas donde él es jefe)
         $areas = $this->getAreasResponsableIds();
         if (empty($areas)) return [];
-
         $ubicaciones = Ubicacion::whereIn('idarea', $areas)->pluck('id_ubicacion')->toArray();
-        if (empty($ubicaciones)) return [];
+        return $this->getBienesPorFiltroUbicacion($ubicaciones);
+    }
 
-        // Lógica base: Bienes que deberían estar en estas ubicaciones
+    /**
+     * Motor de búsqueda: Filtra bienes basándose estrictamente en su ÚLTIMO movimiento vigente.
+     */
+    private function getBienesPorFiltroUbicacion(?array $ubicacionesIds = null): array
+    {
         $query = Bien::query();
 
-        // 1. Filtrar por estado según el TIPO de inventario
+        // Filtro por tipo de inventario (Activos vs Bajas)
         if ($this->getRawOriginal('tipoinventario') === self::TIPO_BAJA) {
-            // El inventario de baja busca bienes que YA están de baja o propuestos para ella
             $query->where(function($q) {
                 $q->where('activo', false)
                   ->orWhereHas('estadoBien', fn($sq) => $sq->whereRaw("LOWER(nombre_estado) LIKE '%baja%'"));
             });
         } else {
-            // Inventarios estándar buscan solo bienes ACTIVOS y que no estén en estado de BAJA
             $query->where('activo', true)
                   ->where(function($q) {
                       $q->whereHas('estadoBien', function($sq) {
@@ -199,23 +233,24 @@ class Inventario extends Model
                   });
         }
 
-        // 2. Filtrar por ubicación actual (último movimiento)
-        return $query->whereIn('id_bien', function($sub) use ($ubicaciones) {
-                       $sub->select('idbien')
-                           ->from('movimiento as m_ext')
-                           ->whereIn('m_ext.idubicacion', $ubicaciones)
-                           ->where('m_ext.anulado', false)
-                           ->where('m_ext.revertido', false)
-                           ->whereIn('m_ext.id_movimiento', function($sub2) {
-                               $sub2->selectRaw('MAX(m_int.id_movimiento)')
-                                    ->from('movimiento as m_int')
-                                    ->whereRaw('m_int.idbien = m_ext.idbien')
-                                    ->where('m_int.anulado', false)
-                                    ->where('m_int.revertido', false);
-                           });
-                   })
-                   ->pluck('id_bien')
-                   ->toArray();
+        return $query->whereIn('id_bien', function($sub) use ($ubicacionesIds) {
+            $sub->select('idbien')
+                ->from('movimiento as m_ext')
+                ->where('m_ext.anulado', false)
+                ->where('m_ext.revertido', false)
+                // Asegurar que sea el ÚLTIMO movimiento de este bien
+                ->whereRaw('m_ext.id_movimiento = (
+                    select MAX(m_int.id_movimiento) 
+                    from movimiento as m_int 
+                    where m_int.idbien = m_ext.idbien 
+                    and m_int.anulado = false 
+                    and m_int.revertido = false
+                )')
+                // Aplicar filtro de ubicación si existe
+                ->when($ubicacionesIds, function($q) use ($ubicacionesIds) {
+                    $q->whereIn('m_ext.idubicacion', $ubicacionesIds);
+                });
+        })->pluck('id_bien')->toArray();
     }
 
     /**
@@ -239,37 +274,100 @@ class Inventario extends Model
     public function getEstadisticasConciliacion(): array
     {
         $esperadosIds = $this->getBienesEsperadosIds();
-        $verificadosIds = $this->getBienesVerificadosIds();
+        
+        // Verificados Reales (Encontrados físicamente: Conformes u Observados)
+        $verificadosIds = $this->detalles()
+            ->whereIn('estadoverificacion', [\App\Models\DetalleInventario::VERIFICADO, \App\Models\DetalleInventario::OBSERVADO])
+            ->with('movimiento')
+            ->get()
+            ->pluck('movimiento.idbien')
+            ->unique()
+            ->toArray();
 
-        // Faltantes = Esperados que NO han sido verificados
-        $faltantesIds = array_diff($esperadosIds, $verificadosIds);
+        // Confirmados como No Encontrados (Perdidos)
+        $perdidosIds = $this->detalles()
+            ->where('estadoverificacion', \App\Models\DetalleInventario::NO_ENCONTRADO)
+            ->with('movimiento')
+            ->get()
+            ->pluck('movimiento.idbien')
+            ->unique()
+            ->toArray();
+
+        // Faltantes = Esperados que NO han sido verificados ni confirmados como perdidos
+        $faltantesIds = array_diff($esperadosIds, $verificadosIds, $perdidosIds);
 
         // Sobrantes = Verificados que NO eran esperados (de otra área)
         $sobrantesIds = array_diff($verificadosIds, $esperadosIds);
 
         $totalEsperados = count($esperadosIds);
         $totalVerificados = count($verificadosIds);
+        $totalPerdidos = count($perdidosIds);
         
-        // El progreso se basa en cuántos de los ESPERADOS hemos encontrado.
         // Verificados conformes = Verificados que SÍ eran esperados
         $verificadosConformes = count(array_intersect($esperadosIds, $verificadosIds));
 
-        $progreso = $totalEsperados > 0 ? round(($verificadosConformes / $totalEsperados) * 100, 1) : 0;
-        // Si no hay esperados pero se registraron cosas, progreso es 100% (o 0 si prefieres, usemos 100% visualmente)
+        // El progreso real se basa en cuántos de los ESPERADOS han sido PROCESADOS (encontrados o confirmados perdidos)
+        $procesados = count(array_intersect($esperadosIds, array_merge($verificadosIds, $perdidosIds)));
+        $progreso = $totalEsperados > 0 ? round(($procesados / $totalEsperados) * 100, 1) : 0;
+
         if ($totalEsperados === 0 && $totalVerificados > 0) {
             $progreso = 100;
         }
 
         return [
             'total_esperados'        => $totalEsperados,
-            'total_verificados'      => $totalVerificados,
-            'total_faltantes'        => count($faltantesIds),
+            'total_verificados'      => $totalVerificados, // Encontrados
+            'total_faltantes'        => count($faltantesIds), // Aún sin procesar
+            'total_perdidos'         => $totalPerdidos,      // Procesados como no encontrados
             'total_sobrantes'        => count($sobrantesIds),
             'verificados_conformes'  => $verificadosConformes,
             'progreso_porcentaje'    => $progreso,
             'esperados_ids'          => $esperadosIds,
             'faltantes_ids'          => array_values($faltantesIds),
+            'perdidos_ids'           => array_values($perdidosIds),
             'sobrantes_ids'          => array_values($sobrantesIds),
         ];
+    }
+
+    /**
+     * Retorna el tipo de alcance en texto legible.
+     */
+    public function getAlcanceHumanizado()
+    {
+        $obs = $this->observacion ?? '';
+        if (str_contains($obs, '[ALCANCE_GENERAL]')) {
+            return 'General';
+        }
+        if (preg_match('/\[ALCANCE_UBICACION:(\d+)\]/', $obs, $matches)) {
+            $ubicacion = \App\Models\Ubicacion::find($matches[1]);
+            return 'Ubicación: ' . ($ubicacion ? $ubicacion->ambiente : "ID {$matches[1]}");
+        }
+        if (preg_match('/\[ALCANCE_AREA:(\d+)\]/', $obs, $matches)) {
+            $area = \App\Models\Area::find($matches[1]);
+            return 'Área: ' . ($area->nombre_area ?? "ID {$matches[1]}");
+        }
+        return 'Por Responsable';
+    }
+
+    /**
+     * Retorna un badge HTML con el tipo de alcance.
+     */
+    public function getAlcanceBadge()
+    {
+        $alcance = $this->getAlcanceHumanizado();
+        $clase = 'badge-secondary';
+        $icon = 'fa-user';
+
+        if (str_contains($alcance, 'General')) {
+            $clase = 'badge-purple text-white';
+            $icon = 'fa-globe';
+        } elseif (str_contains($alcance, 'Ubicación') || str_contains($alcance, 'Área')) {
+            $clase = 'badge-primary';
+            $icon = 'fa-map-marker-alt';
+        }
+
+        $style = str_contains($alcance, 'General') ? 'style="background-color: #6f42c1;"' : '';
+        
+        return "<span class='badge {$clase}' {$style}><i class='fas {$icon}'></i> {$alcance}</span>";
     }
 }

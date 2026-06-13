@@ -38,6 +38,8 @@ use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\BajaController;
 use App\Http\Controllers\EstadoConservacionController;
+use App\Http\Controllers\IncidenciaController;
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -136,6 +138,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('ubicacion', UbicacionController::class)->names('ubicacion');
         Route::get('responsable-area/historial/{dni}', [ResponsableAreaController::class, 'historial'])
             ->name('responsable-area.historial-legacy');
+        Route::get('areas/{area}/responsable', [AreaController::class, 'getResponsable'])
+            ->name('areas.getResponsable');
+        Route::get('areas/{area}/ubicaciones', [AreaController::class, 'getUbicaciones'])
+            ->name('areas.getUbicaciones');
         Route::resource('responsable-area', ResponsableAreaController::class)->names('responsable-area');
 
         // ==================== MOVIMIENTO ====================
@@ -227,12 +233,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::delete('{inventario}/detalles/{detalle}', [InventarioController::class, 'eliminarDetalle'])
                 ->name('detalles.destroy');
+
+            Route::post('{inventario}/detalles/verificar-masivo', [InventarioController::class, 'verificarMasivo'])
+                ->name('detalles.verificar-masivo');
+
+            Route::post('{inventario}/detalles/eliminar-masivo', [InventarioController::class, 'eliminarDetallesMasivo'])
+                ->name('detalles.eliminar-masivo');
         });
+
+        Route::post('inventario/estimar-alcance', [InventarioController::class, 'estimarAlcance'])
+            ->name('inventario.estimar-alcance');
+            
+        Route::post('inventario/{inventario}/regenerar-snapshot', [InventarioController::class, 'regenerarSnapshot'])
+            ->name('inventario.regenerar-snapshot');
 
         Route::resource('inventario', InventarioController::class);
 
-        // ==================== ACTA PDF ====================
+        // ==================== INCIDENCIAS DE INVENTARIO ====================
+        Route::prefix('inventario/{inventario}/incidencias')->name('inventario.incidencias.')->group(function () {
+            Route::get('/', [IncidenciaController::class, 'index'])->name('index');
+            Route::post('/', [IncidenciaController::class, 'store'])->name('store');
+        });
+        Route::post('incidencias/{incidencia}/cambiar-estado', [IncidenciaController::class, 'cambiarEstado'])
+            ->name('inventario.incidencias.cambiar-estado');
+        Route::delete('incidencias/{incidencia}', [IncidenciaController::class, 'destroy'])
+            ->name('inventario.incidencias.destroy');
+
+
+
+        // ==================== ACTA PDF Y EXCEL ====================
         Route::get('{inventario}/acta', [InventarioController::class, 'downloadActa'])->name('inventario.acta');
+        Route::get('{inventario}/excel', [InventarioController::class, 'downloadExcel'])->name('inventario.excel');
 
         // ==================== REPORTES ====================
         Route::prefix('reportes')->name('reportes.')->group(function () {

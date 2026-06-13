@@ -109,19 +109,56 @@ class InventarioController extends Controller
             ]);
         }
 
-        // Datos para filtros
+        // Datos para filtros y alcances
         $responsables       = Responsable::orderBy('apellidos_responsable')->get();
         $estadosConservacion = EstadoConservacion::orderBy('nombre_conservacion')->get();
+        $areas              = \App\Models\Area::orderBy('nombre_area')->get();
+        $ubicaciones        = Ubicacion::orderBy('ambiente')->get();
 
         return view('inventario.index', compact(
             'inventarios',
             'total',
             'estadisticas',
             'responsables',
-            'estadosConservacion'
+            'estadosConservacion',
+            'areas',
+            'ubicaciones'
         ));
     }
     
+    /**
+     * API: Estima cuántos bienes entrarán en un alcance antes de crear el inventario.
+     * Útil para feedback en tiempo real en el modal de creación.
+     */
+    public function estimarAlcance(Request $request)
+    {
+        $tipo   = $request->get('alcance_tipo', 'responsable');
+        $idArea = $request->get('id_area');
+        $idUbic = $request->get('id_ubicacion');
+        $dni    = $request->get('responsable');
+
+        // Mock de un objeto inventario para reutilizar la lógica del modelo
+        $inv = new Inventario();
+        $inv->tipoinventario = 'Estimación';
+        
+        // Inyectar el tag en la observación (simulado)
+        $tag = '';
+        if ($tipo === 'ubicacion' && $idUbic) $tag = "[ALCANCE_UBICACION:{$idUbic}]";
+        elseif ($tipo === 'area' && $idArea) $tag = "[ALCANCE_AREA:{$idArea}]";
+        elseif ($tipo === 'general') $tag = "[ALCANCE_GENERAL]";
+        
+        $inv->observacion = $tag;
+        $inv->responsable = $dni;
+
+        $count = count($inv->getBienesEsperadosIds());
+
+        return response()->json([
+            'success' => true,
+            'total' => $count,
+            'mensaje' => $count > 0 ? "Se incluirán {$count} bienes en este inventario." : "No se encontraron bienes para este alcance."
+        ]);
+    }
+
     /**
      * Vista de creación (maneja accesos directos por URL)
      */
@@ -170,6 +207,24 @@ class InventarioController extends Controller
                 $data['codigoinventario'] = 'INV-' . str_pad($ultimo + 1, 6, '0', STR_PAD_LEFT);
             }
 
+            // --- MANEJO DE ALCANCE SIN MIGRACIONES ---
+            $alcanceTipo = $request->input('alcance_tipo', 'responsable'); // 'responsable', 'ubicacion', 'area', 'general'
+            $idArea      = $request->input('id_area');
+            $idUbic      = $request->input('id_ubicacion');
+            $tagAlcance  = '';
+
+            if ($alcanceTipo === 'ubicacion' && $idUbic) {
+                $tagAlcance = "[ALCANCE_UBICACION:{$idUbic}]";
+            } elseif ($alcanceTipo === 'area' && $idArea) {
+                $tagAlcance = "[ALCANCE_AREA:{$idArea}]";
+            } elseif ($alcanceTipo === 'general') {
+                $tagAlcance = "[ALCANCE_GENERAL]";
+            }
+
+            if ($tagAlcance) {
+                $data['observacion'] = $tagAlcance . ' ' . ($data['observacion'] ?? '');
+            }
+
             $inventario = Inventario::create($data);
             $inventario->load(['responsablePersona', 'usuarioRegistro']);
 
@@ -187,7 +242,23 @@ class InventarioController extends Controller
         }
     }
 
-    // ==================== SHOW ====================
+    /**
+     * Fuerza la regeneración del snapshot si el inventario está en proceso pero vacío.
+     */
+    public function regenerarSnapshot(Inventario $inventario)
+    {
+        // Eliminamos la restricción bloqueante para permitir "actualizar" el snapshot
+        // incluso si ya hay avances.
+        
+        $procesados = $this->generarSnapshot($inventario);
+        $inventario->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Se han sincronizado {$procesados} nuevos bienes a la lista oficial.",
+            'data'    => $this->formatInventario($inventario, true)
+        ]);
+    }
 
     public function show(Inventario $inventario)
     {
@@ -209,7 +280,9 @@ class InventarioController extends Controller
         $movimientos         = Movimiento::with(['bien.tipoBien', 'ubicacion.area'])->activos()->get();
         $estadosConservacion = EstadoConservacion::orderBy('nombre_conservacion')->get();
         $ubicaciones         = Ubicacion::with('area')->orderBy('nombre_sede')->get();
+        $areas               = \App\Models\Area::orderBy('nombre_area')->get();
         $usuarios            = User::orderBy('name')->get();
+
         $estadisticas_conciliacion = $inventario->getEstadisticasConciliacion();
 
         return view('inventario.show', compact(
@@ -217,9 +290,11 @@ class InventarioController extends Controller
             'movimientos',
             'estadosConservacion',
             'ubicaciones',
+            'areas',
             'usuarios',
             'estadisticas_conciliacion'
         ));
+
     }
 
     // ==================== EDIT ====================
@@ -309,14 +384,9 @@ class InventarioController extends Controller
         $data = ['estadoinventario' => $nuevo];
 
         if ($nuevo === 'cerrado') {
-            // ⭐ VALIDACIÓN PROFESIONAL: No cerrar si hay detalles marcados como "pendiente"
-            $pendientes = $inventario->detalles()->where('estadoverificacion', 'pendiente')->count();
-            if ($pendientes > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "No se puede cerrar el inventario porque existen {$pendientes} bienes con estado 'Pendiente'. Debe verificar todos los bienes agregados antes de finalizar."
-                ], 422);
-            }
+            // Nota: Bajo la nueva lógica de conciliación (snapshots), los bienes en estado 'pendiente' 
+            // son legítimamente los "Bienes Faltantes" (no ubicados). 
+            // Por lo tanto, SI SE PERMITE cerrar el inventario dejando bienes pendientes.
 
             $data['usuariocierre'] = Auth::id();
             $data['fechacierre']   = now();
@@ -325,9 +395,18 @@ class InventarioController extends Controller
             }
         }
 
+        $viejoEstado = strtolower($inventario->getRawOriginal('estadoinventario') ?? '');
         $inventario->update($data);
         $inventario->refresh();
 
+        // ⭐⭐⭐ GENERAR SNAPSHOT (PRECARTGA DE BIENES) ⭐⭐⭐
+        // Si pasa de 'pendiente' a 'en_proceso', pre-poblamos el detalle
+        if ($viejoEstado === 'pendiente' && $nuevo === 'en_proceso') {
+            $this->generarSnapshot($inventario);
+        }
+
+        // Si se anula el inventario, podríamos anular también incidencias pendientes si fuera necesario
+        // por ahora solo retornamos
         return response()->json([
             'success' => true,
             'message' => 'Estado actualizado a "' . ucfirst($nuevo) . '".',
@@ -354,6 +433,10 @@ class InventarioController extends Controller
             'detalles.movimiento.ubicacion.area',
             'detalles.estadoConservacion',
             'detalles.ubicacionDetectada.area',
+            'incidencias.bien',
+            'incidencias.area',
+            'incidencias.ubicacion',
+            'incidencias.usuarioRevision',
         ]);
 
         // Estadísticas de conciliación (incluye bienes_faltantes con info detallada)
@@ -388,6 +471,15 @@ class InventarioController extends Controller
 
         $filename = 'Acta_Inv_' . $inventario->codigoinventario . '.pdf';
         return $pdf->download($filename);
+    }
+
+    /**
+    * Descargar Excel consolidado (Verificados, Faltantes, Sobrantes, Incidencias)
+    */
+    public function downloadExcel(Inventario $inventario)
+    {
+        $filename = 'Reporte_Inv_' . $inventario->codigoinventario . '_' . date('Ymd_Hi') . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\InventarioMultiExport($inventario), $filename);
     }
 
     // ==================== ELIMINAR MÚLTIPLES ====================
@@ -462,8 +554,11 @@ class InventarioController extends Controller
                 ->get();
 
             $procesados = 0;
-            $tipoMvto = TipoMvto::where('tipo_mvto', 'ASIGNACIÓN')->orWhere('tipo_mvto', 'Reasignación')->first();
-            $idTipoMvto = $tipoMvto ? $tipoMvto->id_tipo_mvto : 2; // Default a 2 si no se encuentra
+            $tipoMvto = TipoMvto::whereRaw("LOWER(tipo_mvto) LIKE '%traslado%'")
+                ->orWhereRaw("LOWER(tipo_mvto) LIKE '%asignacion%'")
+                ->orWhereRaw("LOWER(tipo_mvto) LIKE '%asignación%'")
+                ->first();
+            $idTipoMvto = $tipoMvto ? $tipoMvto->id_tipo_mvto : 2; // Default to 2 (Asignación) if not found
 
             foreach ($detalles as $detalle) {
                 $originalUbicId = $detalle->movimiento ? $detalle->movimiento->idubicacion : null;
@@ -474,16 +569,14 @@ class InventarioController extends Controller
                     
                     // Crear nuevo movimiento formal
                     Movimiento::create([
-                        'idbien'            => $detalle->movimiento->idbien,
-                        'idubicacion'       => $detectadaUbicId,
-                        'idresponsable'     => $inventario->responsable, // Asignar al responsable del inventario (o del área)
-                        'tipo_mvto'         => $idTipoMvto,
-                        'fecha_mvto'        => now(),
-                        'documento_sustento'=> 'Regularización Acta ' . $inventario->codigoinventario,
-                        'observacion'       => 'Actualización automática post-inventario. ' . $detalle->observacion,
-                        'id_usuario'        => Auth::id(),
+                        'idbien'                      => $detalle->movimiento->idbien,
+                        'idubicacion'                 => $detectadaUbicId,
+                        'tipo_mvto'                   => $idTipoMvto,
+                        'fecha_mvto'                  => now(),
+                        'NumDocto'                    => $inventario->codigoinventario,
+                        'detalle_tecnico'             => 'Regularización automática post-inventario. ' . ($detalle->observacion ?? ''),
+                        'idusuario'                   => Auth::id(),
                         'id_estado_conservacion_bien' => $detalle->estado_conservacion,
-                        'activo'            => true
                     ]);
 
                     $procesados++;
@@ -527,29 +620,51 @@ class InventarioController extends Controller
                 ->first();
 
             if ($existe) {
-                return response()->json(['success' => false, 'message' => 'Este bien ya está registrado en el inventario.'], 422);
+                if ($existe->getRawOriginal('estadoverificacion') === \App\Models\DetalleInventario::PENDIENTE) {
+                    $existe->update([
+                        'estadoverificacion'  => $data['estadoverificacion'] ?? \App\Models\DetalleInventario::VERIFICADO,
+                        'estado_conservacion' => $data['estado_conservacion'] ?? $existe->movimiento->id_estado_conservacion_bien,
+                        'ubicaciondetectada'  => $data['ubicaciondetectada'] ?? null,
+                        'usuarioverificador'  => $data['usuarioverificador'],
+                        'fechaverificacion'   => $data['fechaverificacion'],
+                        'observacion'         => $data['observacion'] ?? null,
+                    ]);
+
+                    if ($existe->ubicaciondetectada && $existe->ubicaciondetectada != $existe->movimiento->idubicacion) {
+                        $existe->update(['requiereregularizacion' => true]);
+                    }
+
+                    if ($inventario->getRawOriginal('estadoinventario') === \App\Models\Inventario::ESTADO_PENDIENTE) {
+                        $inventario->update(['estadoinventario' => \App\Models\Inventario::ESTADO_EN_PROCESO]);
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Bien verificado exitosamente desde la búsqueda.',
+                        'data'    => $this->formatDetalle($existe),
+                    ]);
+                } else {
+                    return response()->json(['success' => false, 'message' => 'Este bien ya está registrado y verificado en el inventario.'], 422);
+                }
             }
 
-            $detalle = DetalleInventario::create($data);
+            DB::beginTransaction();
+            $detalle = \App\Models\DetalleInventario::create($data);
 
-            // ⭐ AUTOMÁTICO: Si el inventario está en 'pendiente', pasar a 'en_proceso' al agregar el primer bien
-            if ($inventario->getRawOriginal('estadoinventario') === Inventario::ESTADO_PENDIENTE) {
-                $inventario->update(['estadoinventario' => Inventario::ESTADO_EN_PROCESO]);
+            // ⭐ AUTOMÁTICO: Si el inventario está en 'pendiente', pasar a 'en_proceso'
+            if ($inventario->getRawOriginal('estadoinventario') === \App\Models\Inventario::ESTADO_PENDIENTE) {
+                $inventario->update(['estadoinventario' => \App\Models\Inventario::ESTADO_EN_PROCESO]);
             }
-            $detalle->load([
-                'movimiento.bien.tipoBien',
-                'movimiento.ubicacion.area',
-                'estadoConservacion',
-                'ubicacionDetectada.area',
-                'usuarioVerificador',
-            ]);
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Bien agregado al inventario exitosamente.',
+                'message' => 'Bien registrado exitosamente.',
                 'data'    => $this->formatDetalle($detalle),
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Error al agregar detalle: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
@@ -565,6 +680,8 @@ class InventarioController extends Controller
         }
 
         try {
+            DB::beginTransaction();
+
             $data = $request->only([
                 'estado_conservacion',
                 'observacion',
@@ -583,12 +700,72 @@ class InventarioController extends Controller
                 'usuarioVerificador',
             ]);
 
+            // ==================== RECONCILIACIÓN INTELIGENTE PRO ====================
+            // 1. Si el bien ahora es VERIFICADO, resolver automáticamente incidencias de 'faltante'
+            if ($detalle->estadoverificacion === \App\Models\DetalleInventario::VERIFICADO) {
+                \App\Models\Incidencia::where('id_inventario', $inventario->id_inventario)
+                    ->where('id_bien', $detalle->movimiento?->idbien)
+                    ->where('tipo_incidencia', 'faltante')
+                    ->where('estado', '!=', \App\Models\Incidencia::ESTADO_REVISADO)
+                    ->update([
+                        'estado' => \App\Models\Incidencia::ESTADO_REVISADO,
+                        'resolucion' => 'Resuelto automáticamente: El bien fue verificado físicamente con éxito durante la auditoría.',
+                        'fecha_revision' => now(),
+                        'id_usuario_revision' => Auth::id()
+                    ]);
+            }
+
+            // ==================== INTEGRACIÓN PROFESIONAL CON INCIDENCIAS ====================
+            // 1. Si el bien es "No Encontrado", reportar incidencia de tipo 'faltante'
+            if ($detalle->estadoverificacion === \App\Models\DetalleInventario::NO_ENCONTRADO) {
+                \App\Models\Incidencia::updateOrCreate(
+                    [
+                        'id_inventario' => $inventario->id_inventario,
+                        'id_bien'       => $detalle->movimiento?->idbien,
+                        'tipo_incidencia' => 'faltante'
+                    ],
+                    [
+                        'id_ubicacion' => $detalle->movimiento?->idubicacion,
+                        'id_area'      => $detalle->ubicacionDetectada?->idarea ?? $detalle->movimiento?->ubicacion?->idarea ?? null,
+                        'observacion'  => 'Reportado como NO ENCONTRADO durante verificación física. ' . ($detalle->observacion ?? ''),
+                        'estado'       => \App\Models\Incidencia::ESTADO_NO_REVISADO
+                    ]
+                );
+            }
+
+            // 2. Si el estado de conservación es MALO o CHATARRA, reportar incidencia de tipo 'deteriorado'
+            $estadoMaloId = \App\Models\EstadoConservacion::whereIn('nombre_conservacion', ['Malo', 'Chatarra'])->pluck('id_estado_conservacion')->toArray();
+            if (in_array($detalle->estado_conservacion, $estadoMaloId)) {
+                \App\Models\Incidencia::updateOrCreate(
+                    [
+                        'id_inventario'   => $inventario->id_inventario,
+                        'id_bien'         => $detalle->movimiento?->idbien,
+                        'tipo_incidencia' => 'deteriorado'
+                    ],
+                    [
+                        'id_ubicacion' => $detalle->ubicaciondetectada ?? $detalle->movimiento?->idubicacion,
+                        'id_area'      => $detalle->ubicacionDetectada?->idarea ?? $detalle->movimiento?->ubicacion?->idarea ?? null,
+                        'observacion'  => 'Reportado con deterioro grave durante inventario. Estado: ' . ($detalle->estadoConservacion?->nombre_conservacion ?? 'Malo') . '. ' . ($detalle->observacion ?? ''),
+                        'estado'       => \App\Models\Incidencia::ESTADO_NO_REVISADO
+                    ]
+                );
+            }
+
+            // 3. Si es SOBRANTE (Ubicación distinta a la esperada), marcar que requiere regularización
+            if ($detalle->ubicaciondetectada && $detalle->ubicaciondetectada != $detalle->movimiento->idubicacion) {
+                $detalle->update(['requiereregularizacion' => true]);
+            }
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Verificación actualizada.',
+                'message' => 'Verificación actualizada y sincronizada con incidencias.',
                 'data'    => $this->formatDetalle($detalle),
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al actualizar detalle: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
@@ -611,15 +788,145 @@ class InventarioController extends Controller
     }
 
     /**
+     * Verificación masiva de bienes (pasar de faltantes a verificados)
+     */
+    public function verificarMasivo(Request $request, Inventario $inventario)
+    {
+        if (!$inventario->puedeEditarse()) {
+            return response()->json(['success' => false, 'message' => 'El inventario no permite ediciones.'], 422);
+        }
+
+        $request->validate([
+            'bienes_ids'          => 'required|array',
+            'bienes_ids.*'        => 'integer|exists:bien,id_bien',
+            'estado_conservacion' => 'required|exists:estado_conservacion,id_estado_conservacion',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $bienesIds = $request->bienes_ids;
+            $estadoCons = $request->estado_conservacion;
+            $procesados = 0;
+
+            foreach ($bienesIds as $idBien) {
+                // Obtener el último movimiento vigente del bien
+                $mov = Movimiento::where('idbien', $idBien)
+                    ->activos()
+                    ->orderBy('id_movimiento', 'desc')
+                    ->first();
+
+                if ($mov) {
+                    // Evitar duplicados
+                    $existe = DetalleInventario::where('id_inventario', $inventario->id_inventario)
+                        ->where('id_movimiento', $mov->id_movimiento)
+                        ->first();
+
+                    if ($existe) {
+                        $existe->update([
+                            'estado_conservacion' => $estadoCons,
+                            'estadoverificacion'  => 'verificado',
+                            'usuarioverificador'  => Auth::id(),
+                            'fechaverificacion'   => now(),
+                        ]);
+                    } else {
+                        DetalleInventario::create([
+                            'id_inventario'       => $inventario->id_inventario,
+                            'id_movimiento'       => $mov->id_movimiento,
+                            'estado_conservacion' => $estadoCons,
+                            'estadoverificacion'  => 'verificado',
+                            'usuarioverificador'  => Auth::id(),
+                            'fechaverificacion'   => now(),
+                        ]);
+                    }
+                    $procesados++;
+                }
+            }
+
+            // Cambiar estado a 'en_proceso' si estaba 'pendiente'
+            if ($procesados > 0 && $inventario->getRawOriginal('estadoinventario') === Inventario::ESTADO_PENDIENTE) {
+                $inventario->update(['estadoinventario' => Inventario::ESTADO_EN_PROCESO]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Se han verificado $procesados bienes exitosamente."
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Quitar/Eliminar detalles de verificación de forma masiva.
+     */
+    public function eliminarDetallesMasivo(Request $request, Inventario $inventario)
+    {
+        if (!Auth::user()->esAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Solo el ADMIN puede realizar esta acción.'], 403);
+        }
+
+        if (!$inventario->puedeEditarse()) {
+            return response()->json(['success' => false, 'message' => 'El inventario está cerrado o anulado.'], 422);
+        }
+
+        $request->validate([
+            'detalles_ids'   => 'required|array',
+            'detalles_ids.*' => 'integer|exists:detalle_inventario,id_detalle_inv'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Opción PRO implementada: No borrar si es parte del snapshot (solo pasar a pendiente).
+            // Si es un bien sobrante (no esperado) agregado manualmente, sí se borra.
+            $esperadosIds = $inventario->getBienesEsperadosIds();
+            $detalles = DetalleInventario::with('movimiento')
+                ->whereIn('id_detalle_inv', $request->detalles_ids)
+                ->where('id_inventario', $inventario->id_inventario)
+                ->get();
+
+            foreach ($detalles as $detalle) {
+                $idBien = $detalle->movimiento ? $detalle->movimiento->idbien : null;
+                if ($idBien && in_array($idBien, $esperadosIds)) {
+                    // Es un bien esperado (del snapshot), se regresa a pendiente
+                    $detalle->update([
+                        'estadoverificacion'     => \App\Models\DetalleInventario::PENDIENTE,
+                        'usuarioverificador'     => null,
+                        'fechaverificacion'      => null,
+                        'ubicaciondetectada'     => null,
+                        'requiereregularizacion' => false,
+                        'observacion'            => null
+                    ]);
+                } else {
+                    // Es un bien agregado manualmente (no esperado), se elimina por completo
+                    $detalle->delete();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Se han quitado ' . count($request->detalles_ids) . ' bienes del listado de verificados.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error en eliminar masivo detalles: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Obtener bienes disponibles para añadir al inventario (no duplicados)
      */
     public function bienesDisponibles(Request $request, Inventario $inventario)
     {
         $term = $request->get('q');
-
-        $yaAgregados = DetalleInventario::where('id_inventario', $inventario->id_inventario)
-            ->pluck('id_movimiento')
-            ->toArray();
 
         $query = Movimiento::with(['bien.tipoBien', 'ubicacion.area'])
             ->vigentes()
@@ -629,8 +936,20 @@ class InventarioController extends Controller
                     ->where('anulado', false)
                     ->where('revertido', false)
                     ->groupBy('idbien');
-            })
-            ->whereNotIn('id_movimiento', $yaAgregados);
+            });
+
+        // Si NO estamos buscando para incidencias, excluimos los bienes que ya están en el inventario Y VERIFICADOS.
+        // Los bienes en estado 'pendiente' (faltantes) SÍ deben aparecer para poder verificarlos desde el buscador.
+        if (!$request->has('incidencia')) {
+            $yaAgregados = DetalleInventario::where('id_inventario', $inventario->id_inventario)
+                ->where('estadoverificacion', '!=', \App\Models\DetalleInventario::PENDIENTE)
+                ->pluck('id_movimiento')
+                ->toArray();
+
+            if (!empty($yaAgregados)) {
+                $query->whereNotIn('id_movimiento', $yaAgregados);
+            }
+        }
 
         // Lógica estricta por tipo de inventario
         if ($inventario->getRawOriginal('tipoinventario') === Inventario::TIPO_BAJA) {
@@ -652,15 +971,77 @@ class InventarioController extends Controller
             ->limit(30)
             ->get()
             ->map(fn ($m) => [
-                'id'   => $m->id_movimiento,
-                'text' => '[' . ($m->bien->codigo_patrimonial ?? '-') . '] ' . ($m->bien->denominacion_bien ?? '-') . ' - Ubic: ' . 
-                          ($m->ubicacion ? (($m->ubicacion->area->nombre_area ?? '-') . ' (' . ($m->ubicacion->ambiente ?? '-') . ')') : 'Sin ubicación'),
+                'id'           => $m->id_movimiento,
+                'id_area'      => $m->ubicacion ? $m->ubicacion->idarea : null,
+                'id_ubicacion' => $m->ubicacion ? $m->ubicacion->id_ubicacion : null,
+                'text'         => '[' . ($m->bien->codigo_patrimonial ?? '-') . '] ' . ($m->bien->denominacion_bien ?? '-') . ' - Ubic: ' . 
+                                  ($m->ubicacion ? (($m->ubicacion->area->nombre_area ?? '-') . ' (' . ($m->ubicacion->ambiente ?? '-') . ')') : 'Sin ubicación'),
             ]);
 
         return response()->json(['results' => $movimientos]);
     }
 
     // ==================== HELPERS PRIVADOS ====================
+
+    /**
+     * Pre-pobla la tabla detalle_inventario con todos los bienes esperados.
+     * "Congela" el alcance del inventario para evitar inconsistencias futuras.
+     */
+    private function generarSnapshot(Inventario $inventario)
+    {
+        try {
+            DB::beginTransaction();
+
+            $bienesIds = $inventario->getBienesEsperadosIds();
+            $esperadosCount = count($bienesIds);
+            $procesados = 0;
+
+            // Obtener el estado de conservación "Bueno" como default
+            $estadoDefault = EstadoConservacion::whereRaw("UPPER(nombre_conservacion) LIKE '%BUENO%'")->first() 
+                             ?? EstadoConservacion::first();
+
+            foreach ($bienesIds as $idBien) {
+                // Obtener estrictamente el ÚLTIMO movimiento vigente del bien
+                // Usando una lógica idéntica a la del listado para evitar discrepancias
+                $mov = Movimiento::where('idbien', $idBien)
+                    ->where('anulado', false)
+                    ->where('revertido', false)
+                    ->latest('id_movimiento')
+                    ->first();
+
+                if ($mov) {
+                    $existe = DetalleInventario::where('id_inventario', $inventario->id_inventario)
+                        ->where('id_movimiento', $mov->id_movimiento)
+                        ->exists();
+
+                    if (!$existe) {
+                        DetalleInventario::create([
+                            'id_inventario'       => $inventario->id_inventario,
+                            'id_movimiento'       => $mov->id_movimiento,
+                            'estado_conservacion' => $estadoDefault?->id_estado_conservacion,
+                            'estadoverificacion'  => 'pendiente',
+                            'usuarioverificador'  => null,
+                            'fechaverificacion'   => null,
+                        ]);
+                        $procesados++;
+                    }
+                }
+            }
+
+            DB::commit();
+            
+            if ($procesados < $esperadosCount && $esperadosCount > 0) {
+                Log::warning("Snapshot incompleto para INV {$inventario->codigoinventario}. Esperados: {$esperadosCount}, Procesados: {$procesados}");
+            }
+            
+            return $procesados;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Fallo al generar snapshot INV {$inventario->id_inventario}: " . $e->getMessage());
+            return 0;
+        }
+    }
 
     private function formatInventario(Inventario $inv, bool $conDetalles = false): array
     {
@@ -674,6 +1055,8 @@ class InventarioController extends Controller
             'estadolabel'      => $inv->estadoinventario,
             'badgeestado'      => $inv->getBadgeEstado(),
             'badgeclase'       => $inv->getBadgeClaseEstado(),
+            'alcancebadge'     => $inv->getAlcanceBadge(),
+            'alcancehumanizado' => $inv->getAlcanceHumanizado(),
             'observacion'      => $inv->observacion,
             'fechacierre'      => $inv->fechacierre?->format('Y-m-d H:i'),
             'puedeEditarse'    => $inv->puedeEditarse(),
@@ -687,7 +1070,8 @@ class InventarioController extends Controller
                 'name' => $inv->usuarioRegistro->name,
             ] : null,
             'total_detalles'     => $inv->detalles()->count(),
-            'total_verificados'  => $inv->detalles()->where('estadoverificacion', 'verificado')->count(),
+            'total_verificados'  => $inv->detalles()->whereIn('estadoverificacion', [\App\Models\DetalleInventario::VERIFICADO, \App\Models\DetalleInventario::OBSERVADO])->count(),
+            'total_perdidos'     => $inv->detalles()->where('estadoverificacion', \App\Models\DetalleInventario::NO_ENCONTRADO)->count(),
         ];
 
         if ($conDetalles) {
@@ -731,12 +1115,15 @@ class InventarioController extends Controller
                 'tipo_bien'          => $d->movimiento->bien->tipoBien->nombre_tipo ?? '-',
             ] : null,
             'ubicacion_original' => $d->movimiento && $d->movimiento->ubicacion ? [
+                'id_ubicacion' => $d->movimiento->ubicacion->id_ubicacion,
+                'id_area'     => $d->movimiento->ubicacion->idarea,
                 'nombre_sede' => $d->movimiento->ubicacion->nombre_sede,
                 'area'        => $d->movimiento->ubicacion->area->nombre_area ?? '-',
                 'ambiente'    => $d->movimiento->ubicacion->ambiente ?? '-',
             ] : null,
             'ubicacion_detectada' => $d->ubicacionDetectada ? [
                 'id_ubicacion' => $d->ubicacionDetectada->id_ubicacion,
+                'id_area'      => $d->ubicacionDetectada->idarea,
                 'nombre_sede'  => $d->ubicacionDetectada->nombre_sede,
                 'area'         => $d->ubicacionDetectada->area->nombre_area ?? '-',
                 'ambiente'     => $d->ubicacionDetectada->ambiente ?? '-',

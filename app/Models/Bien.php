@@ -142,6 +142,12 @@ class Bien extends Model
         return $this->hasMany(Movimiento::class, 'idbien', 'id_bien');
     }
 
+    public function incidencias()
+    {
+        return $this->hasMany(Incidencia::class, 'id_bien', 'id_bien');
+    }
+
+
     /**
      * ⭐⭐⭐ NUEVO: Usuario que registró el bien ⭐⭐⭐
      */

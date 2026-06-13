@@ -135,4 +135,35 @@ class AreaController extends Controller
             return response()->json(['success' => false, 'message' => 'No se puede eliminar. Puede estar en uso.'], 500);
         }
     }
+
+    /**
+     * API: Obtener el responsable actual asignado a esta área
+     */
+    public function getResponsable(Area $area)
+    {
+        $asignacion = \App\Models\ResponsableArea::where('idarea', $area->id_area)
+            ->with('responsable')
+            ->orderByDesc('fecha_asignacion')
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => $asignacion ? $asignacion->responsable : null
+        ]);
+    }
+
+    /**
+     * API: Obtener las ubicaciones de esta área
+     */
+    public function getUbicaciones(Area $area)
+    {
+        $ubicaciones = \App\Models\Ubicacion::where('idarea', $area->id_area)
+            ->orderBy('ambiente')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $ubicaciones
+        ]);
+    }
 }

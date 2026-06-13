@@ -38,6 +38,9 @@ class CheckPermisoRuta
                 'perfil-modulo.permisos.edit' => 'perfil.index',
                 'perfil-modulo.permisos.update' => 'perfil.index',
                 'perfil-modulo.permisos.index' => 'perfil.index',
+                // Rutas de API auxiliares - accesibles para cualquier usuario autenticado
+                'areas.getResponsable' => 'inventario.index',
+                'areas.getUbicaciones' => 'inventario.index',
             ];
 
             foreach ($pm->permisos as $permiso) {
